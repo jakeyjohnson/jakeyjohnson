@@ -3,68 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PartyPadel.UK — Where Padel Meets The Party</title>
-<meta name="description" content="The UK's most social padel events. Round-robin tournaments, live DJs and afterparty vibes at top venues across the UK. Sign up as a player, sponsor or venue.">
-<meta property="og:title" content="PartyPadel.UK — Where Padel Meets The Party">
-<meta property="og:description" content="Social padel tournaments, live DJs and unforgettable nights across the UK. Join the movement.">
+<title>Party Padel — The Court After Dark</title>
+<meta name="description" content="Party Padel turns competitive padel into a high-energy live event. Short-format doubles leagues, DJs, lighting and finals production. Enter a team.">
+<meta property="og:title" content="Party Padel — The Court After Dark">
+<meta property="og:description" content="Short-format doubles leagues, DJs, lighting and finals production. Enter a team.">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23060706%22/><text x=%2250%22 y=%2268%22 font-family=%22Arial%22 font-weight=%22900%22 font-size=%2260%22 fill=%22%23C7FF3A%22 text-anchor=%22middle%22>P</text></svg>">
+<link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
-<!-- ===== Icon sprite (line-icon system matching brand marketing) ===== -->
+<!-- Court-line icon sprite: the signature graphic device, reused as dividers, markers, corner frames -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <symbol id="icon-court" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="3" y1="12" x2="21" y2="12"/></symbol>
-    <symbol id="icon-speaker" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2" y="14" width="4.5" height="6.5" rx="1.2"/><rect x="17.5" y="14" width="4.5" height="6.5" rx="1.2"/></symbol>
-    <symbol id="icon-people" viewBox="0 0 24 24"><circle cx="8.5" cy="8" r="3.2"/><path d="M2.5 20c0-3.3 2.7-5.8 6-5.8s6 2.5 6 5.8"/><circle cx="17.5" cy="9.2" r="2.4"/><path d="M14.8 20c.4-2.6 2.1-4.3 5-4.3"/></symbol>
-    <symbol id="icon-trophy" viewBox="0 0 24 24"><path d="M7 4h10v3.2a5 5 0 0 1-10 0V4z"/><path d="M7 5H3.5v2A4.5 4.5 0 0 0 7 11"/><path d="M17 5h3.5v2A4.5 4.5 0 0 1 17 11"/><line x1="12" y1="12.2" x2="12" y2="17"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="9.5" y1="17" x2="14.5" y2="17"/></symbol>
-    <symbol id="icon-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a15.3 15.3 0 0 1 0 18a15.3 15.3 0 0 1 0-18z"/></symbol>
-    <symbol id="icon-camera" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.9" fill="currentColor" stroke="none"/></symbol>
-    <symbol id="icon-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.7 7-12.3A7 7 0 0 0 5 8.7C5 14.3 12 21 12 21z"/><circle cx="12" cy="8.7" r="2.4"/></symbol>
-    <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.5l3.5 2.5"/></symbol>
-    <symbol id="icon-ticket" viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 0 0 4v3.5A1.5 1.5 0 0 0 4.5 18h15a1.5 1.5 0 0 0 1.5-1.5V13a2 2 0 0 1 0-4V6.5A1.5 1.5 0 0 0 19.5 5h-15A1.5 1.5 0 0 0 3 6.5V9z"/><line x1="10.5" y1="5.5" x2="10.5" y2="17.5" stroke-dasharray="2.2 2.2"/></symbol>
-    <symbol id="icon-bolt" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11l-1.2 8.5L20 10.5h-6.5L13 2z"/></symbol>
-    <symbol id="icon-gift" viewBox="0 0 24 24"><rect x="4" y="8.5" width="16" height="11.5"/><path d="M2.5 8.5h19v3.5h-19z"/><line x1="12" y1="8.5" x2="12" y2="20"/><path d="M12 8.5c-1.6-4.3-6.5-4-6.5-.6 0 0 2.2.6 6.5.6z"/><path d="M12 8.5c1.6-4.3 6.5-4 6.5-.6 0 0-2.2.6-6.5.6z"/></symbol>
-    <symbol id="icon-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12.5l3 3 6-6.5"/></symbol>
-    <symbol id="icon-racket" viewBox="0 0 24 24"><ellipse cx="12" cy="8.5" rx="6" ry="7"/><line x1="12" y1="15.3" x2="12" y2="21.5"/><line x1="9" y1="8.5" x2="15" y2="8.5"/><line x1="12" y1="4.5" x2="12" y2="12.5"/></symbol>
+    <symbol id="ci-cross" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></symbol>
+    <symbol id="ci-arrow" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></symbol>
+    <symbol id="ci-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.7 7-12.3A7 7 0 0 0 5 8.7C5 14.3 12 21 12 21z"/><circle cx="12" cy="8.7" r="2.2"/></symbol>
+    <symbol id="ci-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></symbol>
+    <symbol id="ci-ticket" viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 0 0 4v3.5A1.5 1.5 0 0 0 4.5 18h15a1.5 1.5 0 0 0 1.5-1.5V13a2 2 0 0 1 0-4V6.5A1.5 1.5 0 0 0 19.5 5h-15A1.5 1.5 0 0 0 3 6.5V9z"/></symbol>
+    <symbol id="ci-instagram" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.9" fill="currentColor" stroke="none"/></symbol>
   </defs>
 </svg>
 
-<!-- ===== Progress bar ===== -->
 <div class="scroll-progress" id="scrollProgress"></div>
 
-<!-- ===== Nav ===== -->
+<!-- ===== NAV ===== -->
 <header class="nav" id="nav">
   <div class="nav-inner">
     <a href="#top" class="logo">
-      <span class="logo-mark">P</span>PARTY<span class="accent">PADEL</span><span class="uk">.UK</span>
+      <img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="34" height="34">
     </a>
     <nav class="nav-links" id="navLinks">
-      <a href="#how">How It Works</a>
-      <a href="#events">Events</a>
-      <a href="#sponsors">Sponsors</a>
-      <a href="#venues">Venues</a>
-      <a href="#faq">FAQ</a>
+      <a href="events.html">Events</a>
+      <a href="play.html">Play</a>
+      <a href="format.html">Format</a>
+      <a href="results.html">Results</a>
+      <a href="partners.html">Partners</a>
+      <a href="about.html">About</a>
     </nav>
     <div class="nav-cta">
-      <a href="#signup" class="btn btn-primary btn-small">Join The Party</a>
+      <a href="events.html#tickets" class="btn btn-outline btn-small">Get Tickets</a>
+      <a href="enter-team.html" class="btn btn-primary btn-small">Enter a Team</a>
     </div>
     <button class="burger" id="burger" aria-label="Toggle menu" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
   </div>
   <div class="mobile-menu" id="mobileMenu">
-    <a href="#how">How It Works</a>
-    <a href="#events">Events</a>
-    <a href="#sponsors">Sponsors</a>
-    <a href="#venues">Venues</a>
-    <a href="#faq">FAQ</a>
-    <a href="#signup" class="btn btn-primary">Join The Party</a>
+    <a href="events.html">Events</a>
+    <a href="play.html">Play</a>
+    <a href="format.html">Format</a>
+    <a href="results.html">Results</a>
+    <a href="partners.html">Partners</a>
+    <a href="about.html">About</a>
+    <a href="events.html#tickets" class="btn btn-outline">Get Tickets</a>
+    <a href="enter-team.html" class="btn btn-primary">Enter a Team</a>
   </div>
 </header>
 
@@ -72,549 +69,263 @@
 
   <!-- ===== HERO ===== -->
   <section class="hero">
-    <canvas id="heroCanvas"></canvas>
-    <div class="rig" aria-hidden="true">
-      <div class="beam beam-1"></div>
-      <div class="beam beam-2"></div>
-      <div class="beam beam-3"></div>
-      <div class="beam beam-4"></div>
-      <div class="beam beam-violet-1"></div>
-      <div class="beam beam-violet-2"></div>
-    </div>
-    <div class="fence-overlay"></div>
-    <div class="hero-grain"></div>
-    <div class="hero-vignette"></div>
-
-    <div class="hero-circle-badge" aria-hidden="true">
-      <div class="circle-ring"></div>
-      <div class="circle-copy">
-        <span>PADEL LIKE</span>
-        <span>YOU'VE</span>
-        <strong>NEVER SEEN</strong>
-        <span>IT BEFORE.</span>
-      </div>
-    </div>
+    <div class="court-grid" aria-hidden="true"></div>
+    <div class="hero-vignette" aria-hidden="true"></div>
 
     <div class="hero-content">
-      <p class="hero-eyebrow-line">SPORT.&nbsp; MUSIC.&nbsp; CULTURE.</p>
-      <div class="hero-badge">
-        <span class="pulse-dot"></span> Now Live in 12 UK Cities
-      </div>
-      <h1 class="hero-title">
-        <span class="line">PARTY</span>
-        <span class="line lime-line">PADEL</span>
-      </h1>
-      <div class="hero-tagline">
-        <span class="tag-rule"></span>
-        <p>THE GAME<br><span class="lime-text">AFTER DARK.</span></p>
-      </div>
-      <p class="hero-sub">
-        Padel like you've never seen it before — round-robin tournaments, live DJ sets
-        and a crowd behind the glass. No experience needed, just bring the energy.
-      </p>
-      <div class="hero-actions">
-        <a href="#signup" class="btn btn-split btn-large">
-          <span class="split-lime">Get On The List</span><span class="split-dark">→</span>
-        </a>
-        <a href="#events" class="btn btn-ghost btn-large">See Upcoming Events</a>
+      <div class="hero-frame court-frame">
+        <!-- Placeholder for event film/photography per brief — swap for real footage -->
+        <span class="frame-corner corner-tl"></span>
+        <span class="frame-corner corner-tr"></span>
+        <span class="frame-corner corner-bl"></span>
+        <span class="frame-corner corner-br"></span>
+        <img class="hero-logo" src="assets/img/logo-lockup.webp" alt="Party Padel" width="640" height="640">
       </div>
 
-      <div class="hero-stats">
-        <div class="stat">
-          <span class="stat-num" data-target="5200" data-suffix="+">0</span>
-          <span class="stat-label">Players Signed Up</span>
-        </div>
-        <div class="stat">
-          <span class="stat-num" data-target="40" data-suffix="+">0</span>
-          <span class="stat-label">Events Hosted</span>
-        </div>
-        <div class="stat">
-          <span class="stat-num" data-target="12">0</span>
-          <span class="stat-label">UK Cities</span>
-        </div>
-        <div class="stat">
-          <span class="stat-num" data-target="25" data-suffix="+">0</span>
-          <span class="stat-label">Partner Venues</span>
-        </div>
+      <p class="hero-eyebrow reveal"><svg class="icon icon-sm"><use href="#ci-pin"/></svg> London &nbsp;·&nbsp; 14 September 2026</p>
+      <h1 class="hero-headline reveal">THE COURT<br>AFTER DARK.</h1>
+      <p class="hero-sub reveal">Teams of two. Three divisions. One night you won't forget. Short-format doubles competition with a DJ, lighting rig and a crowd behind the glass.</p>
+
+      <div class="hero-actions reveal">
+        <a href="enter-team.html" class="btn btn-primary btn-large">Enter a Team</a>
+        <a href="events.html#tickets" class="btn btn-outline btn-large">Get Tickets</a>
       </div>
     </div>
-
-    <a href="#how" class="scroll-cue" aria-label="Scroll down">
-      <span></span>
-    </a>
   </section>
 
-  <!-- ===== MARQUEE ===== -->
-  <div class="marquee">
-    <div class="marquee-track">
-      <span>COMPETE.</span><span>PARTY.</span><span>CELEBRATE.</span>
-      <span>COMPETE.</span><span>PARTY.</span><span>CELEBRATE.</span>
-      <span>COMPETE.</span><span>PARTY.</span><span>CELEBRATE.</span>
-      <span>COMPETE.</span><span>PARTY.</span><span>CELEBRATE.</span>
-    </div>
-  </div>
-
-  <!-- ===== WHAT IS IT ===== -->
-  <section class="section about" id="about">
+  <!-- ===== NEXT EVENTS ===== -->
+  <section class="section events-section" id="events">
     <div class="container">
       <div class="section-head reveal">
-        <span class="eyebrow">The Concept</span>
-        <h2>Padel is the fastest growing sport in the UK.<br>We made it a <span class="text-gradient">night out.</span></h2>
-        <p class="lede">
-          PartyPadel.UK brings together short-format padel leagues, iconic warehouse venues and
-          proper DJ-led entertainment — played out in front of a crowd. Turn up solo or with mates,
-          get matched into games, play some padel, then stay for the show. No club membership.
-          Just padel, people and a party.
-        </p>
+        <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Upcoming</span>
+        <h2>Enter The League</h2>
+        <p class="lede">Three cities, three divisions, spaces filling fast. Full fixture list on the Events page.</p>
       </div>
 
-      <div class="about-grid">
-        <div class="about-card reveal">
-          <div class="about-icon"><svg class="icon"><use href="#icon-court"/></svg></div>
-          <h3>Short Format Leagues</h3>
-          <p>Round-robin format so you play with and against loads of new people. All skill levels mixed and matched fairly.</p>
-        </div>
-        <div class="about-card reveal">
-          <div class="about-icon"><svg class="icon"><use href="#icon-speaker"/></svg></div>
-          <h3>Live DJs &amp; Entertainment</h3>
-          <p>Every event runs courtside with resident DJs, lighting rigs and a proper afterparty.</p>
-        </div>
-        <div class="about-card reveal">
-          <div class="about-icon"><svg class="icon"><use href="#icon-people"/></svg></div>
-          <h3>Big Crowd Atmosphere</h3>
-          <p>Play behind the glass in front of a crowd — iconic warehouse venues built for a show, not just a booking.</p>
-        </div>
-        <div class="about-card reveal">
-          <div class="about-icon"><svg class="icon"><use href="#icon-trophy"/></svg></div>
-          <h3>Compete. Win. Celebrate.</h3>
-          <p>Real matches, real prizes, then rackets down and the party takes over.</p>
-        </div>
+      <div class="event-grid">
+        <article class="event-card reveal">
+          <div class="event-card-head">
+            <span class="status-pill status-open">Entries Open</span>
+            <span class="event-date"><svg class="icon icon-sm"><use href="#ci-calendar"/></svg> 14 Sep 2026</span>
+          </div>
+          <h3>London</h3>
+          <p class="event-venue"><svg class="icon icon-sm"><use href="#ci-pin"/></svg> Shoreditch Padel Club</p>
+          <div class="court-rule" aria-hidden="true"></div>
+          <div class="event-meta-row">
+            <span>32 of 50 teams entered</span>
+            <span>From £120 / team</span>
+          </div>
+          <a href="enter-team.html?event=london-2026-09-14" class="btn btn-primary btn-block">Enter a Team</a>
+        </article>
+
+        <article class="event-card reveal">
+          <div class="event-card-head">
+            <span class="status-pill status-limited">Limited</span>
+            <span class="event-date"><svg class="icon icon-sm"><use href="#ci-calendar"/></svg> 27 Sep 2026</span>
+          </div>
+          <h3>Manchester</h3>
+          <p class="event-venue"><svg class="icon icon-sm"><use href="#ci-pin"/></svg> Padel House</p>
+          <div class="court-rule" aria-hidden="true"></div>
+          <div class="event-meta-row">
+            <span>46 of 50 teams entered</span>
+            <span>From £120 / team</span>
+          </div>
+          <a href="enter-team.html?event=manchester-2026-09-27" class="btn btn-primary btn-block">Enter a Team</a>
+        </article>
+
+        <article class="event-card reveal">
+          <div class="event-card-head">
+            <span class="status-pill status-closed">Coming Soon</span>
+            <span class="event-date"><svg class="icon icon-sm"><use href="#ci-calendar"/></svg> 11 Oct 2026</span>
+          </div>
+          <h3>Bristol</h3>
+          <p class="event-venue"><svg class="icon icon-sm"><use href="#ci-pin"/></svg> Harbourside Courts</p>
+          <div class="court-rule" aria-hidden="true"></div>
+          <div class="event-meta-row">
+            <span>Entries open soon</span>
+            <span>From £120 / team</span>
+          </div>
+          <a href="events.html" class="btn btn-outline btn-block">Get Notified</a>
+        </article>
       </div>
+
+      <a href="events.html" class="see-all-link reveal">See all events <svg class="icon icon-sm"><use href="#ci-arrow"/></svg></a>
     </div>
   </section>
 
-  <!-- ===== HOW IT WORKS ===== -->
-  <section class="section how" id="how">
+  <!-- ===== FORMAT ===== -->
+  <section class="section format-section">
     <div class="container">
       <div class="section-head reveal">
-        <span class="eyebrow">The Format</span>
-        <h2>Four steps to your next favourite night</h2>
+        <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> The Format</span>
+        <h2>20 minutes. No hiding.</h2>
+        <p class="lede">Short-format doubles built for a full night of fixtures, not an afternoon of waiting around.</p>
       </div>
 
-      <div class="fixture-list reveal">
-        <div class="fixture-row">
-          <span class="fixture-num">01<em>/04</em></span>
-          <span class="fixture-icon"><svg class="icon"><use href="#icon-ticket"/></svg></span>
-          <span class="fixture-title">Sign Up</span>
-          <p class="fixture-desc">Grab a spot solo, in a pair, or roll up a full squad. Pick your city and date.</p>
+      <div class="format-steps reveal">
+        <div class="format-step">
+          <span class="format-num">01</span>
+          <h3>Enter</h3>
+          <p>Register your team into a division. Two players, one entry.</p>
         </div>
-        <div class="fixture-row">
-          <span class="fixture-num">02<em>/04</em></span>
-          <span class="fixture-icon"><svg class="icon"><use href="#icon-pin"/></svg></span>
-          <span class="fixture-title">Show Up</span>
-          <p class="fixture-desc">Head to a partner venue, get your kit if you need it, meet your group over a welcome drink.</p>
+        <div class="format-step">
+          <span class="format-num">02</span>
+          <h3>Warm Up</h3>
+          <p>Courtside check-in, walk-on, warm-up rally before the clock starts.</p>
         </div>
-        <div class="fixture-row">
-          <span class="fixture-num">03<em>/04</em></span>
-          <span class="fixture-icon"><svg class="icon"><use href="#icon-court"/></svg></span>
-          <span class="fixture-title">Smash It</span>
-          <p class="fixture-desc">Round-robin padel matches, mixed abilities, coaches on hand. It's about fun, not rankings.</p>
+        <div class="format-step">
+          <span class="format-num">03</span>
+          <h3>Compete</h3>
+          <p>Short-format group matches. Every team plays a full round of fixtures.</p>
         </div>
-        <div class="fixture-row">
-          <span class="fixture-num">04<em>/04</em></span>
-          <span class="fixture-icon"><svg class="icon"><use href="#icon-speaker"/></svg></span>
-          <span class="fixture-title">Party On</span>
-          <p class="fixture-desc">Rackets down, music up. DJ sets, prizes and drinks til late with your new padel family.</p>
+        <div class="format-step">
+          <span class="format-num">04</span>
+          <h3>Finals</h3>
+          <p>Top teams progress to a feature-court final under full production.</p>
         </div>
       </div>
+
+      <a href="format.html" class="see-all-link reveal">Full rules &amp; scoring <svg class="icon icon-sm"><use href="#ci-arrow"/></svg></a>
     </div>
   </section>
 
-  <!-- ===== EVENTS ===== -->
-  <section class="section events" id="events">
+  <!-- ===== DIVISIONS ===== -->
+  <section class="section divisions-section">
     <div class="container">
       <div class="section-head reveal">
-        <span class="eyebrow">What's On</span>
-        <h2>Upcoming Events</h2>
-        <p class="lede">Spots go fast — most events sell out within 48 hours of being announced.</p>
+        <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Divisions</span>
+        <h2>Your team. Your division.</h2>
       </div>
 
-      <div class="events-grid">
-        <article class="event-card reveal">
-          <div class="ticket-main">
-            <span class="event-tag">Rooftop Edition</span>
-            <h3>London — Shoreditch Padel Club</h3>
-            <p>Sunset rooftop courts followed by a DJ set with skyline views.</p>
-            <div class="event-meta"><svg class="icon icon-sm"><use href="#icon-pin"/></svg> London &nbsp;·&nbsp; <svg class="icon icon-sm"><use href="#icon-clock"/></svg> 7:00 PM &nbsp;·&nbsp; <svg class="icon icon-sm"><use href="#icon-ticket"/></svg> From £22</div>
-            <a href="#signup" class="btn btn-outline">Get Notified</a>
-          </div>
-          <div class="ticket-stub">
-            <span class="stub-date"><span class="d">14</span><span class="m">SEP</span></span>
-            <span class="stub-label">Admit One</span>
-            <svg class="icon"><use href="#icon-ticket"/></svg>
-          </div>
-        </article>
-
-        <article class="event-card reveal">
-          <div class="ticket-main">
-            <span class="event-tag">Neon Night</span>
-            <h3>Manchester — Padel House</h3>
-            <p>Glow-in-the-dark balls, UV courts and a live house DJ set.</p>
-            <div class="event-meta"><svg class="icon icon-sm"><use href="#icon-pin"/></svg> Manchester &nbsp;·&nbsp; <svg class="icon icon-sm"><use href="#icon-clock"/></svg> 6:30 PM &nbsp;·&nbsp; <svg class="icon icon-sm"><use href="#icon-ticket"/></svg> From £20</div>
-            <a href="#signup" class="btn btn-outline">Get Notified</a>
-          </div>
-          <div class="ticket-stub">
-            <span class="stub-date"><span class="d">27</span><span class="m">SEP</span></span>
-            <span class="stub-label">Admit One</span>
-            <svg class="icon"><use href="#icon-ticket"/></svg>
-          </div>
-        </article>
-
-        <article class="event-card reveal">
-          <div class="ticket-main">
-            <span class="event-tag">Beach Vibes</span>
-            <h3>Bristol — Harbourside Courts</h3>
-            <p>Waterside padel, food trucks and an afternoon-into-night party.</p>
-            <div class="event-meta"><svg class="icon icon-sm"><use href="#icon-pin"/></svg> Bristol &nbsp;·&nbsp; <svg class="icon icon-sm"><use href="#icon-clock"/></svg> 1:00 PM &nbsp;·&nbsp; <svg class="icon icon-sm"><use href="#icon-ticket"/></svg> From £18</div>
-            <a href="#signup" class="btn btn-outline">Get Notified</a>
-          </div>
-          <div class="ticket-stub">
-            <span class="stub-date"><span class="d">11</span><span class="m">OCT</span></span>
-            <span class="stub-label">Admit One</span>
-            <svg class="icon"><use href="#icon-ticket"/></svg>
-          </div>
-        </article>
-
-        <article class="event-card reveal">
-          <div class="ticket-main">
-            <span class="event-tag">Halloween Smash</span>
-            <h3>Edinburgh — Meadowbank Padel</h3>
-            <p>Fancy dress padel tournament with a spooky afterparty.</p>
-            <div class="event-meta"><svg class="icon icon-sm"><use href="#icon-pin"/></svg> Edinburgh &nbsp;·&nbsp; <svg class="icon icon-sm"><use href="#icon-clock"/></svg> 6:00 PM &nbsp;·&nbsp; <svg class="icon icon-sm"><use href="#icon-ticket"/></svg> From £20</div>
-            <a href="#signup" class="btn btn-outline">Get Notified</a>
-          </div>
-          <div class="ticket-stub">
-            <span class="stub-date"><span class="d">25</span><span class="m">OCT</span></span>
-            <span class="stub-label">Admit One</span>
-            <svg class="icon"><use href="#icon-ticket"/></svg>
-          </div>
-        </article>
-
-        <article class="event-card reveal">
-          <div class="ticket-main">
-            <span class="event-tag">Corporate Cup</span>
-            <h3>Birmingham — Sportivate Arena</h3>
-            <p>Company vs. company round robin — team building that people actually enjoy.</p>
-            <div class="event-meta"><svg class="icon icon-sm"><use href="#icon-pin"/></svg> Birmingham &nbsp;·&nbsp; <svg class="icon icon-sm"><use href="#icon-clock"/></svg> 5:30 PM &nbsp;·&nbsp; <svg class="icon icon-sm"><use href="#icon-ticket"/></svg> From £25</div>
-            <a href="#signup" class="btn btn-outline">Get Notified</a>
-          </div>
-          <div class="ticket-stub">
-            <span class="stub-date"><span class="d">08</span><span class="m">NOV</span></span>
-            <span class="stub-label">Admit One</span>
-            <svg class="icon"><use href="#icon-ticket"/></svg>
-          </div>
-        </article>
-
-        <article class="event-card event-card-cta reveal">
-          <h3>Want PartyPadel in your city?</h3>
-          <p>Tell us where you want us next and we'll let you know the moment we land there.</p>
-          <a href="#signup" class="btn btn-primary">Request Your City</a>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== SPONSORS ===== -->
-  <section class="section sponsors" id="sponsors">
-    <div class="glow glow-sponsor"></div>
-    <div class="container split">
-      <div class="split-copy reveal">
-        <span class="eyebrow">For Brands</span>
-        <h2>Reach an audience that shows up, plays hard and posts about it.</h2>
-        <p class="lede">
-          PartyPadel events sell out. Our players are young, social, active and highly engaged —
-          exactly the crowd that's hard to reach through traditional ads.
-        </p>
-        <ul class="check-list">
-          <li>Court-side branding, banners and kit at every event</li>
-          <li>Product sampling &amp; live activations with a captive audience</li>
-          <li>Social content &amp; UGC across Instagram and TikTok</li>
-          <li>Direct access to a fast-growing, highly engaged community</li>
-          <li>Flexible packages — single event, city-wide or national partner</li>
-        </ul>
-        <a href="#signup" class="btn btn-primary btn-large">Become a Sponsor <span class="arrow">→</span></a>
-      </div>
-
-      <div class="split-stats reveal">
-        <div class="stat-card">
-          <span class="stat-num" data-target="87" data-suffix="%">0</span>
-          <p>of players are aged 18–40</p>
+      <div class="division-grid reveal">
+        <div class="division-card">
+          <h3>Men's</h3>
+          <p>Open doubles competition. Every skill level from club-level to competitive.</p>
+          <span class="division-status">Entering now</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-num" data-target="4200" data-suffix="+">0</span>
-          <p>social followers &amp; growing weekly</p>
+        <div class="division-card">
+          <h3>Women's</h3>
+          <p>Open doubles competition. Every skill level from club-level to competitive.</p>
+          <span class="division-status">Entering now</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-num" data-target="92" data-suffix="%">0</span>
-          <p>of events sell out in advance</p>
-        </div>
-        <div class="stat-card">
-          <span class="stat-num" data-target="12">0</span>
-          <p>UK cities and counting</p>
+        <div class="division-card">
+          <h3>Mixed</h3>
+          <p>One player of each. The format most teams enter first.</p>
+          <span class="division-status">Entering now</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ===== VENUES ===== -->
-  <section class="section venues" id="venues">
-    <div class="container split reverse">
-      <div class="split-visual reveal">
-        <div class="venue-card-stack">
-          <div class="vcard vcard-1">
-            <span class="vcard-icon"><svg class="icon"><use href="#icon-trophy"/></svg></span>
-            <strong>+38%</strong>
-            <p>average off-peak court utilisation uplift</p>
-          </div>
-          <div class="vcard vcard-2">
-            <span class="vcard-icon"><svg class="icon"><use href="#icon-ticket"/></svg></span>
-            <strong>+£1.8k</strong>
-            <p>average bar &amp; food revenue per event night</p>
-          </div>
-          <div class="vcard vcard-3">
-            <span class="vcard-icon"><svg class="icon"><use href="#icon-people"/></svg></span>
-            <strong>150+</strong>
-            <p>new players introduced to your venue per event</p>
-          </div>
-        </div>
-      </div>
-      <div class="split-copy reveal">
-        <span class="eyebrow">For Venues</span>
-        <h2>Turn quiet courts into your busiest, most profitable nights.</h2>
-        <p class="lede">
-          We bring the players, the DJ, the marketing and the running of the event.
-          You bring the courts. It's a fully managed, zero-admin way to fill off-peak
-          slots and introduce new members to your club.
-        </p>
-        <ul class="check-list">
-          <li>We handle bookings, ticketing, marketing and hosting end-to-end</li>
-          <li>Boosted bar, food and pro-shop revenue on event nights</li>
-          <li>New member acquisition — most attendees have never played at your venue</li>
-          <li>Zero cost to list — we work on a simple revenue share</li>
-        </ul>
-        <a href="#signup" class="btn btn-primary btn-large">List Your Venue <span class="arrow">→</span></a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== TESTIMONIALS ===== -->
-  <section class="section testimonials">
+  <!-- ===== EXPERIENCE ===== -->
+  <section class="section experience-section">
     <div class="container">
-      <div class="section-head reveal center">
-        <span class="eyebrow">The Community</span>
-        <h2>Don't just take our word for it</h2>
+      <div class="section-head reveal">
+        <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> The Experience</span>
+        <h2>Sport first. Production makes it a night.</h2>
+        <p class="lede">Competition, DJ and lighting, social space and a feature court finals stage — all in the same room.</p>
       </div>
-      <div class="testi-grid reveal">
-        <div class="testi-featured">
-          <p>"Turned up on my own not knowing anyone, left with a group chat of 15 new mates and a hangover. Best Saturday I've had in years."</p>
-          <div class="testi-author"><span class="avatar">JM</span> Jess M. — London</div>
+
+      <div class="experience-gallery reveal">
+        <div class="experience-tile court-frame">
+          <span class="frame-corner corner-tl"></span><span class="frame-corner corner-br"></span>
+          <span class="tile-label">Competition — feature court, live scoring</span>
         </div>
-        <div class="testi-support-list">
-          <div class="testi-card">
-            <p>"I hadn't picked up a racket in my life. Didn't matter — the format made sure everyone was playing at the right level. Then the DJ came on."</p>
-            <div class="testi-author"><span class="avatar">TK</span> Tom K. — Manchester</div>
-          </div>
-          <div class="testi-card">
-            <p>"As a venue we were dead on Sunday afternoons. PartyPadel fills our courts and our bar every single time. Genuinely our best partnership this year."</p>
-            <div class="testi-author"><span class="avatar">RH</span> Ravi H. — Venue Partner, Bristol</div>
-          </div>
-          <div class="testi-card">
-            <p>"Sponsoring PartyPadel gave us more real engagement in one night than a month of paid social. The energy in the room is unmatched."</p>
-            <div class="testi-author"><span class="avatar">EL</span> Elle S. — Brand Partner</div>
-          </div>
+        <div class="experience-tile court-frame">
+          <span class="frame-corner corner-tl"></span><span class="frame-corner corner-br"></span>
+          <span class="tile-label">Production — DJ, lighting rig, walk-ons</span>
+        </div>
+        <div class="experience-tile court-frame">
+          <span class="frame-corner corner-tl"></span><span class="frame-corner corner-br"></span>
+          <span class="tile-label">Social — food, drink, courtside viewing</span>
+        </div>
+        <div class="experience-tile court-frame">
+          <span class="frame-corner corner-tl"></span><span class="frame-corner corner-br"></span>
+          <span class="tile-label">Finals — feature court, full production</span>
         </div>
       </div>
+      <p class="gallery-note">Photography placeholder — real event imagery replaces these tiles after the first event.</p>
     </div>
   </section>
 
-  <!-- ===== SIGNUP ===== -->
-  <section class="section signup" id="signup">
-    <canvas id="signupCanvas"></canvas>
+  <!-- ===== RESULTS TEASER ===== -->
+  <section class="section results-section">
     <div class="container">
-      <div class="signup-box reveal">
-        <div class="signup-copy">
-          <span class="eyebrow">Join The Movement</span>
-          <h2>Be first on the court.</h2>
-          <p class="lede">
-            Join the list for early access to tickets, city launches, sponsor packs and venue
-            partnerships. We'll never spam you — just the good stuff.
-          </p>
-          <div class="signup-perks">
-            <div class="perk"><svg class="icon"><use href="#icon-bolt"/></svg> Early access to sold-out events</div>
-            <div class="perk"><svg class="icon"><use href="#icon-gift"/></svg> Member-only prizes &amp; giveaways</div>
-            <div class="perk"><svg class="icon"><use href="#icon-pin"/></svg> First to know when we land in your city</div>
-          </div>
-        </div>
+      <div class="section-head reveal">
+        <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Results</span>
+        <h2>Standings go live on the first serve.</h2>
+      </div>
 
-        <form id="signupForm" class="signup-form" novalidate>
-          <div class="form-row">
-            <label for="name">Name</label>
-            <input type="text" id="name" name="name" placeholder="Your full name" required>
-          </div>
-          <div class="form-row">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" placeholder="you@example.com" required>
-          </div>
-          <div class="form-row">
-            <label for="city">City</label>
-            <select id="city" name="city" required>
-              <option value="" disabled selected>Select your city</option>
-              <option>London</option>
-              <option>Manchester</option>
-              <option>Bristol</option>
-              <option>Edinburgh</option>
-              <option>Birmingham</option>
-              <option>Leeds</option>
-              <option>Glasgow</option>
-              <option>Other / Not listed</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <span class="group-label">I'm signing up as a</span>
-            <div class="radio-group">
-              <label class="radio-pill">
-                <input type="radio" name="role" value="Player" checked>
-                <span><svg class="icon icon-sm"><use href="#icon-racket"/></svg> Player</span>
-              </label>
-              <label class="radio-pill">
-                <input type="radio" name="role" value="Sponsor">
-                <span><svg class="icon icon-sm"><use href="#icon-trophy"/></svg> Sponsor</span>
-              </label>
-              <label class="radio-pill">
-                <input type="radio" name="role" value="Venue">
-                <span><svg class="icon icon-sm"><use href="#icon-court"/></svg> Venue</span>
-              </label>
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary btn-large btn-submit">
-            <span class="btn-text">Get On The List</span>
-            <span class="btn-loader"></span>
-          </button>
-          <p class="form-note">By signing up you agree to receive emails from PartyPadel.UK. Unsubscribe anytime.</p>
-        </form>
-
-        <div class="signup-success" id="signupSuccess">
-          <div class="success-badge">
-            <svg class="icon icon-lg"><use href="#icon-check"/></svg>
-          </div>
-          <h3>You're on the list!</h3>
-          <p>Keep an eye on your inbox — we'll be in touch with everything PartyPadel.</p>
-          <button class="btn btn-ghost" id="resetForm">Sign up another</button>
+      <div class="standings-preview reveal">
+        <div class="standings-header">
+          <span>Team</span><span>P</span><span>W</span><span>L</span><span>Pts</span>
         </div>
+        <div class="standings-row standings-placeholder">
+          <span>—</span><span>—</span><span>—</span><span>—</span><span>—</span>
+        </div>
+        <div class="standings-row standings-placeholder">
+          <span>—</span><span>—</span><span>—</span><span>—</span><span>—</span>
+        </div>
+        <div class="standings-row standings-placeholder">
+          <span>—</span><span>—</span><span>—</span><span>—</span><span>—</span>
+        </div>
+        <p class="standings-empty">No fixtures played yet. Standings populate live once London kicks off on 14 September.</p>
       </div>
     </div>
   </section>
 
-  <!-- ===== FAQ ===== -->
-  <section class="section faq" id="faq">
-    <div class="container narrow">
-      <div class="section-head reveal center">
-        <span class="eyebrow">Questions</span>
-        <h2>Everything you need to know</h2>
-      </div>
-      <div class="accordion reveal">
-        <div class="accordion-item">
-          <button class="accordion-trigger">Do I need to be good at padel? <span class="accordion-icon">+</span></button>
-          <div class="accordion-panel"><p>Not at all. Our round-robin format matches you fairly by ability, and most events are 60% beginners. Coaches are on hand to help if it's your first time.</p></div>
-        </div>
-        <div class="accordion-item">
-          <button class="accordion-trigger">What do I need to bring? <span class="accordion-icon">+</span></button>
-          <div class="accordion-panel"><p>Just yourself, sportswear and trainers. Rackets and balls are provided at every venue, and we've got spares if you're short a doubles partner.</p></div>
-        </div>
-        <div class="accordion-item">
-          <button class="accordion-trigger">Can I come on my own? <span class="accordion-icon">+</span></button>
-          <div class="accordion-panel"><p>Absolutely — most of our players show up solo. It's honestly the best way to meet people, and the round-robin format means you'll play with loads of different people over the night.</p></div>
-        </div>
-        <div class="accordion-item">
-          <button class="accordion-trigger">How does sponsorship pricing work? <span class="accordion-icon">+</span></button>
-          <div class="accordion-panel"><p>We offer flexible packages from single-event activations to national partnerships. Sign up above as a sponsor and our partnerships team will send over the current media pack and pricing.</p></div>
-        </div>
-        <div class="accordion-item">
-          <button class="accordion-trigger">What does it cost to list our venue? <span class="accordion-icon">+</span></button>
-          <div class="accordion-panel"><p>Nothing upfront — we work on a simple revenue share from ticket sales, so it's zero risk. We handle all marketing, bookings and on-the-night hosting.</p></div>
-        </div>
-        <div class="accordion-item">
-          <button class="accordion-trigger">Is there an age limit? <span class="accordion-icon">+</span></button>
-          <div class="accordion-panel"><p>You need to be 18+ to attend, as all events include a licensed bar and afterparty.</p></div>
-        </div>
-      </div>
+  <!-- Partner strip intentionally omitted — brief §13: no partner logos or claims until real partners are confirmed. -->
+
+  <!-- ===== FOLLOW ===== -->
+  <section class="follow-section">
+    <div class="container follow-inner reveal">
+      <p>Follow the league for city announcements, draws and finals highlights.</p>
+      <a href="https://instagram.com/partypadel.uk" class="follow-link">
+        <svg class="icon"><use href="#ci-instagram"/></svg> @partypadel.uk
+      </a>
     </div>
   </section>
 
   <!-- ===== FINAL CTA ===== -->
   <section class="final-cta">
     <div class="container">
-      <h2 class="reveal">Ready to smash it?</h2>
-      <p class="reveal">The next PartyPadel is closer than you think.</p>
-      <a href="#signup" class="btn btn-split btn-large reveal">
-        <span class="split-lime">Join The Party</span><span class="split-dark">→</span>
-      </a>
+      <h2 class="reveal">Your team. Your city.<br>Your night.</h2>
+      <a href="enter-team.html" class="btn btn-primary btn-large reveal">Enter a Team</a>
     </div>
   </section>
 
 </main>
 
-<!-- ===== CONTACT STRIP ===== -->
-<div class="contact-strip">
-  <div class="container contact-strip-inner">
-    <a href="https://partypadel.uk" class="contact-item">
-      <svg class="icon"><use href="#icon-globe"/></svg>
-      <span><em>Visit Our Website</em><strong>partypadel.uk</strong></span>
-    </a>
-    <a href="https://instagram.com/partypadel.uk" class="contact-item">
-      <svg class="icon"><use href="#icon-camera"/></svg>
-      <span><em>Follow Us</em><strong>@partypadel.uk</strong></span>
-    </a>
-    <span class="contact-item">
-      <svg class="icon"><use href="#icon-pin"/></svg>
-      <span><em>Across The UK</em><strong>Iconic Warehouse Venues</strong></span>
-    </span>
-  </div>
-</div>
-
 <!-- ===== FOOTER ===== -->
 <footer class="footer">
   <div class="container footer-grid">
     <div class="footer-brand">
-      <a href="#top" class="logo"><span class="logo-mark">P</span>PARTY<span class="accent">PADEL</span><span class="uk">.UK</span></a>
-      <p>Sport. Music. Culture. Padel like you've never seen it before.</p>
+      <img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="40" height="40">
+      <p>Serious sport. Social energy.</p>
       <div class="socials">
-        <a href="https://instagram.com/partypadel.uk" aria-label="Instagram"><svg class="icon icon-sm"><use href="#icon-camera"/></svg></a>
-        <a href="#" aria-label="TikTok">TT</a>
-        <a href="#" aria-label="X / Twitter">X</a>
+        <a href="https://instagram.com/partypadel.uk" aria-label="Instagram"><svg class="icon icon-sm"><use href="#ci-instagram"/></svg></a>
       </div>
     </div>
     <div class="footer-col">
-      <h4>Explore</h4>
-      <a href="#how">How It Works</a>
-      <a href="#events">Events</a>
-      <a href="#faq">FAQ</a>
+      <h4>League</h4>
+      <a href="events.html">Events</a>
+      <a href="play.html">Play</a>
+      <a href="format.html">Format</a>
+      <a href="results.html">Results</a>
     </div>
     <div class="footer-col">
-      <h4>Partner With Us</h4>
-      <a href="#sponsors">Sponsors</a>
-      <a href="#venues">Venues</a>
-      <a href="#signup">Join The List</a>
+      <h4>Business</h4>
+      <a href="partners.html">Partners</a>
+      <a href="about.html">About</a>
     </div>
     <div class="footer-col">
       <h4>Contact</h4>
       <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a>
-      <a href="https://instagram.com/partypadel.uk">@partypadel.uk</a>
       <span class="footer-note">United Kingdom</span>
     </div>
   </div>
   <div class="footer-bottom">
-    <span>© 2026 PartyPadel.UK — All rights reserved.</span>
+    <span>© 2026 Party Padel — All rights reserved.</span>
   </div>
 </footer>
 
