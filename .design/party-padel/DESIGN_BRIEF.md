@@ -2,6 +2,8 @@
 
 Source: `Party_Padel_Brand_Guidelines_Website_Brief.docx` (client-supplied, v1.0), imported verbatim below. This is the authoritative brand and product spec — it supersedes earlier informal direction taken from Instagram references.
 
+> **Amendment — 8 August 2026 (from the brand owner):** Party Padel is **not a league** — it's a one-night event, per city. Quick-format padel competition, a cash prize for the winning team(s), and a complete party built around it: activations, DJs, fun. The verbatim brief below still uses "league" language in places (brand proposition, example taglines) — treat those as superseded by this note. The underlying event mechanics (group fixtures into a same-night final) were already correct; only the "league" framing needs to go from new copy.
+
 ---
 
 ## 1. Brand Foundation
@@ -76,7 +78,7 @@ Dark warehouse/premium indoor-club environments. Hard directional lighting, prac
 
 Confident modern sports property — not a corporate federation, not a nightclub promoter. Short and direct. Competitive without macho clichés. British English. Energetic without constant exclamation marks. Culture/nightlife references used selectively. Never over-explain padel to an audience already interested.
 
-Example language: "THE COURT AFTER DARK." / "YOUR TEAM. YOUR CITY. YOUR NIGHT." / "20 MINUTES. NO HIDING." / "PLAY HARD. STAY LATE." / "ENTER THE LEAGUE." / "FROM FIRST SERVE TO FINAL SET."
+Example language: "THE COURT AFTER DARK." / "YOUR TEAM. YOUR CITY. YOUR NIGHT." / "20 MINUTES. NO HIDING." / "PLAY HARD. STAY LATE." / ~~"ENTER THE LEAGUE."~~ *(superseded — see amendment above; use "ENTER THE EVENT" or similar)* / "FROM FIRST SERVE TO FINAL SET."
 
 ## 8. Event Product
 
