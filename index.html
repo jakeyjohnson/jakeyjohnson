@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PartyPadel.UK — Where Padel Meets The Party</title>
+<meta name="description" content="The UK's most social padel events. Round-robin tournaments, live DJs and afterparty vibes at top venues across the UK. Sign up as a player, sponsor or venue.">
+<meta property="og:title" content="PartyPadel.UK — Where Padel Meets The Party">
+<meta property="og:description" content="Social padel tournaments, live DJs and unforgettable nights across the UK. Join the movement.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎾</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- ===== Progress bar ===== -->
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- ===== Nav ===== -->
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="#top" class="logo">
+      <span class="logo-ball">🎾</span> Party<span class="accent">Padel</span><span class="uk">.UK</span>
+    </a>
+    <nav class="nav-links" id="navLinks">
+      <a href="#how">How It Works</a>
+      <a href="#events">Events</a>
+      <a href="#sponsors">Sponsors</a>
+      <a href="#venues">Venues</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="#signup" class="btn btn-primary btn-small">Join The Party</a>
+    </div>
+    <button class="burger" id="burger" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#how">How It Works</a>
+    <a href="#events">Events</a>
+    <a href="#sponsors">Sponsors</a>
+    <a href="#venues">Venues</a>
+    <a href="#faq">FAQ</a>
+    <a href="#signup" class="btn btn-primary">Join The Party</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <canvas id="heroCanvas"></canvas>
+    <div class="hero-glow glow-1"></div>
+    <div class="hero-glow glow-2"></div>
+    <div class="hero-glow glow-3"></div>
+    <div class="grid-overlay"></div>
+
+    <div class="hero-content">
+      <div class="hero-badge reveal">
+        <span class="pulse-dot"></span> Now Live in 12 UK Cities
+      </div>
+      <h1 class="hero-title reveal">
+        <span class="line">WHERE PADEL</span>
+        <span class="line">MEETS THE <span class="text-gradient">PARTY</span></span>
+      </h1>
+      <p class="hero-sub reveal">
+        Social padel tournaments, live DJ sets and unforgettable nights out —
+        no experience needed, just bring the energy.
+      </p>
+      <div class="hero-actions reveal">
+        <a href="#signup" class="btn btn-primary btn-large">
+          Get On The List <span class="arrow">→</span>
+        </a>
+        <a href="#events" class="btn btn-ghost btn-large">See Upcoming Events</a>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="stat">
+          <span class="stat-num" data-target="5200" data-suffix="+">0</span>
+          <span class="stat-label">Players Signed Up</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" data-target="40" data-suffix="+">0</span>
+          <span class="stat-label">Events Hosted</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" data-target="12">0</span>
+          <span class="stat-label">UK Cities</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" data-target="25" data-suffix="+">0</span>
+          <span class="stat-label">Partner Venues</span>
+        </div>
+      </div>
+    </div>
+
+    <a href="#how" class="scroll-cue" aria-label="Scroll down">
+      <span></span>
+    </a>
+  </section>
+
+  <!-- ===== MARQUEE ===== -->
+  <div class="marquee">
+    <div class="marquee-track">
+      <span>🎾 SMASH IT</span><span>🎧 LIVE DJ SETS</span><span>🍹 AFTERPARTY VIBES</span>
+      <span>🏆 ROUND ROBIN TOURNAMENTS</span><span>🎉 ALL LEVELS WELCOME</span><span>📍 UK WIDE</span>
+      <span>🎾 SMASH IT</span><span>🎧 LIVE DJ SETS</span><span>🍹 AFTERPARTY VIBES</span>
+      <span>🏆 ROUND ROBIN TOURNAMENTS</span><span>🎉 ALL LEVELS WELCOME</span><span>📍 UK WIDE</span>
+    </div>
+  </div>
+
+  <!-- ===== WHAT IS IT ===== -->
+  <section class="section about" id="about">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">The Concept</span>
+        <h2>Padel is the fastest growing sport in the UK.<br>We made it a <span class="text-gradient">night out.</span></h2>
+        <p class="lede">
+          PartyPadel.UK brings together social round-robin padel tournaments, top venues and
+          proper DJ-led afterparties. Turn up solo or with mates, get matched into games,
+          play some padel, then stay for drinks and music. No club membership. No rankings.
+          Just padel, people and a party.
+        </p>
+      </div>
+
+      <div class="about-grid">
+        <div class="about-card reveal">
+          <div class="about-icon">🎾</div>
+          <h3>Social Padel</h3>
+          <p>Round-robin format so you play with and against loads of new people. All skill levels mixed and matched fairly.</p>
+        </div>
+        <div class="about-card reveal">
+          <div class="about-icon">🎧</div>
+          <h3>Live DJs</h3>
+          <p>Every event ends in a proper afterparty — resident DJs, drinks deals and a court-side dancefloor.</p>
+        </div>
+        <div class="about-card reveal">
+          <div class="about-icon">🏟️</div>
+          <h3>Top Venues</h3>
+          <p>We partner with the best padel clubs in the UK, from rooftop courts to premium indoor arenas.</p>
+        </div>
+        <div class="about-card reveal">
+          <div class="about-icon">🤝</div>
+          <h3>Real Community</h3>
+          <p>Thousands of players across the UK who show up for the sport and stay for the people.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HOW IT WORKS ===== -->
+  <section class="section how" id="how">
+    <div class="container">
+      <div class="section-head reveal center">
+        <span class="eyebrow">The Format</span>
+        <h2>Four steps to your next favourite night</h2>
+      </div>
+
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-num">01</div>
+          <h3>Sign Up</h3>
+          <p>Grab a spot solo, in a pair, or roll up a full squad. Pick your city and date.</p>
+        </div>
+        <div class="step-connector" aria-hidden="true"></div>
+        <div class="step reveal">
+          <div class="step-num">02</div>
+          <h3>Show Up</h3>
+          <p>Head to a partner venue, get your kit if you need it, meet your group over a welcome drink.</p>
+        </div>
+        <div class="step-connector" aria-hidden="true"></div>
+        <div class="step reveal">
+          <div class="step-num">03</div>
+          <h3>Smash It</h3>
+          <p>Round-robin padel matches, mixed abilities, coaches on hand. It's about fun, not rankings.</p>
+        </div>
+        <div class="step-connector" aria-hidden="true"></div>
+        <div class="step reveal">
+          <div class="step-num">04</div>
+          <h3>Party On</h3>
+          <p>Rackets down, music up. DJ sets, prizes and drinks til late with your new padel family.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== EVENTS ===== -->
+  <section class="section events" id="events">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">What's On</span>
+        <h2>Upcoming Events</h2>
+        <p class="lede">Spots go fast — most events sell out within 48 hours of being announced.</p>
+      </div>
+
+      <div class="events-grid">
+        <article class="event-card reveal">
+          <div class="event-date"><span class="d">14</span><span class="m">SEP</span></div>
+          <div class="event-body">
+            <span class="event-tag">Rooftop Edition</span>
+            <h3>London — Shoreditch Padel Club</h3>
+            <p>Sunset rooftop courts followed by a DJ set with skyline views.</p>
+            <div class="event-meta">📍 London &nbsp;·&nbsp; 🕖 7:00 PM &nbsp;·&nbsp; 🎟️ From £22</div>
+          </div>
+          <a href="#signup" class="btn btn-outline">Get Notified</a>
+        </article>
+
+        <article class="event-card reveal">
+          <div class="event-date"><span class="d">27</span><span class="m">SEP</span></div>
+          <div class="event-body">
+            <span class="event-tag">Neon Night</span>
+            <h3>Manchester — Padel House</h3>
+            <p>Glow-in-the-dark balls, UV courts and a live house DJ set.</p>
+            <div class="event-meta">📍 Manchester &nbsp;·&nbsp; 🕖 6:30 PM &nbsp;·&nbsp; 🎟️ From £20</div>
+          </div>
+          <a href="#signup" class="btn btn-outline">Get Notified</a>
+        </article>
+
+        <article class="event-card reveal">
+          <div class="event-date"><span class="d">11</span><span class="m">OCT</span></div>
+          <div class="event-body">
+            <span class="event-tag">Beach Vibes</span>
+            <h3>Bristol — Harbourside Courts</h3>
+            <p>Waterside padel, food trucks and an afternoon-into-night party.</p>
+            <div class="event-meta">📍 Bristol &nbsp;·&nbsp; 🕐 1:00 PM &nbsp;·&nbsp; 🎟️ From £18</div>
+          </div>
+          <a href="#signup" class="btn btn-outline">Get Notified</a>
+        </article>
+
+        <article class="event-card reveal">
+          <div class="event-date"><span class="d">25</span><span class="m">OCT</span></div>
+          <div class="event-body">
+            <span class="event-tag">Halloween Smash</span>
+            <h3>Edinburgh — Meadowbank Padel</h3>
+            <p>Fancy dress padel tournament with a spooky afterparty.</p>
+            <div class="event-meta">📍 Edinburgh &nbsp;·&nbsp; 🕖 6:00 PM &nbsp;·&nbsp; 🎟️ From £20</div>
+          </div>
+          <a href="#signup" class="btn btn-outline">Get Notified</a>
+        </article>
+
+        <article class="event-card reveal">
+          <div class="event-date"><span class="d">08</span><span class="m">NOV</span></div>
+          <div class="event-body">
+            <span class="event-tag">Corporate Cup</span>
+            <h3>Birmingham — Sportivate Arena</h3>
+            <p>Company vs. company round robin — team building that people actually enjoy.</p>
+            <div class="event-meta">📍 Birmingham &nbsp;·&nbsp; 🕖 5:30 PM &nbsp;·&nbsp; 🎟️ From £25</div>
+          </div>
+          <a href="#signup" class="btn btn-outline">Get Notified</a>
+        </article>
+
+        <article class="event-card event-card-cta reveal">
+          <h3>Want PartyPadel in your city?</h3>
+          <p>Tell us where you want us next and we'll let you know the moment we land there.</p>
+          <a href="#signup" class="btn btn-primary">Request Your City</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SPONSORS ===== -->
+  <section class="section sponsors" id="sponsors">
+    <div class="glow glow-sponsor"></div>
+    <div class="container split">
+      <div class="split-copy reveal">
+        <span class="eyebrow">For Brands</span>
+        <h2>Reach an audience that shows up, plays hard and posts about it.</h2>
+        <p class="lede">
+          PartyPadel events sell out. Our players are young, social, active and highly engaged —
+          exactly the crowd that's hard to reach through traditional ads.
+        </p>
+        <ul class="check-list">
+          <li>Court-side branding, banners and kit at every event</li>
+          <li>Product sampling &amp; live activations with a captive audience</li>
+          <li>Social content &amp; UGC across Instagram and TikTok</li>
+          <li>Direct access to a fast-growing, highly engaged community</li>
+          <li>Flexible packages — single event, city-wide or national partner</li>
+        </ul>
+        <a href="#signup" class="btn btn-primary btn-large">Become a Sponsor <span class="arrow">→</span></a>
+      </div>
+
+      <div class="split-stats reveal">
+        <div class="stat-card">
+          <span class="stat-num" data-target="87" data-suffix="%">0</span>
+          <p>of players are aged 18–40</p>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" data-target="4200" data-suffix="+">0</span>
+          <p>social followers &amp; growing weekly</p>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" data-target="92" data-suffix="%">0</span>
+          <p>of events sell out in advance</p>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" data-target="12">0</span>
+          <p>UK cities and counting</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== VENUES ===== -->
+  <section class="section venues" id="venues">
+    <div class="container split reverse">
+      <div class="split-visual reveal">
+        <div class="venue-card-stack">
+          <div class="vcard vcard-1">
+            <span class="vcard-icon">📈</span>
+            <strong>+38%</strong>
+            <p>average off-peak court utilisation uplift</p>
+          </div>
+          <div class="vcard vcard-2">
+            <span class="vcard-icon">🍸</span>
+            <strong>+£1.8k</strong>
+            <p>average bar &amp; food revenue per event night</p>
+          </div>
+          <div class="vcard vcard-3">
+            <span class="vcard-icon">👥</span>
+            <strong>150+</strong>
+            <p>new players introduced to your venue per event</p>
+          </div>
+        </div>
+      </div>
+      <div class="split-copy reveal">
+        <span class="eyebrow">For Venues</span>
+        <h2>Turn quiet courts into your busiest, most profitable nights.</h2>
+        <p class="lede">
+          We bring the players, the DJ, the marketing and the running of the event.
+          You bring the courts. It's a fully managed, zero-admin way to fill off-peak
+          slots and introduce new members to your club.
+        </p>
+        <ul class="check-list">
+          <li>We handle bookings, ticketing, marketing and hosting end-to-end</li>
+          <li>Boosted bar, food and pro-shop revenue on event nights</li>
+          <li>New member acquisition — most attendees have never played at your venue</li>
+          <li>Zero cost to list — we work on a simple revenue share</li>
+        </ul>
+        <a href="#signup" class="btn btn-primary btn-large">List Your Venue <span class="arrow">→</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TESTIMONIALS ===== -->
+  <section class="section testimonials">
+    <div class="container">
+      <div class="section-head reveal center">
+        <span class="eyebrow">The Community</span>
+        <h2>Don't just take our word for it</h2>
+      </div>
+      <div class="testi-track reveal">
+        <div class="testi-card">
+          <p>"Turned up on my own not knowing anyone, left with a group chat of 15 new mates and a hangover. Best Saturday I've had in years."</p>
+          <div class="testi-author"><span class="avatar">JM</span> Jess M. — London</div>
+        </div>
+        <div class="testi-card">
+          <p>"I hadn't picked up a racket in my life. Didn't matter — the format made sure everyone was playing at the right level. Then the DJ came on."</p>
+          <div class="testi-author"><span class="avatar">TK</span> Tom K. — Manchester</div>
+        </div>
+        <div class="testi-card">
+          <p>"As a venue we were dead on Sunday afternoons. PartyPadel fills our courts and our bar every single time. Genuinely our best partnership this year."</p>
+          <div class="testi-author"><span class="avatar">RH</span> Ravi H. — Venue Partner, Bristol</div>
+        </div>
+        <div class="testi-card">
+          <p>"Sponsoring PartyPadel gave us more real engagement in one night than a month of paid social. The energy in the room is unmatched."</p>
+          <div class="testi-author"><span class="avatar">EL</span> Elle S. — Brand Partner</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SIGNUP ===== -->
+  <section class="section signup" id="signup">
+    <canvas id="signupCanvas"></canvas>
+    <div class="container">
+      <div class="signup-box reveal">
+        <div class="signup-copy">
+          <span class="eyebrow">Join The Movement</span>
+          <h2>Be first on the court.</h2>
+          <p class="lede">
+            Join the list for early access to tickets, city launches, sponsor packs and venue
+            partnerships. We'll never spam you — just the good stuff.
+          </p>
+          <div class="signup-perks">
+            <div class="perk">⚡ Early access to sold-out events</div>
+            <div class="perk">🎁 Member-only prizes &amp; giveaways</div>
+            <div class="perk">📍 First to know when we land in your city</div>
+          </div>
+        </div>
+
+        <form id="signupForm" class="signup-form" novalidate>
+          <div class="form-row">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" placeholder="Your full name" required>
+          </div>
+          <div class="form-row">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" required>
+          </div>
+          <div class="form-row">
+            <label for="city">City</label>
+            <select id="city" name="city" required>
+              <option value="" disabled selected>Select your city</option>
+              <option>London</option>
+              <option>Manchester</option>
+              <option>Bristol</option>
+              <option>Edinburgh</option>
+              <option>Birmingham</option>
+              <option>Leeds</option>
+              <option>Glasgow</option>
+              <option>Other / Not listed</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <span class="group-label">I'm signing up as a</span>
+            <div class="radio-group">
+              <label class="radio-pill">
+                <input type="radio" name="role" value="Player" checked>
+                <span>🎾 Player</span>
+              </label>
+              <label class="radio-pill">
+                <input type="radio" name="role" value="Sponsor">
+                <span>🤝 Sponsor</span>
+              </label>
+              <label class="radio-pill">
+                <input type="radio" name="role" value="Venue">
+                <span>🏟️ Venue</span>
+              </label>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-large btn-submit">
+            <span class="btn-text">Get On The List</span>
+            <span class="btn-loader"></span>
+          </button>
+          <p class="form-note">By signing up you agree to receive emails from PartyPadel.UK. Unsubscribe anytime.</p>
+        </form>
+
+        <div class="signup-success" id="signupSuccess">
+          <div class="success-emoji">🎉</div>
+          <h3>You're on the list!</h3>
+          <p>Keep an eye on your inbox — we'll be in touch with everything PartyPadel.</p>
+          <button class="btn btn-ghost" id="resetForm">Sign up another</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section class="section faq" id="faq">
+    <div class="container narrow">
+      <div class="section-head reveal center">
+        <span class="eyebrow">Questions</span>
+        <h2>Everything you need to know</h2>
+      </div>
+      <div class="accordion reveal">
+        <div class="accordion-item">
+          <button class="accordion-trigger">Do I need to be good at padel? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>Not at all. Our round-robin format matches you fairly by ability, and most events are 60% beginners. Coaches are on hand to help if it's your first time.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger">What do I need to bring? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>Just yourself, sportswear and trainers. Rackets and balls are provided at every venue, and we've got spares if you're short a doubles partner.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger">Can I come on my own? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>Absolutely — most of our players show up solo. It's honestly the best way to meet people, and the round-robin format means you'll play with loads of different people over the night.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger">How does sponsorship pricing work? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>We offer flexible packages from single-event activations to national partnerships. Sign up above as a sponsor and our partnerships team will send over the current media pack and pricing.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger">What does it cost to list our venue? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>Nothing upfront — we work on a simple revenue share from ticket sales, so it's zero risk. We handle all marketing, bookings and on-the-night hosting.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger">Is there an age limit? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>You need to be 18+ to attend, as all events include a licensed bar and afterparty.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FINAL CTA ===== -->
+  <section class="final-cta">
+    <div class="container">
+      <h2 class="reveal">Ready to smash it?</h2>
+      <p class="reveal">The next PartyPadel is closer than you think.</p>
+      <a href="#signup" class="btn btn-primary btn-large reveal">Join The Party <span class="arrow">→</span></a>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <a href="#top" class="logo">🎾 Party<span class="accent">Padel</span><span class="uk">.UK</span></a>
+      <p>The UK's most social padel events. Sport, music, people.</p>
+      <div class="socials">
+        <a href="#" aria-label="Instagram">IG</a>
+        <a href="#" aria-label="TikTok">TT</a>
+        <a href="#" aria-label="X / Twitter">X</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="#how">How It Works</a>
+      <a href="#events">Events</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="footer-col">
+      <h4>Partner With Us</h4>
+      <a href="#sponsors">Sponsors</a>
+      <a href="#venues">Venues</a>
+      <a href="#signup">Join The List</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a>
+      <span class="footer-note">United Kingdom</span>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 PartyPadel.UK — All rights reserved.</span>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>
