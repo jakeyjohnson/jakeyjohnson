@@ -11,10 +11,11 @@
   };
 
   function loadEvents(){
-    return fetch('assets/data/events.json').then(function(res){
-      if (!res.ok) throw new Error('Could not load events data');
-      return res.json();
-    });
+    /* Data comes from a plain <script src="assets/data/events-data.js">
+       (loaded before this file), not fetch — fetch()'ing a local JSON
+       file is blocked by the browser when a page is opened directly
+       (file://) rather than served over http/https. */
+    return Promise.resolve(window.PARTY_PADEL_EVENTS || []);
   }
 
   function getQueryParam(name){

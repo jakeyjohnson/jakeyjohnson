@@ -25,10 +25,13 @@ assets/css/tokens.css   Design tokens — every colour/type/spacing/radius/
                           line-weight value used anywhere on the site
 assets/css/style.css     Component styles, all referencing tokens.css
 assets/js/main.js        Nav, mobile menu, scroll-reveal, accordion, counters
-assets/js/events.js      Shared event-data helpers (fetch, filter, status
-                          labels, card rendering) used by events.html,
-                          event.html and enter-team.html
-assets/data/events.json  Event data — add a city here, not a new page
+assets/js/events.js      Shared event-data helpers (filter, status labels,
+                          card rendering) used by events.html, event.html,
+                          enter-team.html and results.html
+assets/data/events-data.js Event data — add a city here, not a new page.
+                          Loaded as a plain <script> (window.PARTY_PADEL_EVENTS),
+                          not fetch, so pages work opened directly as a file
+                          too, not just from a real web server
 assets/data/results.json Standings/fixtures, keyed by event slug (empty
                           until the first event happens — see below)
 assets/data/partners.json Confirmed partners only — empty by design
@@ -47,11 +50,11 @@ python3 -m http.server 8000
 
 ## Adding a new city/event
 
-Add an entry to `assets/data/events.json` — no HTML changes needed. Events
-listing, the homepage teaser (top 3, edit `index.html` directly since that
-one's intentionally static), the event detail page, and the registration
-flow's event picker all read from this file. Status must be one of:
-`coming-soon`, `entries-open`, `limited`, `sold-out`, `completed`.
+Add an object to the array in `assets/data/events-data.js` — no HTML changes
+needed. Events listing, the homepage teaser (top 3, edit `index.html`
+directly since that one's intentionally static), the event detail page, and
+the registration flow's event picker all read from this file. Status must be
+one of: `coming-soon`, `entries-open`, `limited`, `sold-out`, `completed`.
 
 ## What's stubbed, not wired
 
