@@ -8,10 +8,10 @@
 <meta property="og:title" content="PartyPadel.UK — Where Padel Meets The Party">
 <meta property="og:description" content="Social padel tournaments, live DJs and unforgettable nights across the UK. Join the movement.">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎾</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23060706%22/><text x=%2250%22 y=%2268%22 font-family=%22Arial%22 font-weight=%22900%22 font-size=%2260%22 fill=%22%23C7FF3A%22 text-anchor=%22middle%22>P</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -23,7 +23,7 @@
 <header class="nav" id="nav">
   <div class="nav-inner">
     <a href="#top" class="logo">
-      <span class="logo-ball">🎾</span> Party<span class="accent">Padel</span><span class="uk">.UK</span>
+      <span class="logo-mark">P</span>PARTY<span class="accent">PADEL</span><span class="uk">.UK</span>
     </a>
     <nav class="nav-links" id="navLinks">
       <a href="#how">How It Works</a>
@@ -54,19 +54,27 @@
   <!-- ===== HERO ===== -->
   <section class="hero">
     <canvas id="heroCanvas"></canvas>
-    <div class="hero-glow glow-1"></div>
-    <div class="hero-glow glow-2"></div>
-    <div class="hero-glow glow-3"></div>
-    <div class="grid-overlay"></div>
+    <div class="rig" aria-hidden="true">
+      <div class="beam beam-1"></div>
+      <div class="beam beam-2"></div>
+      <div class="beam beam-3"></div>
+      <div class="beam beam-4"></div>
+    </div>
+    <div class="fence-overlay"></div>
+    <div class="hero-vignette"></div>
 
     <div class="hero-content">
       <div class="hero-badge reveal">
         <span class="pulse-dot"></span> Now Live in 12 UK Cities
       </div>
       <h1 class="hero-title reveal">
-        <span class="line">WHERE PADEL</span>
-        <span class="line">MEETS THE <span class="text-gradient">PARTY</span></span>
+        <span class="line">PARTY</span>
+        <span class="line lime-line">PADEL</span>
       </h1>
+      <div class="hero-tagline reveal">
+        <span class="tag-rule"></span>
+        <p>THE GAME<br><span class="lime-text">AFTER DARK.</span></p>
+      </div>
       <p class="hero-sub reveal">
         Social padel tournaments, live DJ sets and unforgettable nights out —
         no experience needed, just bring the energy.
@@ -106,10 +114,10 @@
   <!-- ===== MARQUEE ===== -->
   <div class="marquee">
     <div class="marquee-track">
-      <span>🎾 SMASH IT</span><span>🎧 LIVE DJ SETS</span><span>🍹 AFTERPARTY VIBES</span>
-      <span>🏆 ROUND ROBIN TOURNAMENTS</span><span>🎉 ALL LEVELS WELCOME</span><span>📍 UK WIDE</span>
-      <span>🎾 SMASH IT</span><span>🎧 LIVE DJ SETS</span><span>🍹 AFTERPARTY VIBES</span>
-      <span>🏆 ROUND ROBIN TOURNAMENTS</span><span>🎉 ALL LEVELS WELCOME</span><span>📍 UK WIDE</span>
+      <span>COMPETE.</span><span>PARTY.</span><span>CELEBRATE.</span>
+      <span>COMPETE.</span><span>PARTY.</span><span>CELEBRATE.</span>
+      <span>COMPETE.</span><span>PARTY.</span><span>CELEBRATE.</span>
+      <span>COMPETE.</span><span>PARTY.</span><span>CELEBRATE.</span>
     </div>
   </div>
 
@@ -500,7 +508,7 @@
 <footer class="footer">
   <div class="container footer-grid">
     <div class="footer-brand">
-      <a href="#top" class="logo">🎾 Party<span class="accent">Padel</span><span class="uk">.UK</span></a>
+      <a href="#top" class="logo"><span class="logo-mark">P</span>PARTY<span class="accent">PADEL</span><span class="uk">.UK</span></a>
       <p>The UK's most social padel events. Sport, music, people.</p>
       <div class="socials">
         <a href="#" aria-label="Instagram">IG</a>

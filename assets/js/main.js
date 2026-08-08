@@ -169,7 +169,7 @@
     if (!canvas) return;
     var ctx = canvas.getContext('2d');
     var particles = [];
-    var colors = opts.colors || ['#ff2e92', '#29e5ff', '#c6ff3d', '#ff8c42'];
+    var colors = opts.colors || ['#C7FF3A', '#FFC24B', '#F6F7F2', '#C7FF3A'];
     var count = opts.count || 60;
     var w, h, dpr;
 
@@ -276,7 +276,7 @@
     canvas.height = h * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    var colors = ['#ff2e92', '#ff8c42', '#c6ff3d', '#29e5ff', '#8b5cf6', '#ffffff'];
+    var colors = ['#C7FF3A', '#F6F7F2', '#FFC24B', '#C7FF3A', '#F6F7F2', '#9FCE2C'];
     var pieces = [];
     var pieceCount = 140;
 
