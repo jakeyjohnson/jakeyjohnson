@@ -116,10 +116,9 @@ button{ font-family: inherit; }
 .btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 10px 28px rgba(199,255,58,0.28); background: #d4ff5c; }
 .btn-primary:active{ transform: translateY(0); }
 .btn-ghost{
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.03);
   color: var(--text);
   border-color: var(--border-strong);
-  backdrop-filter: blur(6px);
 }
 .btn-ghost:hover{ background: rgba(255,255,255,0.1); border-color: var(--lime); }
 .btn-split{
@@ -164,8 +163,7 @@ button{ font-family: inherit; }
   border-bottom: 1px solid transparent;
 }
 .nav.scrolled{
-  background: rgba(6,7,6,0.86);
-  backdrop-filter: blur(14px) saturate(140%);
+  background: rgba(6,7,6,0.97);
   border-bottom-color: var(--border);
   padding: 12px 0;
 }
@@ -216,8 +214,7 @@ button{ font-family: inherit; }
   display:none; flex-direction:column; gap: 4px;
   max-height: 0; overflow:hidden;
   transition: max-height .35s var(--ease);
-  background: rgba(6,7,6,0.98);
-  backdrop-filter: blur(14px);
+  background: rgba(6,7,6,0.99);
 }
 .mobile-menu.open{ max-height: 420px; }
 .mobile-menu a{
@@ -246,24 +243,33 @@ button{ font-family: inherit; }
   position:absolute; inset:0; width:100%; height:100%; z-index:1; opacity: .8;
 }
 
-/* floodlight rig: a few hard-edged beams raking down like stadium lights through a night sky */
+/* floodlight rig: hard-edged rig lights raking down, like trusses cutting through warehouse haze */
 .rig{ position:absolute; inset:0; z-index:0; overflow:hidden; }
 .beam{
-  position:absolute; top:-10%; width: 140px; height: 160%;
-  background: linear-gradient(180deg, rgba(199,255,58,0.16), rgba(199,255,58,0) 70%);
-  filter: blur(6px);
+  position:absolute; top:-10%; width: 90px; height: 160%;
+  background: linear-gradient(180deg, rgba(199,255,58,0.22) 0%, rgba(199,255,58,0.22) 8%, rgba(199,255,58,0) 55%);
+  filter: blur(1px);
   transform-origin: top center;
   animation: sway 9s ease-in-out infinite;
 }
 .beam-1{ left: 8%;  transform: rotate(12deg);  animation-delay: 0s; }
-.beam-2{ left: 22%; transform: rotate(-8deg); width:100px; background: linear-gradient(180deg, rgba(255,194,75,0.14), rgba(255,194,75,0) 70%); animation-delay: -3s; }
+.beam-2{ left: 22%; transform: rotate(-8deg); width:64px; background: linear-gradient(180deg, rgba(255,194,75,0.2) 0%, rgba(255,194,75,0.2) 8%, rgba(255,194,75,0) 55%); animation-delay: -3s; }
 .beam-3{ right: 14%; transform: rotate(-14deg); animation-delay: -6s; }
-.beam-4{ right: 30%; transform: rotate(9deg); width:80px; background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 70%); animation-delay: -1.5s; }
-.beam-violet-1{ right: 6%; width:120px; transform: rotate(16deg); background: linear-gradient(180deg, rgba(155,107,255,0.15), rgba(155,107,255,0) 70%); animation-delay: -5s; }
-.beam-violet-2{ left: 42%; width:90px; transform: rotate(-6deg); background: linear-gradient(180deg, rgba(155,107,255,0.1), rgba(155,107,255,0) 70%); animation-delay: -2s; }
+.beam-4{ right: 30%; transform: rotate(9deg); width:46px; background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.12) 8%, rgba(255,255,255,0) 55%); animation-delay: -1.5s; }
+.beam-violet-1{ right: 6%; width:76px; transform: rotate(16deg); background: linear-gradient(180deg, rgba(155,107,255,0.2) 0%, rgba(155,107,255,0.2) 8%, rgba(155,107,255,0) 55%); animation-delay: -5s; }
+.beam-violet-2{ left: 42%; width:56px; transform: rotate(-6deg); background: linear-gradient(180deg, rgba(155,107,255,0.14) 0%, rgba(155,107,255,0.14) 8%, rgba(155,107,255,0) 55%); animation-delay: -2s; }
 @keyframes sway{
-  0%,100%{ opacity:.7; }
+  0%,100%{ opacity:.65; }
   50%{ opacity:1; }
+}
+
+/* grit: film-grain wash over the whole hero so it reads as a photographed room, not a rendered gradient */
+.hero-grain{
+  position:absolute; inset:0; z-index:1;
+  background-image: var(--noise);
+  background-size: 150px 150px;
+  opacity: .5;
+  mix-blend-mode: overlay;
 }
 
 .fence-overlay{
@@ -287,13 +293,12 @@ button{ font-family: inherit; }
 }
 .hero-badge{
   display:inline-flex; align-items:center; gap:8px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(6,7,6,0.7);
   border:1px solid var(--border-strong);
   padding: 7px 16px; border-radius: 3px;
   font-family: var(--f-cond);
   font-size: .82rem; font-weight:500; letter-spacing:.04em; text-transform:uppercase; color: var(--muted);
   margin-bottom: 30px;
-  backdrop-filter: blur(6px);
 }
 .pulse-dot{
   width:7px; height:7px; border-radius:50%; background: var(--lime);

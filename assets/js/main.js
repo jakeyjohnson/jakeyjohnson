@@ -163,14 +163,16 @@
     });
   }
 
-  /* ================= Hero particle canvas ================= */
+  /* ================= Hero dust/haze canvas =================
+     Slow-drifting motes catching the floodlight, like dust in a
+     warehouse air — not a tech/network visual. */
   function initParticleCanvas(canvasId, opts){
     var canvas = document.getElementById(canvasId);
     if (!canvas) return;
     var ctx = canvas.getContext('2d');
     var particles = [];
-    var colors = opts.colors || ['#C7FF3A', '#FFC24B', '#F6F7F2', '#C7FF3A'];
-    var count = opts.count || 60;
+    var colors = opts.colors || ['#F6F7F2', '#FFC24B', '#F6F7F2', '#C7FF3A'];
+    var count = opts.count || 45;
     var w, h, dpr;
 
     function resize(){
@@ -188,11 +190,11 @@
       return {
         x: Math.random() * w,
         y: Math.random() * h,
-        r: Math.random() * 2.5 + 1,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
+        r: Math.random() * 1.8 + 0.6,
+        vx: (Math.random() - 0.5) * 0.12,
+        vy: -Math.random() * 0.18 - 0.03,
         color: colors[Math.floor(Math.random() * colors.length)],
-        alpha: Math.random() * 0.5 + 0.2
+        alpha: Math.random() * 0.35 + 0.08
       };
     }
 
@@ -220,23 +222,6 @@
         ctx.fill();
       }
       ctx.globalAlpha = 1;
-
-      // subtle connecting lines
-      for (var a = 0; a < particles.length; a++){
-        for (var b = a + 1; b < particles.length; b++){
-          var dx = particles[a].x - particles[b].x;
-          var dy = particles[a].y - particles[b].y;
-          var dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 110){
-            ctx.beginPath();
-            ctx.moveTo(particles[a].x, particles[a].y);
-            ctx.lineTo(particles[b].x, particles[b].y);
-            ctx.strokeStyle = 'rgba(255,255,255,' + (0.08 * (1 - dist / 110)) + ')';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
-        }
-      }
 
       requestAnimationFrame(draw);
     }
