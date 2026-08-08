@@ -119,10 +119,10 @@
           <div id="paymentUnavailable" class="form-alert" style="display:none;">
             Online payment isn't switched on for this event yet. Email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your team name and division and we'll get you sorted.
           </div>
-          <p class="form-note">You'll pay on Stripe's secure checkout — card, Apple Pay or Google Pay. We never see or store your card details.</p>
+          <p class="form-note">You'll pay on Ticket Tailor's secure checkout. We never see or store your card details.</p>
           <div class="form-actions">
             <button type="button" class="btn btn-outline" data-back>Back</button>
-            <button type="button" class="btn btn-primary" id="submitBtn"><span class="btn-text">Pay Securely with Stripe</span></button>
+            <button type="button" class="btn btn-primary" id="submitBtn"><span class="btn-text">Continue to Secure Checkout</span></button>
           </div>
         </div>
 
@@ -146,7 +146,7 @@
           </div>
 
           <div class="form-alert" id="confirmFallback" style="display:none;">
-            Payment received, but this browser doesn't have your team details on file (a different device or browser than the one you registered on, or the cache was cleared). Check your inbox for Stripe's payment receipt, and email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your team name so we can confirm your entry.
+            Payment received, but this browser doesn't have your team details on file (a different device or browser than the one you registered on, or the cache was cleared). Check your inbox for Ticket Tailor's order confirmation, and email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your team name so we can confirm your entry.
           </div>
 
           <div class="form-actions confirm-actions">
@@ -286,7 +286,7 @@
       '<div class="order-row"><span>Division</span><span>' + fDivision.value + '</span></div>' +
       '<div class="order-row"><span>Team</span><span>' + document.getElementById('fTeamName').value + '</span></div>' +
       '<div class="order-row order-total"><span>Total</span><span>£' + selectedEvent.priceTeam + '</span></div>';
-    document.getElementById('paymentUnavailable').style.display = selectedEvent.stripePaymentLink ? 'none' : 'block';
+    document.getElementById('paymentUnavailable').style.display = selectedEvent.ticketTailorCheckoutUrl ? 'none' : 'block';
   }
 
   /* Prevent native form submission (e.g. Enter key in a text field) —
@@ -296,7 +296,7 @@
   var PENDING_KEY = 'pp_pending_entry';
 
   document.getElementById('submitBtn').addEventListener('click', function(){
-    if (!selectedEvent || !selectedEvent.stripePaymentLink) return;
+    if (!selectedEvent || !selectedEvent.ticketTailorCheckoutUrl) return;
 
     var pending = {
       eventSlug: selectedEvent.slug,
@@ -310,15 +310,12 @@
     };
     try { localStorage.setItem(PENDING_KEY, JSON.stringify(pending)); } catch (e){ /* private browsing etc — confirmation falls back gracefully */ }
 
-    /* client_reference_id ties the Stripe payment back to this team so it
-       shows up in the Stripe Dashboard payment list without a backend.
-       prefilled_email saves the customer a step on Stripe's checkout. */
-    var ref = pending.teamName + ' — ' + pending.division + ' — ' + pending.city;
-    var url = selectedEvent.stripePaymentLink +
-      (selectedEvent.stripePaymentLink.indexOf('?') === -1 ? '?' : '&') +
-      'client_reference_id=' + encodeURIComponent(ref) +
-      '&prefilled_email=' + encodeURIComponent(pending.p1Email);
-    window.location.href = url;
+    /* Straight to Ticket Tailor's checkout for this event — no query
+       params appended, since we're not assuming a specific prefill/
+       reference URL scheme on their end. If you want the team name
+       captured on Ticket Tailor's side too, add it as a custom question
+       in their dashboard for the buyer to re-enter at checkout. */
+    window.location.href = selectedEvent.ticketTailorCheckoutUrl;
   });
 
   document.getElementById('copyLinkBtn').addEventListener('click', function(){
@@ -333,11 +330,11 @@
     }
   });
 
-  /* Returning from Stripe's hosted checkout after a successful payment
-     (Payment Link's "After payment" redirect — see events-data.js). There's
-     no backend here to verify the payment server-side; this reads back the
-     details saved just before redirecting to Stripe, which is only present
-     if this browser actually went through the form. */
+  /* Returning from Ticket Tailor's hosted checkout after a successful
+     payment (the event's post-checkout redirect — see events-data.js).
+     There's no backend here to verify the payment server-side; this reads
+     back the details saved just before redirecting to Ticket Tailor,
+     which is only present if this browser actually went through the form. */
   if (window.PartyPadelEvents.getQueryParam('confirmed') === '1'){
     var raw = null;
     try { raw = localStorage.getItem(PENDING_KEY); } catch (e){}

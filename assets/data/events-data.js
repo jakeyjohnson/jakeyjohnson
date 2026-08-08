@@ -2,22 +2,24 @@
    array. Loaded as a plain <script> (not fetch) so pages work whether
    opened directly as a file or served from a real web host.
 
-   PAYMENTS — stripePaymentLink
-   Each event needs its own Stripe Payment Link (Stripe Dashboard >
-   Payment Links > + New — no code required):
-     1. Create a Product + Price matching priceTeam below EXACTLY.
-        priceTeam here is just display copy — the amount actually
-        charged is whatever the Payment Link's Price is set to in
-        Stripe. If you change one, change the other, or you'll show
-        a price on-site that doesn't match what people are charged.
-     2. In the Payment Link's settings, under "After payment", choose
-        "Redirect customers to your website" and set the URL to:
-        https://YOURDOMAIN/enter-team.html?confirmed=1
-     3. Copy the generated link (https://buy.stripe.com/...) into
-        stripePaymentLink below for that event.
-   Leave stripePaymentLink empty until it's set up — the registration
-   form shows a friendly "payments not yet open" message instead of
-   sending people to a broken link. See README.md for the full flow. */
+   PAYMENTS — ticketTailorCheckoutUrl
+   Each event needs its own Ticket Tailor checkout URL (Ticket Tailor
+   Dashboard > Events > your event > Box Office — no code required):
+     1. Create a "Team Entry" ticket type priced to match priceTeam below
+        EXACTLY. priceTeam here is just display copy — the amount actually
+        charged is whatever that ticket type is priced at in Ticket
+        Tailor. If you change one, change the other, or you'll show a
+        price on-site that doesn't match what people are charged.
+     2. Don't duplicate team/player name questions as Ticket Tailor
+        "custom questions" — our own form already collects those. Ticket
+        Tailor still needs a buyer name + email for the order itself.
+     3. In the event's checkout settings, set the post-checkout redirect
+        URL to: https://YOURDOMAIN/enter-team.html?confirmed=1
+     4. Copy that event's checkout/Box Office URL into
+        ticketTailorCheckoutUrl below.
+   Leave ticketTailorCheckoutUrl empty until it's set up — the
+   registration form shows a friendly "payments not yet open" message
+   instead of sending people to a broken link. See README.md. */
 window.PARTY_PADEL_EVENTS = [
   {
     "slug": "london-2026-09-14",
@@ -32,7 +34,7 @@ window.PARTY_PADEL_EVENTS = [
     "teamsCapacity": 50,
     "priceTeam": 60,
     "priceSpectator": 15,
-    "stripePaymentLink": "",
+    "ticketTailorCheckoutUrl": "",
     "divisions": [
       {
         "name": "Men's",
@@ -79,7 +81,7 @@ window.PARTY_PADEL_EVENTS = [
     "teamsCapacity": 50,
     "priceTeam": 60,
     "priceSpectator": 15,
-    "stripePaymentLink": "",
+    "ticketTailorCheckoutUrl": "",
     "divisions": [
       {
         "name": "Men's",
@@ -126,7 +128,7 @@ window.PARTY_PADEL_EVENTS = [
     "teamsCapacity": 50,
     "priceTeam": 60,
     "priceSpectator": 15,
-    "stripePaymentLink": "",
+    "ticketTailorCheckoutUrl": "",
     "divisions": [
       {
         "name": "Men's",
@@ -173,7 +175,7 @@ window.PARTY_PADEL_EVENTS = [
     "teamsCapacity": 50,
     "priceTeam": 60,
     "priceSpectator": 15,
-    "stripePaymentLink": "",
+    "ticketTailorCheckoutUrl": "",
     "divisions": [
       {
         "name": "Men's",

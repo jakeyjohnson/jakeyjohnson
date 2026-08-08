@@ -56,43 +56,53 @@ directly since that one's intentionally static), the event detail page, and
 the registration flow's event picker all read from this file. Status must be
 one of: `coming-soon`, `entries-open`, `limited`, `sold-out`, `completed`.
 
-## Taking payment (Stripe Payment Links)
+## Taking payment (Ticket Tailor)
 
 The registration flow (`enter-team.html`) collects team/player details on
-your own branded form, then sends the customer to Stripe's hosted checkout
-to actually pay — card, Apple Pay, Google Pay all handled by Stripe, so no
-card data ever touches this site or your server. This works on plain static
-hosting with **zero backend code**.
+your own branded form, then sends the customer to Ticket Tailor's hosted
+checkout to actually pay, so no card data ever touches this site or your
+server. This works on plain static hosting with **zero backend code**.
+Ticket Tailor is purpose-built event ticketing (vs. a generic payment
+processor), which is why it's the better fit here — it gives you real
+per-division capacity limits, box office/reporting, and check-in tooling on
+their side if you want to use it, on top of just taking payment.
 
 To switch payments on for an event:
 
-1. In the Stripe Dashboard: **Payment Links → + New**. Create a Product +
-   Price for that event's team entry — the amount here is what's actually
-   charged.
-2. Under the Payment Link's **"After payment"** setting, choose *"Redirect
-   customers to your website"* and set the URL to:
+1. In Ticket Tailor: create the event, then a **"Team Entry"** ticket type
+   priced to match that event's `priceTeam` — the amount there is what's
+   actually charged.
+2. **Don't** add team/player name questions as Ticket Tailor "custom
+   questions" — our form already collects those, and asking twice adds
+   clicks instead of removing them. Ticket Tailor still needs a buyer name
+   + email for the order regardless.
+3. In the event's checkout settings, set the post-checkout redirect URL to:
    `https://YOURDOMAIN/enter-team.html?confirmed=1`
-3. Copy the generated link (`https://buy.stripe.com/...`) into that event's
-   `stripePaymentLink` field in `assets/data/events-data.js`.
+4. Copy that event's checkout/Box Office URL into its
+   `ticketTailorCheckoutUrl` field in `assets/data/events-data.js`.
 
-Until `stripePaymentLink` is filled in, the form shows a friendly "payments
-aren't switched on yet" message instead of sending people to a broken link
-— so it's always safe to publish events ahead of opening entries.
+Until `ticketTailorCheckoutUrl` is filled in, the form shows a friendly
+"payments aren't switched on yet" message instead of sending people to a
+broken link — so it's always safe to publish events ahead of opening
+entries.
 
-**Keep `priceTeam` (the on-site display price) and the Stripe Price you
-create in sync manually** — they're two separate places by necessity (Stripe
-Payment Links don't expose their price for the page to read without a
-backend call), so if you change one, change the other.
+**Keep `priceTeam` (the on-site display price) and the ticket price you set
+in Ticket Tailor in sync manually** — they're two separate places by
+necessity (reading Ticket Tailor's live price back into the page would need
+a backend call), so if you change one, change the other.
 
-There's no backend, so there's no database of entries either — the source
-of truth for "who paid" is the Stripe Dashboard, where each payment is
-tagged with `client_reference_id` (team name, division, city) so you can
-match it back to a team without opening every transaction. The confirmation
-screen a customer sees after paying is read from their own browser's local
-storage (saved right before they left for Stripe) — reliable for the normal
-case, but if they pay on one device/browser and land back on another, or
-clear their browser storage mid-flow, they'll see a graceful fallback
-message pointing them to email you instead of a fabricated confirmation.
+There's no backend, so there's no database of entries on our side either —
+the source of truth for "who paid" is the Ticket Tailor dashboard. The
+confirmation screen a customer sees after paying is read from their own
+browser's local storage (saved right before they left for checkout) —
+reliable for the normal case, but if they pay on one device/browser and
+land back on another, or clear their browser storage mid-flow, they'll see
+a graceful fallback message pointing them to email you instead of a
+fabricated confirmation.
+
+Note: Ticket Tailor charges its own per-ticket booking fee on top of card
+processing — check their current pricing before launch, it isn't reflected
+in `priceTeam`.
 
 - **Spectator tickets** (`event.html`) — routes to a `mailto:` enquiry until
   a ticketing platform is integrated. Wire it up the same way as team entry
