@@ -15,34 +15,33 @@ This is a full platform build, not a single session. Tasks are ordered so founda
 - [x] **CTASection**: built as `.final-cta`, reused copy pattern ready for other pages.
 
 ## Core UI — registration path first (brief §9 priority order)
-- [x] **Homepage** (`index.html`): hero, next-events teaser (3 EventCards demonstrating Entries Open / Limited / Coming Soon states), format teaser, divisions, experience gallery (honestly-labelled placeholders), results teaser (empty state, no fabricated data), follow strip, final CTA, footer. Partner strip omitted per brief §13 — no real partners yet. Tested desktop + mobile, no console errors.
-- [ ] **EventCard → shared component + events data layer**: the card markup/CSS exists inline on the homepage; next step is extracting it against `assets/data/events.json` (slug, city, date, venue, status, divisions, price) so Events listing and Event detail both read from one source instead of duplicating markup.
-- [ ] **Events listing page** (`events.html`): grid of EventCards, filterable by status/division. _Depends on: events data layer._
-- [ ] **Event detail page** (`event.html?slug=`): hero, registration status + spaces remaining, division availability, price, schedule, rules, spectator tickets, FAQ, sticky mobile CTA. _Depends on: EventCard data layer, FAQAccordion._
-- [ ] **DivisionCard component**: Men's/Women's/Mixed, availability-aware. Used on Home, Play, Event detail.
-- [ ] **Team registration flow** (`enter-team.html`): 4-step stepper — event+division, team+players, payment (stubbed, clearly commented for later Stripe/etc. integration), confirmation with shareable team card. Highest-conversion page on the whole site per brief §9 — build with real interaction states, not a static mock. _New page, multi-step client-side form._
-- [ ] **Play page** (`play.html`): divisions overview + entry point into registration. _Depends on: DivisionCard._
+- [x] **Homepage** (`index.html`): hero, next-events teaser (3 EventCards demonstrating Entries Open / Limited / Coming Soon states), format teaser, divisions, experience gallery (honestly-labelled placeholders), results teaser (empty state, no fabricated data), follow strip, final CTA, footer. Partner strip omitted per brief §13 — no real partners yet.
+- [x] **Events data layer**: `assets/data/events.json` (3 events covering all non-terminal statuses), `assets/js/events.js` shared helpers (load, filter, status metadata, card renderer, query-param parsing). `assets/data/results.json` and `assets/data/partners.json` also created, intentionally empty per brief §13.
+- [x] **Events listing page** (`events.html`): grid rendered from `events.json`, live status + division filter chips, empty state when a filter combination matches nothing.
+- [x] **Event detail page** (`event.html?slug=`): hero, division availability, running-order schedule, spectator ticket box, FAQ accordion, sticky mobile CTA — all rendered from the `slug` query param against `events.json`. Handles unknown slug gracefully.
+- [x] **DivisionCard component**: built and reused on Homepage, Play, and Event detail (availability-aware there, generic on Home/Play).
+- [x] **Team registration flow** (`enter-team.html`): 4-step stepper (event+division → team+players → payment → confirmation), full validation per step, pre-fills event from `?event=` query param, order summary, stubbed payment clearly commented for Stripe/etc., shareable team-card confirmation screen with copy-link. Tested end-to-end.
+- [x] **Play page** (`play.html`): division grid + entry requirements + CTA into registration.
 
 ## Core UI — supporting pages
-- [ ] **FormatSteps component + Format page**: 3–4 visual steps explaining short-format competition, rules, scoring. Condensed version reused on Home.
-- [ ] **FixtureBoard + StandingsTable + FinalsBracket components**: broadcast-graphic styling per brief §10, not spreadsheet tables. `assets/data/results.json` schema, keyed by event slug.
-- [ ] **Results page** (`results.html`): standings/fixtures/bracket across live events, empty states for pre-event.
-- [ ] **ExperienceGallery component**: photography/video grid — sport, DJ, lighting, crowd, feature court. Placeholder assets, clearly labelled for replacement.
-- [ ] **Partners page** (`partners.html`): pitch + enquiry form. No fabricated logos or partner claims (brief §13) — `assets/data/partners.json` starts empty, PartnerBand renders nothing until real entries exist.
-- [ ] **About page** (`about.html`): brand story, north star ("Serious sport. Social energy."), contact.
+- [x] **Format page** (`format.html`): full 4-step FormatSteps + rules/scoring table.
+- [x] **Results page** (`results.html`): standings preview (honest empty state) + fixtures list rendered live from `events.json`.
+- [x] **Experience gallery**: built on Homepage as honestly-labelled placeholder tiles with court-frame corners.
+- [x] **Partners page** (`partners.html`): pitch (audience/categories/approach), explicit "no partners yet" section, working enquiry form (stubbed submit, validated, success state).
+- [x] **About page** (`about.html`): brand foundation copy, positioning, north star statement, contact.
 
 ## Interactions & States
-- [ ] **Event status states**: all 5 statuses styled consistently across EventCard, Event detail, Play. Covers: default, hover, disabled (Sold Out shouldn't invite a click it can't honour).
-- [ ] **Registration flow validation**: inline field errors, step-back navigation, stubbed-payment success/failure simulation so the UI is demonstrably complete even without a real processor.
-- [ ] **Hover-state audit**: confirm nothing on the site uses glow/box-shadow-bloom — every interactive hover should be line movement, colour inversion, or a flat acid highlight per brief §10.
+- [x] **Event status states**: Entries Open / Limited / Coming Soon / Sold Out / Completed all styled and wired through `events.js` — used consistently on Homepage, Events listing, Event detail, Results.
+- [x] **Registration flow validation**: inline field + email-format errors per step, back/forward navigation preserves entered data, stubbed-payment loading state before confirmation.
+- [x] **Hover-state audit**: confirmed no glow/box-shadow-bloom anywhere in `style.css` — hovers are border-colour change, background-colour change, or underline-width animation only.
 
 ## Responsive & Polish
-- [ ] **Mobile pass**: every new page at 375/768/1024px. Sticky Enter-a-Team CTA on Event detail confirmed reachable one-handed.
-- [ ] **Accessibility pass**: WCAG contrast against the exact brand hex values (acid-on-black and black-on-acid both need checking, acid is borderline on contrast at small text sizes), keyboard nav through the registration stepper, visible focus states, `prefers-reduced-motion`, descriptive alt text on all placeholder imagery.
+- [x] **Mobile pass**: every page checked at 375–390px — nav drawer, filter chips, stepper, ticket box, form grids all reflow correctly. Sticky Enter-a-Team bar confirmed on Event detail (hides once the in-page CTA scrolls into view, shows once it scrolls past).
+- [ ] **Accessibility pass**: focus-visible states and reduced-motion are in from the token system, but a dedicated WCAG contrast check (acid-on-black and black-on-acid at small text sizes) and full keyboard-nav sweep of the registration stepper haven't been run yet.
 
 ## Review
-- [ ] **Design review**: run `/design-review` against the brief once the core pages exist, before considering the platform "done."
+- [ ] **Design review**: run `/design-review` against the brief now that the core pages exist.
 
 ---
 
-**Recommended execution order for this session**: Foundation block (tokens ✅, court-line system, logo, nav/footer, CTASection) → Homepage hero, since everything downstream reuses those five pieces and the homepage is the fastest way to validate the whole direction is right before it's replicated across ten more pages.
+**Status**: every page in the brief's primary nav (Events, Play, Format, Results, Partners, About) plus Home, Event detail and the full team-registration flow are built and tested — no 404s left in the nav. Remaining: formal accessibility/contrast pass, and `/design-review`. Results/standings and the finals bracket stay in their honest empty state until a real event has been played, by design.

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enter a Team — Party Padel</title>
+<meta name="description" content="Enter your team into Party Padel. Two players, one entry, four steps.">
+<link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ci-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12.5l3 3 6-6.5"/></symbol>
+    <symbol id="ci-instagram" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.9" fill="currentColor" stroke="none"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="34" height="34"></a>
+    <nav class="nav-links" id="navLinks">
+      <a href="events.html">Events</a>
+      <a href="play.html">Play</a>
+      <a href="format.html">Format</a>
+      <a href="results.html">Results</a>
+      <a href="partners.html">Partners</a>
+      <a href="about.html">About</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="events.html" class="btn btn-outline btn-small">Get Tickets</a>
+    </div>
+    <button class="burger" id="burger" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="events.html">Events</a>
+    <a href="play.html">Play</a>
+    <a href="format.html">Format</a>
+    <a href="results.html">Results</a>
+    <a href="partners.html">Partners</a>
+    <a href="about.html">About</a>
+    <a href="events.html" class="btn btn-outline">Get Tickets</a>
+  </div>
+</header>
+
+<main>
+  <section class="section register-section">
+    <div class="container narrow">
+      <div class="section-head">
+        <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-check"/></svg> Enter a Team</span>
+        <h1>Your Team. Your City.</h1>
+      </div>
+
+      <div class="stepper" id="stepper">
+        <span class="stepper-item active" data-step-indicator="1"><em>01</em> Event</span>
+        <span class="stepper-item" data-step-indicator="2"><em>02</em> Team</span>
+        <span class="stepper-item" data-step-indicator="3"><em>03</em> Payment</span>
+        <span class="stepper-item" data-step-indicator="4"><em>04</em> Confirmed</span>
+      </div>
+
+      <form id="registerForm" novalidate>
+
+        <!-- STEP 1 -->
+        <div class="form-step active" data-step="1">
+          <div class="form-row">
+            <label for="fEvent">Event</label>
+            <select id="fEvent" required>
+              <option value="" disabled selected>Loading events…</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="fDivision">Division</label>
+            <select id="fDivision" required>
+              <option value="" disabled selected>Select an event first</option>
+            </select>
+          </div>
+          <p class="form-note" id="divisionAvailability"></p>
+          <div class="form-actions">
+            <a href="events.html" class="btn btn-outline">Cancel</a>
+            <button type="button" class="btn btn-primary" data-next>Continue</button>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="form-step" data-step="2">
+          <div class="form-row">
+            <label for="fTeamName">Team name</label>
+            <input type="text" id="fTeamName" placeholder="e.g. Baseline Bandits" required>
+          </div>
+          <div class="form-grid">
+            <div class="form-row">
+              <label for="fP1Name">Player 1 name</label>
+              <input type="text" id="fP1Name" required>
+            </div>
+            <div class="form-row">
+              <label for="fP1Email">Player 1 email</label>
+              <input type="email" id="fP1Email" required>
+            </div>
+            <div class="form-row">
+              <label for="fP2Name">Player 2 name</label>
+              <input type="text" id="fP2Name" required>
+            </div>
+            <div class="form-row">
+              <label for="fP2Email">Player 2 email</label>
+              <input type="email" id="fP2Email" required>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline" data-back>Back</button>
+            <button type="button" class="btn btn-primary" data-next>Continue to Payment</button>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="form-step" data-step="3">
+          <div class="order-summary" id="orderSummary"></div>
+          <div class="form-grid">
+            <div class="form-row form-row-full">
+              <label for="fCard">Card number</label>
+              <input type="text" id="fCard" placeholder="4242 4242 4242 4242" required>
+            </div>
+            <div class="form-row">
+              <label for="fExpiry">Expiry</label>
+              <input type="text" id="fExpiry" placeholder="MM/YY" required>
+            </div>
+            <div class="form-row">
+              <label for="fCvc">CVC</label>
+              <input type="text" id="fCvc" placeholder="123" required>
+            </div>
+          </div>
+          <p class="form-note">Payment processing isn't wired to a real provider yet — this step is fully built and ready for Stripe (or similar) to be dropped in. No card details are sent anywhere.</p>
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline" data-back>Back</button>
+            <button type="submit" class="btn btn-primary" id="submitBtn"><span class="btn-text">Pay &amp; Confirm Entry</span></button>
+          </div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="form-step" data-step="4">
+          <div class="confirm-badge"><svg class="icon icon-lg"><use href="#ci-check"/></svg></div>
+          <h2 class="confirm-heading">You're In.</h2>
+          <p class="lede confirm-lede">Confirmation sent to both players. See you courtside.</p>
+
+          <div class="team-card" id="teamCard">
+            <div class="team-card-head">
+              <span>PARTY PADEL</span>
+              <span id="tcDivision"></span>
+            </div>
+            <h3 id="tcTeamName"></h3>
+            <p id="tcEventLine"></p>
+            <div class="team-card-players">
+              <span id="tcPlayer1"></span>
+              <span id="tcPlayer2"></span>
+            </div>
+          </div>
+
+          <div class="form-actions confirm-actions">
+            <button type="button" class="btn btn-outline" id="copyLinkBtn">Copy Team Card Link</button>
+            <a href="index.html" class="btn btn-primary">Back to Home</a>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="40" height="40">
+      <p>Serious sport. Social energy.</p>
+      <div class="socials"><a href="https://instagram.com/partypadel.uk" aria-label="Instagram"><svg class="icon icon-sm"><use href="#ci-instagram"/></svg></a></div>
+    </div>
+    <div class="footer-col">
+      <h4>League</h4>
+      <a href="events.html">Events</a><a href="play.html">Play</a><a href="format.html">Format</a><a href="results.html">Results</a>
+    </div>
+    <div class="footer-col">
+      <h4>Business</h4>
+      <a href="partners.html">Partners</a><a href="about.html">About</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a>
+      <span class="footer-note">United Kingdom</span>
+    </div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 Party Padel — All rights reserved.</span></div>
+</footer>
+
+<script src="assets/js/events.js"></script>
+<script src="assets/js/main.js"></script>
+<script>
+(function(){
+  var form = document.getElementById('registerForm');
+  var steps = Array.prototype.slice.call(document.querySelectorAll('.form-step'));
+  var indicators = Array.prototype.slice.call(document.querySelectorAll('.stepper-item'));
+  var current = 1;
+  var events = [];
+  var selectedEvent = null;
+
+  function goToStep(n){
+    current = n;
+    steps.forEach(function(s){ s.classList.toggle('active', Number(s.getAttribute('data-step')) === n); });
+    indicators.forEach(function(ind, i){
+      ind.classList.toggle('active', i + 1 === n);
+      ind.classList.toggle('done', i + 1 < n);
+    });
+    window.scrollTo({ top: document.getElementById('stepper').offsetTop - 100, behavior: 'smooth' });
+  }
+
+  function validateStep(n){
+    var stepEl = steps[n - 1];
+    var fields = stepEl.querySelectorAll('input[required], select[required]');
+    var valid = true;
+    fields.forEach(function(f){
+      f.classList.remove('error');
+      if (!f.value.trim()){ f.classList.add('error'); valid = false; }
+    });
+    var emailFields = stepEl.querySelectorAll('input[type="email"]');
+    var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    emailFields.forEach(function(f){
+      if (f.value.trim() && !emailPattern.test(f.value.trim())){ f.classList.add('error'); valid = false; }
+    });
+    return valid;
+  }
+
+  document.querySelectorAll('[data-next]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if (!validateStep(current)) return;
+      if (current === 2) buildOrderSummary();
+      goToStep(current + 1);
+    });
+  });
+  document.querySelectorAll('[data-back]').forEach(function(btn){
+    btn.addEventListener('click', function(){ goToStep(current - 1); });
+  });
+
+  var fEvent = document.getElementById('fEvent');
+  var fDivision = document.getElementById('fDivision');
+  var divisionAvailability = document.getElementById('divisionAvailability');
+
+  function populateDivisions(){
+    var ev = events.filter(function(e){ return e.slug === fEvent.value; })[0];
+    selectedEvent = ev;
+    fDivision.innerHTML = '';
+    if (!ev){
+      fDivision.innerHTML = '<option value="" disabled selected>Select an event first</option>';
+      divisionAvailability.textContent = '';
+      return;
+    }
+    var opt = document.createElement('option');
+    opt.value = ''; opt.disabled = true; opt.selected = true; opt.textContent = 'Select a division';
+    fDivision.appendChild(opt);
+    ev.divisions.forEach(function(d){
+      var o = document.createElement('option');
+      o.value = d.name;
+      o.textContent = d.name + (d.spacesLeft === 0 ? ' — Full' : ' — ' + d.spacesLeft + ' left');
+      o.disabled = d.spacesLeft === 0;
+      fDivision.appendChild(o);
+    });
+    divisionAvailability.textContent = ev.city + ', ' + ev.dateLabel + ' — £' + ev.priceTeam + ' per team.';
+  }
+  fEvent.addEventListener('change', populateDivisions);
+
+  window.PartyPadelEvents.loadEvents().then(function(evs){
+    events = evs;
+    fEvent.innerHTML = '<option value="" disabled selected>Select an event</option>';
+    evs.forEach(function(ev){
+      if (ev.status === 'sold-out') return;
+      var o = document.createElement('option');
+      o.value = ev.slug;
+      o.textContent = ev.city + ' — ' + ev.dateLabel;
+      fEvent.appendChild(o);
+    });
+    var preselect = window.PartyPadelEvents.getQueryParam('event');
+    if (preselect && evs.some(function(e){ return e.slug === preselect; })){
+      fEvent.value = preselect;
+      populateDivisions();
+    }
+  });
+
+  function buildOrderSummary(){
+    var summary = document.getElementById('orderSummary');
+    if (!selectedEvent) return;
+    summary.innerHTML =
+      '<div class="order-row"><span>Event</span><span>' + selectedEvent.city + ' — ' + selectedEvent.dateLabel + '</span></div>' +
+      '<div class="order-row"><span>Division</span><span>' + fDivision.value + '</span></div>' +
+      '<div class="order-row"><span>Team</span><span>' + document.getElementById('fTeamName').value + '</span></div>' +
+      '<div class="order-row order-total"><span>Total</span><span>£' + selectedEvent.priceTeam + '</span></div>';
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    if (!validateStep(3)) return;
+    var submitBtn = document.getElementById('submitBtn');
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+
+    // NOTE: stubbed — no real payment provider wired up. Swap this timeout
+    // for a real Stripe/etc. confirmation call; everything downstream
+    // (confirmation screen, team card) already expects that shape.
+    setTimeout(function(){
+      submitBtn.classList.remove('loading');
+      submitBtn.disabled = false;
+
+      document.getElementById('tcTeamName').textContent = document.getElementById('fTeamName').value;
+      document.getElementById('tcDivision').textContent = fDivision.value;
+      document.getElementById('tcEventLine').textContent = selectedEvent.city + ' — ' + selectedEvent.dateLabel;
+      document.getElementById('tcPlayer1').textContent = document.getElementById('fP1Name').value;
+      document.getElementById('tcPlayer2').textContent = document.getElementById('fP2Name').value;
+
+      goToStep(4);
+    }, 800);
+  });
+
+  document.getElementById('copyLinkBtn').addEventListener('click', function(){
+    var btn = this;
+    var text = window.location.origin + window.location.pathname.replace('enter-team.html', 'event.html') + '?slug=' + (selectedEvent ? selectedEvent.slug : '');
+    if (navigator.clipboard){
+      navigator.clipboard.writeText(text).then(function(){
+        var original = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(function(){ btn.textContent = original; }, 1800);
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>

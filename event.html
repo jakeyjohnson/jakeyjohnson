@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event — Party Padel</title>
+<meta name="description" content="Event details, registration status and spectator tickets.">
+<link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ci-cross" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></symbol>
+    <symbol id="ci-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.7 7-12.3A7 7 0 0 0 5 8.7C5 14.3 12 21 12 21z"/><circle cx="12" cy="8.7" r="2.2"/></symbol>
+    <symbol id="ci-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></symbol>
+    <symbol id="ci-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.5l3.5 2.5"/></symbol>
+    <symbol id="ci-ticket" viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 0 0 4v3.5A1.5 1.5 0 0 0 4.5 18h15a1.5 1.5 0 0 0 1.5-1.5V13a2 2 0 0 1 0-4V6.5A1.5 1.5 0 0 0 19.5 5h-15A1.5 1.5 0 0 0 3 6.5V9z"/></symbol>
+    <symbol id="ci-instagram" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.9" fill="currentColor" stroke="none"/></symbol>
+  </defs>
+</svg>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="34" height="34"></a>
+    <nav class="nav-links" id="navLinks">
+      <a href="events.html" aria-current="page">Events</a>
+      <a href="play.html">Play</a>
+      <a href="format.html">Format</a>
+      <a href="results.html">Results</a>
+      <a href="partners.html">Partners</a>
+      <a href="about.html">About</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="events.html" class="btn btn-outline btn-small">Get Tickets</a>
+      <a href="enter-team.html" class="btn btn-primary btn-small">Enter a Team</a>
+    </div>
+    <button class="burger" id="burger" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="events.html">Events</a>
+    <a href="play.html">Play</a>
+    <a href="format.html">Format</a>
+    <a href="results.html">Results</a>
+    <a href="partners.html">Partners</a>
+    <a href="about.html">About</a>
+    <a href="events.html" class="btn btn-outline">Get Tickets</a>
+    <a href="enter-team.html" class="btn btn-primary">Enter a Team</a>
+  </div>
+</header>
+
+<main id="eventContent">
+  <p class="loading-note page-header-loading">Loading event…</p>
+</main>
+
+<template id="eventTemplate">
+  <section class="section event-hero">
+    <div class="container">
+      <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> <span data-field="statusLabel"></span></span>
+      <h1 data-field="city"></h1>
+      <p class="lede">
+        <svg class="icon icon-sm"><use href="#ci-pin"/></svg> <span data-field="venue"></span> &nbsp;·&nbsp;
+        <svg class="icon icon-sm"><use href="#ci-calendar"/></svg> <span data-field="dateLabel"></span> &nbsp;·&nbsp;
+        <svg class="icon icon-sm"><use href="#ci-clock"/></svg> <span data-field="time"></span>
+      </p>
+      <div class="hero-actions">
+        <a href="#" class="btn btn-primary btn-large" data-field="enterHref" data-attr="href"><span data-field="enterLabel"></span></a>
+        <a href="#tickets" class="btn btn-outline btn-large">Spectator Tickets</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container split-cols">
+      <div>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Divisions</span>
+          <h2>Availability</h2>
+        </div>
+        <div class="division-grid" data-field="divisions"></div>
+      </div>
+      <div>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Schedule</span>
+          <h2>Running Order</h2>
+        </div>
+        <div class="schedule-list" data-field="schedule"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="tickets">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Spectators</span>
+        <h2>Watch From The Sidelines</h2>
+        <p class="lede">Not entering? Come for the finals, the DJ and the crowd behind the glass.</p>
+      </div>
+      <div class="ticket-box">
+        <div>
+          <span class="ticket-price" data-field="spectatorPrice"></span>
+          <span class="ticket-price-label">per ticket</span>
+        </div>
+        <a href="mailto:hello@partypadel.uk?subject=Spectator%20tickets" class="btn btn-primary btn-large">
+          <svg class="icon icon-sm"><use href="#ci-ticket"/></svg> Get Tickets
+        </a>
+      </div>
+      <p class="ticket-note">Ticketing is handled by our platform partner at checkout — this button routes to enquiries until that integration goes live.</p>
+    </div>
+  </section>
+
+  <section class="section faq-section">
+    <div class="container narrow">
+      <div class="section-head">
+        <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> FAQ</span>
+        <h2>Before You Enter</h2>
+      </div>
+      <div class="accordion">
+        <div class="accordion-item">
+          <button class="accordion-trigger">What do I need to bring? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>Just yourself and a partner. Rackets are available to hire courtside if you don't have your own.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger">Can I enter more than one division? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>Yes — teams can enter multiple divisions where spaces allow, at full entry price per division.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger">What happens if we lose our first match? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>Every team plays a full round of group fixtures regardless of result — you're guaranteed multiple matches on the night.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger">Is there an age limit? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>You need to be 18+ to enter or attend, as events run a licensed bar.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<div class="sticky-cta" id="stickyCta" hidden>
+  <a href="#" class="btn btn-primary btn-block" id="stickyCtaLink">Enter a Team</a>
+</div>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="40" height="40">
+      <p>Serious sport. Social energy.</p>
+      <div class="socials"><a href="https://instagram.com/partypadel.uk" aria-label="Instagram"><svg class="icon icon-sm"><use href="#ci-instagram"/></svg></a></div>
+    </div>
+    <div class="footer-col">
+      <h4>League</h4>
+      <a href="events.html">Events</a><a href="play.html">Play</a><a href="format.html">Format</a><a href="results.html">Results</a>
+    </div>
+    <div class="footer-col">
+      <h4>Business</h4>
+      <a href="partners.html">Partners</a><a href="about.html">About</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a>
+      <span class="footer-note">United Kingdom</span>
+    </div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 Party Padel — All rights reserved.</span></div>
+</footer>
+
+<script src="assets/js/events.js"></script>
+<script src="assets/js/main.js"></script>
+<script>
+(function(){
+  var slug = window.PartyPadelEvents.getQueryParam('slug');
+  var main = document.getElementById('eventContent');
+
+  window.PartyPadelEvents.loadEvents().then(function(events){
+    var ev = events.filter(function(e){ return e.slug === slug; })[0];
+    if (!ev){
+      main.innerHTML = '<section class="section"><div class="container"><h1>Event not found</h1><p class="lede">That event may have moved or already happened. <a href="events.html">See all events</a>.</p></div></section>';
+      return;
+    }
+    document.title = ev.city + ' — Party Padel';
+
+    var tpl = document.getElementById('eventTemplate').content.cloneNode(true);
+    var meta = window.PartyPadelEvents.statusMeta(ev.status);
+
+    tpl.querySelector('[data-field="statusLabel"]').textContent = meta.label;
+    tpl.querySelector('[data-field="city"]').textContent = ev.city;
+    tpl.querySelector('[data-field="venue"]').textContent = ev.venue;
+    tpl.querySelector('[data-field="dateLabel"]').textContent = ev.dateLabel;
+    tpl.querySelector('[data-field="time"]').textContent = ev.time;
+    tpl.querySelector('[data-field="spectatorPrice"]').textContent = '£' + ev.priceSpectator;
+
+    var enterLink = tpl.querySelector('[data-field="enterHref"]');
+    var enterLabel = ev.status === 'sold-out' ? 'Entries Closed' : (ev.status === 'coming-soon' ? 'Get Notified' : 'Enter a Team — £' + ev.priceTeam);
+    tpl.querySelector('[data-field="enterLabel"]').textContent = enterLabel;
+    enterLink.href = ev.status === 'coming-soon' || ev.status === 'sold-out'
+      ? 'mailto:hello@partypadel.uk?subject=Notify%20me%20-%20' + encodeURIComponent(ev.city)
+      : 'enter-team.html?event=' + encodeURIComponent(ev.slug);
+    document.getElementById('stickyCtaLink').href = enterLink.href;
+    document.getElementById('stickyCtaLink').textContent = enterLabel;
+
+    var divWrap = tpl.querySelector('[data-field="divisions"]');
+    ev.divisions.forEach(function(d){
+      var full = d.spacesLeft === 0;
+      divWrap.insertAdjacentHTML('beforeend',
+        '<div class="division-card">' +
+          '<h3>' + d.name + '</h3>' +
+          '<span class="division-status" style="' + (full ? 'color:var(--color-text-tertiary)' : '') + '">' +
+            (full ? 'Full' : d.spacesLeft + ' spaces left') +
+          '</span>' +
+        '</div>'
+      );
+    });
+
+    var schedWrap = tpl.querySelector('[data-field="schedule"]');
+    ev.schedule.forEach(function(s){
+      schedWrap.insertAdjacentHTML('beforeend',
+        '<div class="schedule-row"><span class="schedule-time">' + s.time + '</span><span>' + s.label + '</span></div>'
+      );
+    });
+
+    main.innerHTML = '';
+    main.appendChild(tpl);
+
+    // accordion needs re-binding since this content was injected after main.js ran
+    document.querySelectorAll('.accordion-item').forEach(function(item){
+      var trigger = item.querySelector('.accordion-trigger');
+      var panel = item.querySelector('.accordion-panel');
+      trigger.addEventListener('click', function(){
+        var isOpen = item.classList.contains('open');
+        document.querySelectorAll('.accordion-item.open').forEach(function(other){
+          if (other !== item){ other.classList.remove('open'); other.querySelector('.accordion-panel').style.maxHeight = null; }
+        });
+        if (isOpen){ item.classList.remove('open'); panel.style.maxHeight = null; }
+        else { item.classList.add('open'); panel.style.maxHeight = panel.scrollHeight + 'px'; }
+      });
+    });
+
+    // sticky mobile CTA
+    var sticky = document.getElementById('stickyCta');
+    function toggleSticky(){
+      if (window.innerWidth > 720) { sticky.hidden = true; return; }
+      var heroActions = document.querySelector('.event-hero .hero-actions');
+      if (!heroActions) return;
+      var rect = heroActions.getBoundingClientRect();
+      sticky.hidden = rect.bottom > 0;
+    }
+    window.addEventListener('scroll', toggleSticky, { passive: true });
+    window.addEventListener('resize', toggleSticky);
+    toggleSticky();
+  }).catch(function(){
+    main.innerHTML = '<section class="section"><div class="container"><p class="empty-note">Couldn\'t load this event — try refreshing.</p></div></section>';
+  });
+})();
+</script>
+</body>
+</html>
