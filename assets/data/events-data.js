@@ -1,6 +1,23 @@
 /* Party Padel event data — add a new city by adding an object to this
    array. Loaded as a plain <script> (not fetch) so pages work whether
-   opened directly as a file or served from a real web host. */
+   opened directly as a file or served from a real web host.
+
+   PAYMENTS — stripePaymentLink
+   Each event needs its own Stripe Payment Link (Stripe Dashboard >
+   Payment Links > + New — no code required):
+     1. Create a Product + Price matching priceTeam below EXACTLY.
+        priceTeam here is just display copy — the amount actually
+        charged is whatever the Payment Link's Price is set to in
+        Stripe. If you change one, change the other, or you'll show
+        a price on-site that doesn't match what people are charged.
+     2. In the Payment Link's settings, under "After payment", choose
+        "Redirect customers to your website" and set the URL to:
+        https://YOURDOMAIN/enter-team.html?confirmed=1
+     3. Copy the generated link (https://buy.stripe.com/...) into
+        stripePaymentLink below for that event.
+   Leave stripePaymentLink empty until it's set up — the registration
+   form shows a friendly "payments not yet open" message instead of
+   sending people to a broken link. See README.md for the full flow. */
 window.PARTY_PADEL_EVENTS = [
   {
     "slug": "london-2026-09-14",
@@ -13,8 +30,9 @@ window.PARTY_PADEL_EVENTS = [
     "status": "entries-open",
     "teamsEntered": 32,
     "teamsCapacity": 50,
-    "priceTeam": 120,
+    "priceTeam": 60,
     "priceSpectator": 15,
+    "stripePaymentLink": "",
     "divisions": [
       {
         "name": "Men's",
@@ -40,7 +58,7 @@ window.PARTY_PADEL_EVENTS = [
       },
       {
         "time": "21:30",
-        "label": "Finals \u2014 feature court"
+        "label": "Finals — feature court"
       },
       {
         "time": "22:30",
@@ -59,8 +77,9 @@ window.PARTY_PADEL_EVENTS = [
     "status": "limited",
     "teamsEntered": 46,
     "teamsCapacity": 50,
-    "priceTeam": 120,
+    "priceTeam": 60,
     "priceSpectator": 15,
+    "stripePaymentLink": "",
     "divisions": [
       {
         "name": "Men's",
@@ -86,7 +105,7 @@ window.PARTY_PADEL_EVENTS = [
       },
       {
         "time": "22:00",
-        "label": "Finals \u2014 feature court"
+        "label": "Finals — feature court"
       },
       {
         "time": "23:00",
@@ -105,8 +124,9 @@ window.PARTY_PADEL_EVENTS = [
     "status": "coming-soon",
     "teamsEntered": 0,
     "teamsCapacity": 50,
-    "priceTeam": 120,
+    "priceTeam": 60,
     "priceSpectator": 15,
+    "stripePaymentLink": "",
     "divisions": [
       {
         "name": "Men's",
@@ -132,7 +152,7 @@ window.PARTY_PADEL_EVENTS = [
       },
       {
         "time": "20:30",
-        "label": "Finals \u2014 feature court"
+        "label": "Finals — feature court"
       },
       {
         "time": "21:30",
@@ -142,7 +162,7 @@ window.PARTY_PADEL_EVENTS = [
   },
   {
     "slug": "demo-event",
-    "city": "Demo City (TEST \u2014 remove before launch)",
+    "city": "Demo City (TEST — remove before launch)",
     "date": "2026-12-31",
     "dateLabel": "31 December 2026",
     "time": "19:00",
@@ -151,8 +171,9 @@ window.PARTY_PADEL_EVENTS = [
     "status": "entries-open",
     "teamsEntered": 5,
     "teamsCapacity": 50,
-    "priceTeam": 120,
+    "priceTeam": 60,
     "priceSpectator": 15,
+    "stripePaymentLink": "",
     "divisions": [
       {
         "name": "Men's",
@@ -178,7 +199,7 @@ window.PARTY_PADEL_EVENTS = [
       },
       {
         "time": "22:00",
-        "label": "Finals \u2014 feature court"
+        "label": "Finals — feature court"
       },
       {
         "time": "23:00",

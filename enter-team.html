@@ -116,24 +116,13 @@
         <!-- STEP 3 -->
         <div class="form-step" data-step="3">
           <div class="order-summary" id="orderSummary"></div>
-          <div class="form-grid">
-            <div class="form-row form-row-full">
-              <label for="fCard">Card number</label>
-              <input type="text" id="fCard" placeholder="4242 4242 4242 4242" required>
-            </div>
-            <div class="form-row">
-              <label for="fExpiry">Expiry</label>
-              <input type="text" id="fExpiry" placeholder="MM/YY" required>
-            </div>
-            <div class="form-row">
-              <label for="fCvc">CVC</label>
-              <input type="text" id="fCvc" placeholder="123" required>
-            </div>
+          <div id="paymentUnavailable" class="form-alert" style="display:none;">
+            Online payment isn't switched on for this event yet. Email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your team name and division and we'll get you sorted.
           </div>
-          <p class="form-note">Payment processing isn't wired to a real provider yet — this step is fully built and ready for Stripe (or similar) to be dropped in. No card details are sent anywhere.</p>
+          <p class="form-note">You'll pay on Stripe's secure checkout — card, Apple Pay or Google Pay. We never see or store your card details.</p>
           <div class="form-actions">
             <button type="button" class="btn btn-outline" data-back>Back</button>
-            <button type="submit" class="btn btn-primary" id="submitBtn"><span class="btn-text">Pay &amp; Confirm Entry</span></button>
+            <button type="button" class="btn btn-primary" id="submitBtn"><span class="btn-text">Pay Securely with Stripe</span></button>
           </div>
         </div>
 
@@ -141,7 +130,7 @@
         <div class="form-step" data-step="4">
           <div class="confirm-badge"><svg class="icon icon-lg"><use href="#ci-check"/></svg></div>
           <h2 class="confirm-heading">You're In.</h2>
-          <p class="lede confirm-lede">Confirmation sent to both players. See you courtside.</p>
+          <p class="lede confirm-lede" id="confirmLede">Confirmation sent to both players. See you courtside.</p>
 
           <div class="team-card" id="teamCard">
             <div class="team-card-head">
@@ -154,6 +143,10 @@
               <span id="tcPlayer1"></span>
               <span id="tcPlayer2"></span>
             </div>
+          </div>
+
+          <div class="form-alert" id="confirmFallback" style="display:none;">
+            Payment received, but this browser doesn't have your team details on file (a different device or browser than the one you registered on, or the cache was cleared). Check your inbox for Stripe's payment receipt, and email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your team name so we can confirm your entry.
           </div>
 
           <div class="form-actions confirm-actions">
@@ -293,30 +286,39 @@
       '<div class="order-row"><span>Division</span><span>' + fDivision.value + '</span></div>' +
       '<div class="order-row"><span>Team</span><span>' + document.getElementById('fTeamName').value + '</span></div>' +
       '<div class="order-row order-total"><span>Total</span><span>£' + selectedEvent.priceTeam + '</span></div>';
+    document.getElementById('paymentUnavailable').style.display = selectedEvent.stripePaymentLink ? 'none' : 'block';
   }
 
-  form.addEventListener('submit', function(e){
-    e.preventDefault();
-    if (!validateStep(3)) return;
-    var submitBtn = document.getElementById('submitBtn');
-    submitBtn.classList.add('loading');
-    submitBtn.disabled = true;
+  /* Prevent native form submission (e.g. Enter key in a text field) —
+     everything is handled by explicit button clicks below. */
+  form.addEventListener('submit', function(e){ e.preventDefault(); });
 
-    // NOTE: stubbed — no real payment provider wired up. Swap this timeout
-    // for a real Stripe/etc. confirmation call; everything downstream
-    // (confirmation screen, team card) already expects that shape.
-    setTimeout(function(){
-      submitBtn.classList.remove('loading');
-      submitBtn.disabled = false;
+  var PENDING_KEY = 'pp_pending_entry';
 
-      document.getElementById('tcTeamName').textContent = document.getElementById('fTeamName').value;
-      document.getElementById('tcDivision').textContent = fDivision.value;
-      document.getElementById('tcEventLine').textContent = selectedEvent.city + ' — ' + selectedEvent.dateLabel;
-      document.getElementById('tcPlayer1').textContent = document.getElementById('fP1Name').value;
-      document.getElementById('tcPlayer2').textContent = document.getElementById('fP2Name').value;
+  document.getElementById('submitBtn').addEventListener('click', function(){
+    if (!selectedEvent || !selectedEvent.stripePaymentLink) return;
 
-      goToStep(4);
-    }, 800);
+    var pending = {
+      eventSlug: selectedEvent.slug,
+      city: selectedEvent.city,
+      dateLabel: selectedEvent.dateLabel,
+      division: fDivision.value,
+      teamName: document.getElementById('fTeamName').value,
+      p1Name: document.getElementById('fP1Name').value,
+      p1Email: document.getElementById('fP1Email').value,
+      p2Name: document.getElementById('fP2Name').value
+    };
+    try { localStorage.setItem(PENDING_KEY, JSON.stringify(pending)); } catch (e){ /* private browsing etc — confirmation falls back gracefully */ }
+
+    /* client_reference_id ties the Stripe payment back to this team so it
+       shows up in the Stripe Dashboard payment list without a backend.
+       prefilled_email saves the customer a step on Stripe's checkout. */
+    var ref = pending.teamName + ' — ' + pending.division + ' — ' + pending.city;
+    var url = selectedEvent.stripePaymentLink +
+      (selectedEvent.stripePaymentLink.indexOf('?') === -1 ? '?' : '&') +
+      'client_reference_id=' + encodeURIComponent(ref) +
+      '&prefilled_email=' + encodeURIComponent(pending.p1Email);
+    window.location.href = url;
   });
 
   document.getElementById('copyLinkBtn').addEventListener('click', function(){
@@ -330,6 +332,31 @@
       });
     }
   });
+
+  /* Returning from Stripe's hosted checkout after a successful payment
+     (Payment Link's "After payment" redirect — see events-data.js). There's
+     no backend here to verify the payment server-side; this reads back the
+     details saved just before redirecting to Stripe, which is only present
+     if this browser actually went through the form. */
+  if (window.PartyPadelEvents.getQueryParam('confirmed') === '1'){
+    var raw = null;
+    try { raw = localStorage.getItem(PENDING_KEY); } catch (e){}
+    var pending = raw ? JSON.parse(raw) : null;
+    if (pending){
+      selectedEvent = { slug: pending.eventSlug, city: pending.city, dateLabel: pending.dateLabel };
+      document.getElementById('tcTeamName').textContent = pending.teamName;
+      document.getElementById('tcDivision').textContent = pending.division;
+      document.getElementById('tcEventLine').textContent = pending.city + ' — ' + pending.dateLabel;
+      document.getElementById('tcPlayer1').textContent = pending.p1Name;
+      document.getElementById('tcPlayer2').textContent = pending.p2Name;
+      try { localStorage.removeItem(PENDING_KEY); } catch (e){}
+    } else {
+      document.getElementById('teamCard').style.display = 'none';
+      document.getElementById('confirmLede').style.display = 'none';
+      document.getElementById('confirmFallback').style.display = 'block';
+    }
+    goToStep(4);
+  }
 })();
 </script>
 </body>

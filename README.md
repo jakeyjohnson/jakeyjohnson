@@ -56,16 +56,47 @@ directly since that one's intentionally static), the event detail page, and
 the registration flow's event picker all read from this file. Status must be
 one of: `coming-soon`, `entries-open`, `limited`, `sold-out`, `completed`.
 
-## What's stubbed, not wired
+## Taking payment (Stripe Payment Links)
 
-Nothing here fabricates data or fakes a working backend — every stubbed
-piece is commented in the code and safe to ship as-is until it's wired up:
+The registration flow (`enter-team.html`) collects team/player details on
+your own branded form, then sends the customer to Stripe's hosted checkout
+to actually pay — card, Apple Pay, Google Pay all handled by Stripe, so no
+card data ever touches this site or your server. This works on plain static
+hosting with **zero backend code**.
 
-- **Team registration payment** (`enter-team.html`) — the full 4-step flow,
-  validation, and order summary are real; the payment step doesn't call a
-  real processor. Look for the `NOTE:` comment in the inline script.
+To switch payments on for an event:
+
+1. In the Stripe Dashboard: **Payment Links → + New**. Create a Product +
+   Price for that event's team entry — the amount here is what's actually
+   charged.
+2. Under the Payment Link's **"After payment"** setting, choose *"Redirect
+   customers to your website"* and set the URL to:
+   `https://YOURDOMAIN/enter-team.html?confirmed=1`
+3. Copy the generated link (`https://buy.stripe.com/...`) into that event's
+   `stripePaymentLink` field in `assets/data/events-data.js`.
+
+Until `stripePaymentLink` is filled in, the form shows a friendly "payments
+aren't switched on yet" message instead of sending people to a broken link
+— so it's always safe to publish events ahead of opening entries.
+
+**Keep `priceTeam` (the on-site display price) and the Stripe Price you
+create in sync manually** — they're two separate places by necessity (Stripe
+Payment Links don't expose their price for the page to read without a
+backend call), so if you change one, change the other.
+
+There's no backend, so there's no database of entries either — the source
+of truth for "who paid" is the Stripe Dashboard, where each payment is
+tagged with `client_reference_id` (team name, division, city) so you can
+match it back to a team without opening every transaction. The confirmation
+screen a customer sees after paying is read from their own browser's local
+storage (saved right before they left for Stripe) — reliable for the normal
+case, but if they pay on one device/browser and land back on another, or
+clear their browser storage mid-flow, they'll see a graceful fallback
+message pointing them to email you instead of a fabricated confirmation.
+
 - **Spectator tickets** (`event.html`) — routes to a `mailto:` enquiry until
-  a ticketing platform is integrated.
+  a ticketing platform is integrated. Wire it up the same way as team entry
+  if you want online spectator sales too.
 - **Partner enquiry form** (`partners.html`) — validates and shows a success
   state client-side; doesn't send anywhere yet.
 - **Results/standings** — `assets/data/results.json` is intentionally empty.
