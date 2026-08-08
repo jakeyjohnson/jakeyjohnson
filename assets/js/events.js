@@ -28,7 +28,7 @@
 
   function eventCardHTML(ev){
     var meta = statusMeta(ev.status);
-    var ctaLabel = 'Enter a Team';
+    var ctaLabel = 'Get Tickets';
     var ctaHref = 'enter-team.html?event=' + encodeURIComponent(ev.slug);
     var ctaClass = 'btn-primary';
     if (ev.status === 'coming-soon'){

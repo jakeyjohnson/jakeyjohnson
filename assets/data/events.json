@@ -73,5 +73,30 @@
       { "time": "20:30", "label": "Finals — feature court" },
       { "time": "21:30", "label": "Presentation & afterparty" }
     ]
+  },
+  {
+    "slug": "demo-event",
+    "city": "Demo City (TEST — remove before launch)",
+    "date": "2026-12-31",
+    "dateLabel": "31 December 2026",
+    "time": "19:00",
+    "venue": "Test Venue",
+    "address": "For checking the sign-up flow only",
+    "status": "entries-open",
+    "teamsEntered": 5,
+    "teamsCapacity": 50,
+    "priceTeam": 120,
+    "priceSpectator": 15,
+    "divisions": [
+      { "name": "Men's", "spacesLeft": 20 },
+      { "name": "Women's", "spacesLeft": 20 },
+      { "name": "Mixed", "spacesLeft": 20 }
+    ],
+    "schedule": [
+      { "time": "19:00", "label": "Check-in & warm-up" },
+      { "time": "20:00", "label": "Group fixtures begin" },
+      { "time": "22:00", "label": "Finals — feature court" },
+      { "time": "23:00", "label": "Presentation & afterparty" }
+    ]
   }
 ]

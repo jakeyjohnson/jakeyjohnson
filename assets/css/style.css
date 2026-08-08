@@ -104,7 +104,7 @@ button{ font-family: inherit; }
   display:flex; align-items:center; justify-content:space-between; gap: var(--space-5);
 }
 .logo{ display:flex; align-items:center; flex-shrink:0; }
-.logo img{ display:block; width: 56px; height: 56px; }
+.logo img{ display:block; width: 120px; height: 120px; }
 .nav-links{ display:flex; gap: var(--space-6); }
 .nav-links a{
   font-family: var(--font-family-display);
