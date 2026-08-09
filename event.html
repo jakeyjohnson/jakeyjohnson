@@ -3,8 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Event — Party Padel</title>
-<meta name="description" content="Event details, registration status and spectator tickets.">
+<title>Padel Tournament — Party Padel</title>
+<meta name="description" content="Padel tournament details, entry status, divisions and spectator tickets — adapted Americano format, solo entry from £32.">
+<link rel="canonical" href="https://partypadel.uk/event.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Party Padel">
+<meta property="og:title" content="Padel Tournament — Party Padel">
+<meta property="og:description" content="Padel tournament details, entry status, divisions and spectator tickets — adapted Americano format, solo entry from £32.">
+<meta property="og:url" content="https://partypadel.uk/event.html">
+<meta property="og:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Padel Tournament — Party Padel">
+<meta name="twitter:description" content="Padel tournament details, entry status, divisions and spectator tickets — adapted Americano format, solo entry from £32.">
+<meta name="twitter:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
 <link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -186,7 +197,59 @@
       main.innerHTML = '<section class="section"><div class="container"><h1>Event not found</h1><p class="lede">That event may have moved or already happened. <a href="events.html">See all events</a>.</p></div></section>';
       return;
     }
-    document.title = ev.city + ' — Party Padel';
+    var pageTitle = ev.city + ' Padel Tournament — Party Padel';
+    var pageDesc = ev.city + ' padel tournament — ' + ev.dateLabel + ' at ' + ev.venue + '. Adapted Americano format, solo entry from £' + ev.pricePlayer + '.';
+    var pageUrl = 'https://partypadel.uk/event.html?slug=' + encodeURIComponent(ev.slug);
+    document.title = pageTitle;
+    var setMeta = function(selector, attr, value){
+      var el = document.querySelector(selector);
+      if (el) el.setAttribute(attr, value);
+    };
+    setMeta('meta[name="description"]', 'content', pageDesc);
+    setMeta('link[rel="canonical"]', 'href', pageUrl);
+    setMeta('meta[property="og:title"]', 'content', pageTitle);
+    setMeta('meta[property="og:description"]', 'content', pageDesc);
+    setMeta('meta[property="og:url"]', 'content', pageUrl);
+    setMeta('meta[name="twitter:title"]', 'content', pageTitle);
+    setMeta('meta[name="twitter:description"]', 'content', pageDesc);
+
+    /* SportsEvent structured data — enables Google's Event rich results.
+       startDate assumes British Summer Time (+01:00); all current event
+       dates fall before BST ends in late October. Revisit for any event
+       added for November-March, which would need +00:00 instead. */
+    var ldScript = document.createElement('script');
+    ldScript.type = 'application/ld+json';
+    ldScript.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "SportsEvent",
+      "name": ev.city + " Padel Tournament — Party Padel",
+      "sport": "Padel",
+      "startDate": ev.date + "T" + ev.time + ":00+01:00",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": ev.venue,
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": ev.city,
+          "addressCountry": "GB"
+        }
+      },
+      "organizer": {
+        "@type": "SportsOrganization",
+        "name": "Party Padel",
+        "url": "https://partypadel.uk/"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": String(ev.pricePlayer),
+        "priceCurrency": "GBP",
+        "url": pageUrl,
+        "availability": ev.status === "sold-out" ? "https://schema.org/SoldOut" : "https://schema.org/InStock"
+      }
+    });
+    document.head.appendChild(ldScript);
 
     var tpl = document.getElementById('eventTemplate').content.cloneNode(true);
     var meta = window.PartyPadelEvents.statusMeta(ev.status);
