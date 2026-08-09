@@ -77,15 +77,17 @@
         <div class="form-step active" data-step="1">
           <div class="form-row">
             <label for="fEvent">Event</label>
-            <select id="fEvent" required>
+            <select id="fEvent" required aria-describedby="fEventError">
               <option value="" disabled selected>Loading events…</option>
             </select>
+            <span class="field-error" id="fEventError" aria-live="polite"></span>
           </div>
           <div class="form-row">
             <label for="fDivision">Division</label>
-            <select id="fDivision" required>
+            <select id="fDivision" required aria-describedby="fDivisionError">
               <option value="" disabled selected>Select an event first</option>
             </select>
+            <span class="field-error" id="fDivisionError" aria-live="polite"></span>
           </div>
           <p class="form-note" id="divisionAvailability"></p>
           <div class="form-actions">
@@ -99,16 +101,19 @@
           <div class="form-grid">
             <div class="form-row">
               <label for="fPlayerName">Your name</label>
-              <input type="text" id="fPlayerName" required>
+              <input type="text" id="fPlayerName" required aria-describedby="fPlayerNameError">
+              <span class="field-error" id="fPlayerNameError" aria-live="polite"></span>
             </div>
             <div class="form-row">
               <label for="fPlayerEmail">Your email</label>
-              <input type="email" id="fPlayerEmail" required>
+              <input type="email" id="fPlayerEmail" required aria-describedby="fPlayerEmailError">
+              <span class="field-error" id="fPlayerEmailError" aria-live="polite"></span>
             </div>
           </div>
           <div class="form-row">
             <label for="fSkillLevel">Skill level (1.0–5.0)</label>
-            <input type="text" id="fSkillLevel" placeholder="e.g. 3.5" inputmode="decimal" required>
+            <input type="text" id="fSkillLevel" placeholder="e.g. 3.5" inputmode="decimal" required aria-describedby="fSkillLevelError">
+            <span class="field-error" id="fSkillLevelError" aria-live="polite"></span>
             <p class="form-note">Not sure? 1.0–2.0 — never played or a few times. 2.5–3.5 — play occasionally, know the rules. 4.0–5.0 — regular club player or coached. Self-rate honestly, it's how we seed fair rotations on the night.</p>
           </div>
           <div class="form-actions">
@@ -210,24 +215,47 @@
     window.scrollTo({ top: document.getElementById('stepper').offsetTop - 100, behavior: 'smooth' });
   }
 
+  /* Border colour alone doesn't tell anyone what's wrong — not a
+     screen reader user, not someone who can't distinguish the red from
+     the default border. Every invalid field gets an explicit, specific
+     message via aria-describedby, not just a colour change. */
+  function setFieldError(field, message){
+    field.classList.add('error');
+    field.setAttribute('aria-invalid', 'true');
+    var errorEl = document.getElementById(field.getAttribute('aria-describedby'));
+    if (errorEl) errorEl.textContent = message;
+  }
+  function clearFieldError(field){
+    field.classList.remove('error');
+    field.removeAttribute('aria-invalid');
+    var errorEl = document.getElementById(field.getAttribute('aria-describedby'));
+    if (errorEl) errorEl.textContent = '';
+  }
+
   function validateStep(n){
     var stepEl = steps[n - 1];
     var fields = stepEl.querySelectorAll('input[required], select[required]');
     var valid = true;
     fields.forEach(function(f){
-      f.classList.remove('error');
-      if (!f.value.trim()){ f.classList.add('error'); valid = false; }
+      clearFieldError(f);
+      if (!f.value.trim()){
+        setFieldError(f, f.tagName === 'SELECT' ? 'Make a selection' : 'This field is required');
+        valid = false;
+      }
     });
     var emailFields = stepEl.querySelectorAll('input[type="email"]');
     var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     emailFields.forEach(function(f){
-      if (f.value.trim() && !emailPattern.test(f.value.trim())){ f.classList.add('error'); valid = false; }
+      if (f.value.trim() && !emailPattern.test(f.value.trim())){
+        setFieldError(f, 'Enter a valid email address');
+        valid = false;
+      }
     });
     var skillField = stepEl.querySelector('#fSkillLevel');
     if (skillField && skillField.value.trim()){
       var skillValue = parseFloat(skillField.value.trim());
       if (isNaN(skillValue) || skillValue < 1.0 || skillValue > 5.0){
-        skillField.classList.add('error');
+        setFieldError(skillField, 'Enter a number between 1.0 and 5.0');
         valid = false;
       }
     }

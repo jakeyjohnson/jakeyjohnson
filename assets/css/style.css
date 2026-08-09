@@ -135,7 +135,7 @@ button{ font-family: inherit; }
 .nav-cta{ display:flex; gap: var(--space-3); flex-shrink:0; }
 .burger{
   display:none; flex-direction:column; justify-content:center; gap:5px;
-  width: 40px; height:40px; background:none; border:none; cursor:pointer;
+  width: 44px; height:44px; background:none; border:none; cursor:pointer;
 }
 .burger span{ width: 22px; height:2px; background: var(--color-text-primary); transition: transform var(--duration-normal), opacity var(--duration-normal); margin: 0 auto; }
 .burger.open span:nth-child(1){ transform: translateY(7px) rotate(45deg); }
@@ -411,7 +411,7 @@ button{ font-family: inherit; }
 .footer-brand p{ font-size: var(--font-size-sm); max-width:240px; margin-bottom: var(--space-4); }
 .socials{ display:flex; gap: var(--space-2); }
 .socials a{
-  width:36px; height:36px; border-radius: var(--radius-sm);
+  width:44px; height:44px; border-radius: var(--radius-sm);
   border: var(--line-weight-hairline) solid var(--color-border-primary);
   display:flex; align-items:center; justify-content:center;
   color: var(--color-text-secondary);
@@ -481,6 +481,7 @@ select{
 textarea{ resize: vertical; min-height: 100px; font-family: var(--font-family-body); }
 input:focus, select:focus, textarea:focus{ border-color: var(--color-accent-primary); }
 input.error, select.error, textarea.error{ border-color: var(--color-status-error); }
+.field-error{ display:block; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--color-status-error); margin-top: var(--space-1); min-height: 1.2em; }
 .form-note{ font-size: var(--font-size-xs); color: var(--color-text-tertiary); margin: 0 0 var(--space-4); }
 .form-actions{ display:flex; gap: var(--space-3); justify-content:flex-end; margin-top: var(--space-5); }
 @media (max-width: 640px){
@@ -502,6 +503,14 @@ input.error, select.error, textarea.error{ border-color: var(--color-status-erro
   font-family: var(--font-family-display); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold);
   letter-spacing: var(--letter-spacing-wide); text-transform:uppercase; color: var(--color-text-secondary);
   cursor:pointer; transition: all var(--duration-fast) var(--easing-default);
+  position:relative;
+}
+/* Rendered chip stays compact (brief reserves radius-full for exactly this,
+   "compact filter/tag chips" — don't blow that up just to hit a touch-target
+   number), but the tappable area still meets the 44px minimum via an
+   invisible hit-slop rather than visually enlarging the chip. */
+.filter-chip::before{
+  content:''; position:absolute; top:-10px; bottom:-10px; left:-4px; right:-4px;
 }
 .filter-chip:hover{ border-color: var(--color-accent-primary); color: var(--color-text-primary); }
 .filter-chip.active{ background: var(--color-accent-primary); border-color: var(--color-accent-primary); color: var(--color-text-inverse); }

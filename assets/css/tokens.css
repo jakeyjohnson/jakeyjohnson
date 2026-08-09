@@ -47,7 +47,7 @@
 
   --color-text-primary:    var(--raw-clean-white);
   --color-text-secondary:  var(--raw-concrete-grey);
-  --color-text-tertiary:   rgba(255,255,255,0.38);    /* [assumption] placeholders, disabled */
+  --color-text-tertiary:   rgba(255,255,255,0.52);    /* form notes, filter labels, loading/empty states, stepper numbers — used for real informational text sitewide (not just placeholders/disabled), so kept at the minimum alpha that clears WCAG AA 4.5:1 on Event Black (~5.7:1) */
   --color-text-inverse:    var(--raw-event-black);    /* black text on acid buttons */
   --color-text-link:       var(--color-accent-primary);
 

@@ -93,11 +93,11 @@
       </div>
       <form class="enquiry-form reveal" id="enquiryForm" novalidate>
         <div class="form-grid">
-          <div class="form-row"><label for="pName">Name</label><input type="text" id="pName" required></div>
-          <div class="form-row"><label for="pCompany">Company</label><input type="text" id="pCompany" required></div>
+          <div class="form-row"><label for="pName">Name</label><input type="text" id="pName" required aria-describedby="pNameError"><span class="field-error" id="pNameError" aria-live="polite"></span></div>
+          <div class="form-row"><label for="pCompany">Company</label><input type="text" id="pCompany" required aria-describedby="pCompanyError"><span class="field-error" id="pCompanyError" aria-live="polite"></span></div>
         </div>
-        <div class="form-row"><label for="pEmail">Email</label><input type="email" id="pEmail" required></div>
-        <div class="form-row"><label for="pMessage">Message</label><textarea id="pMessage" rows="4" required></textarea></div>
+        <div class="form-row"><label for="pEmail">Email</label><input type="email" id="pEmail" required aria-describedby="pEmailError"><span class="field-error" id="pEmailError" aria-live="polite"></span></div>
+        <div class="form-row"><label for="pMessage">Message</label><textarea id="pMessage" rows="4" required aria-describedby="pMessageError"></textarea><span class="field-error" id="pMessageError" aria-live="polite"></span></div>
         <button type="submit" class="btn btn-primary btn-large" id="enquirySubmit"><span class="btn-text">Send Enquiry</span></button>
       </form>
       <div class="enquiry-success" id="enquirySuccess" hidden>
@@ -127,14 +127,27 @@
   var form = document.getElementById('enquiryForm');
   form.addEventListener('submit', function(e){
     e.preventDefault();
+    function setFieldError(f, message){
+      f.classList.add('error');
+      f.setAttribute('aria-invalid', 'true');
+      var errorEl = document.getElementById(f.getAttribute('aria-describedby'));
+      if (errorEl) errorEl.textContent = message;
+    }
+    function clearFieldError(f){
+      f.classList.remove('error');
+      f.removeAttribute('aria-invalid');
+      var errorEl = document.getElementById(f.getAttribute('aria-describedby'));
+      if (errorEl) errorEl.textContent = '';
+    }
+
     var fields = form.querySelectorAll('input[required], textarea[required]');
     var valid = true;
     fields.forEach(function(f){
-      f.classList.remove('error');
-      if (!f.value.trim()){ f.classList.add('error'); valid = false; }
+      clearFieldError(f);
+      if (!f.value.trim()){ setFieldError(f, 'This field is required'); valid = false; }
     });
     var email = document.getElementById('pEmail');
-    if (email.value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){ email.classList.add('error'); valid = false; }
+    if (email.value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){ setFieldError(email, 'Enter a valid email address'); valid = false; }
     if (!valid) return;
 
     var btn = document.getElementById('enquirySubmit');
