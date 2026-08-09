@@ -25,6 +25,13 @@ assets/css/tokens.css   Design tokens — every colour/type/spacing/radius/
                           line-weight value used anywhere on the site
 assets/css/style.css     Component styles, all referencing tokens.css
 assets/js/main.js        Nav, mobile menu, scroll-reveal, accordion, counters
+assets/js/motion.js       Button press/hover feedback, built on the Motion
+                          library (window.Motion, see below)
+assets/js/vendor/motion.js Vendored UMD build of the `motion` npm package —
+                          committed so pages don't depend on a CDN or build
+                          step at runtime. To update: bump the version in
+                          package.json, `npm install`, then copy
+                          node_modules/motion/dist/motion.js over this file
 assets/js/events.js      Shared event-data helpers (filter, status labels,
                           card rendering) used by events.html, event.html,
                           enter-team.html and results.html

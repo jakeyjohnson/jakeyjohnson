@@ -1,0 +1,9 @@
+{
+  "name": "jakeyjohnson",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Party Padel — static, multi-page site, no build step, no framework, no backend.",
+  "dependencies": {
+    "motion": "^13.0.0"
+  }
+}
