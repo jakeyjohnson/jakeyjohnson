@@ -1,0 +1,2 @@
+# One target URL per line, e.g. venue/partner/sponsor sites you want leads from.
+# Lines starting with # are ignored.
