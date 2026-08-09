@@ -11,7 +11,7 @@ no build step, no framework, no backend.
 | `index.html` | Homepage — hero, next events, format, divisions, experience, results teaser |
 | `events.html` | All events, filterable by status and division |
 | `event.html?slug=...` | Single event — registration status, divisions, schedule, tickets, FAQ |
-| `enter-team.html` | 4-step team registration (event+division → team+players → payment → confirmation) |
+| `enter-team.html` | 4-step individual registration (event+division → your details+skill level → payment → confirmation) |
 | `format.html` | How the competition works, rules and scoring |
 | `play.html` | Divisions overview and entry requirements |
 | `results.html` | Standings and fixtures |
@@ -58,21 +58,22 @@ one of: `coming-soon`, `entries-open`, `limited`, `sold-out`, `completed`.
 
 ## Taking payment (Ticket Tailor)
 
-The registration flow (`enter-team.html`) collects team/player details on
-your own branded form, then sends the customer to Ticket Tailor's hosted
-checkout to actually pay, so no card data ever touches this site or your
-server. This works on plain static hosting with **zero backend code**.
-Ticket Tailor is purpose-built event ticketing (vs. a generic payment
-processor), which is why it's the better fit here — it gives you real
-per-division capacity limits, box office/reporting, and check-in tooling on
-their side if you want to use it, on top of just taking payment.
+The registration flow (`enter-team.html`) collects a player's own details
+(name, email, self-rated skill level) on your own branded form, then sends
+them to Ticket Tailor's hosted checkout to actually pay, so no card data
+ever touches this site or your server. This works on plain static hosting
+with **zero backend code**. Ticket Tailor is purpose-built event ticketing
+(vs. a generic payment processor), which is why it's the better fit here —
+it gives you real per-division capacity limits, box office/reporting, and
+check-in tooling on their side if you want to use it, on top of just taking
+payment.
 
 To switch payments on for an event:
 
-1. In Ticket Tailor: create the event, then a **"Team Entry"** ticket type
-   priced to match that event's `priceTeam` — the amount there is what's
+1. In Ticket Tailor: create the event, then a **"Player Entry"** ticket type
+   priced to match that event's `pricePlayer` — the amount there is what's
    actually charged.
-2. **Don't** add team/player name questions as Ticket Tailor "custom
+2. **Don't** add name/skill-level questions as Ticket Tailor "custom
    questions" — our form already collects those, and asking twice adds
    clicks instead of removing them. Ticket Tailor still needs a buyer name
    + email for the order regardless.
@@ -86,10 +87,13 @@ Until `ticketTailorCheckoutUrl` is filled in, the form shows a friendly
 broken link — so it's always safe to publish events ahead of opening
 entries.
 
-**Keep `priceTeam` (the on-site display price) and the ticket price you set
-in Ticket Tailor in sync manually** — they're two separate places by
+**Keep `pricePlayer` (the on-site display price) and the ticket price you
+set in Ticket Tailor in sync manually** — they're two separate places by
 necessity (reading Ticket Tailor's live price back into the page would need
-a backend call), so if you change one, change the other.
+a backend call), so if you change one, change the other. Note this price
+carried over unchanged from when entry was priced per team rather than per
+player — worth deciding whether the number itself should change now that
+it's charged per person.
 
 There's no backend, so there's no database of entries on our side either —
 the source of truth for "who paid" is the Ticket Tailor dashboard. The
@@ -102,11 +106,11 @@ fabricated confirmation.
 
 Note: Ticket Tailor charges its own per-ticket booking fee on top of card
 processing — check their current pricing before launch, it isn't reflected
-in `priceTeam`.
+in `pricePlayer`.
 
 - **Spectator tickets** (`event.html`) — routes to a `mailto:` enquiry until
-  a ticketing platform is integrated. Wire it up the same way as team entry
-  if you want online spectator sales too.
+  a ticketing platform is integrated. Wire it up the same way as player
+  entry if you want online spectator sales too.
 - **Partner enquiry form** (`partners.html`) — validates and shows a success
   state client-side; doesn't send anywhere yet.
 - **Results/standings** — `assets/data/results.json` is intentionally empty.

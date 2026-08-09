@@ -43,7 +43,7 @@
     }
     var entrantsLine = ev.status === 'coming-soon'
       ? 'Entries open soon'
-      : (ev.teamsEntered + ' of ' + ev.teamsCapacity + ' teams entered');
+      : (ev.playersEntered + ' of ' + ev.playersCapacity + ' players entered');
 
     return '' +
       '<article class="event-card reveal">' +
@@ -56,7 +56,7 @@
         '<div class="court-rule" aria-hidden="true"></div>' +
         '<div class="event-meta-row">' +
           '<span>' + entrantsLine + '</span>' +
-          '<span>From £' + ev.priceTeam + ' / team</span>' +
+          '<span>From £' + ev.pricePlayer + ' / player</span>' +
         '</div>' +
         '<a href="' + ctaHref + '" class="btn ' + ctaClass + ' btn-block">' + ctaLabel + '</a>' +
       '</article>';

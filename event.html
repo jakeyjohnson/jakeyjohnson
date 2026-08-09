@@ -123,16 +123,16 @@
       </div>
       <div class="accordion">
         <div class="accordion-item">
-          <button class="accordion-trigger">What do I need to bring? <span class="accordion-icon">+</span></button>
-          <div class="accordion-panel"><p>Just yourself and a partner. Rackets are available to hire courtside if you don't have your own.</p></div>
+          <button class="accordion-trigger">Do I need to bring a partner? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>No — sign up solo. Partners rotate every round on the night, so you'll play with and against everyone in your division. Rackets are available to hire courtside if you don't have your own.</p></div>
         </div>
         <div class="accordion-item">
           <button class="accordion-trigger">Can I enter more than one division? <span class="accordion-icon">+</span></button>
-          <div class="accordion-panel"><p>Yes — teams can enter multiple divisions where spaces allow, at full entry price per division.</p></div>
+          <div class="accordion-panel"><p>Yes — you can enter multiple divisions where spaces allow, at full entry price per division.</p></div>
         </div>
         <div class="accordion-item">
-          <button class="accordion-trigger">What happens if we lose our first match? <span class="accordion-icon">+</span></button>
-          <div class="accordion-panel"><p>Every team plays a full round of group fixtures regardless of result — you're guaranteed multiple matches on the night.</p></div>
+          <button class="accordion-trigger">What happens if I lose my first round? <span class="accordion-icon">+</span></button>
+          <div class="accordion-panel"><p>Every player rotates through a full schedule of rounds regardless of result — you're guaranteed multiple rounds and partners on the night.</p></div>
         </div>
         <div class="accordion-item">
           <button class="accordion-trigger">Is there an age limit? <span class="accordion-icon">+</span></button>
@@ -144,7 +144,7 @@
 </template>
 
 <div class="sticky-cta" id="stickyCta" hidden>
-  <a href="#" class="btn btn-primary btn-block" id="stickyCtaLink">Enter a Team</a>
+  <a href="#" class="btn btn-primary btn-block" id="stickyCtaLink">Enter</a>
 </div>
 
 <footer class="footer">
@@ -199,7 +199,7 @@
     tpl.querySelector('[data-field="spectatorPrice"]').textContent = '£' + ev.priceSpectator;
 
     var enterLink = tpl.querySelector('[data-field="enterHref"]');
-    var enterLabel = ev.status === 'sold-out' ? 'Entries Closed' : (ev.status === 'coming-soon' ? 'Get Notified' : 'Enter a Team — £' + ev.priceTeam);
+    var enterLabel = ev.status === 'sold-out' ? 'Entries Closed' : (ev.status === 'coming-soon' ? 'Get Notified' : 'Enter — £' + ev.pricePlayer);
     tpl.querySelector('[data-field="enterLabel"]').textContent = enterLabel;
     enterLink.href = ev.status === 'coming-soon' || ev.status === 'sold-out'
       ? 'mailto:hello@partypadel.uk?subject=Notify%20me%20-%20' + encodeURIComponent(ev.city)

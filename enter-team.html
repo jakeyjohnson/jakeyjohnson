@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Enter a Team — Party Padel</title>
-<meta name="description" content="Enter your team into Party Padel. Two players, one entry, four steps.">
+<title>Enter — Party Padel</title>
+<meta name="description" content="Enter Party Padel individually. Rate your level, pick a division, we handle partners on the night.">
 <link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,13 +49,13 @@
   <section class="section register-section">
     <div class="container narrow">
       <div class="section-head">
-        <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-check"/></svg> Enter a Team</span>
-        <h1>Your Team. Your City.</h1>
+        <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-check"/></svg> Enter</span>
+        <h1>You. Your City.</h1>
       </div>
 
       <div class="stepper" id="stepper">
         <span class="stepper-item active" data-step-indicator="1"><em>01</em> Event</span>
-        <span class="stepper-item" data-step-indicator="2"><em>02</em> Team</span>
+        <span class="stepper-item" data-step-indicator="2"><em>02</em> You</span>
         <span class="stepper-item" data-step-indicator="3"><em>03</em> Payment</span>
         <span class="stepper-item" data-step-indicator="4"><em>04</em> Confirmed</span>
       </div>
@@ -85,27 +85,20 @@
 
         <!-- STEP 2 -->
         <div class="form-step" data-step="2">
-          <div class="form-row">
-            <label for="fTeamName">Team name</label>
-            <input type="text" id="fTeamName" placeholder="e.g. Baseline Bandits" required>
-          </div>
           <div class="form-grid">
             <div class="form-row">
-              <label for="fP1Name">Player 1 name</label>
-              <input type="text" id="fP1Name" required>
+              <label for="fPlayerName">Your name</label>
+              <input type="text" id="fPlayerName" required>
             </div>
             <div class="form-row">
-              <label for="fP1Email">Player 1 email</label>
-              <input type="email" id="fP1Email" required>
+              <label for="fPlayerEmail">Your email</label>
+              <input type="email" id="fPlayerEmail" required>
             </div>
-            <div class="form-row">
-              <label for="fP2Name">Player 2 name</label>
-              <input type="text" id="fP2Name" required>
-            </div>
-            <div class="form-row">
-              <label for="fP2Email">Player 2 email</label>
-              <input type="email" id="fP2Email" required>
-            </div>
+          </div>
+          <div class="form-row">
+            <label for="fSkillLevel">Skill level (1.0–5.0)</label>
+            <input type="text" id="fSkillLevel" placeholder="e.g. 3.5" inputmode="decimal" required>
+            <p class="form-note">Self-rate honestly — this is how we seed fair rotations on the night. 1.0 is first-timer, 5.0 is competitive.</p>
           </div>
           <div class="form-actions">
             <button type="button" class="btn btn-outline" data-back>Back</button>
@@ -117,7 +110,7 @@
         <div class="form-step" data-step="3">
           <div class="order-summary" id="orderSummary"></div>
           <div id="paymentUnavailable" class="form-alert" style="display:none;">
-            Online payment isn't switched on for this event yet. Email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your team name and division and we'll get you sorted.
+            Online payment isn't switched on for this event yet. Email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your name and division and we'll get you sorted.
           </div>
           <p class="form-note">You'll pay on Ticket Tailor's secure checkout. We never see or store your card details.</p>
           <div class="form-actions">
@@ -130,27 +123,26 @@
         <div class="form-step" data-step="4">
           <div class="confirm-badge"><svg class="icon icon-lg"><use href="#ci-check"/></svg></div>
           <h2 class="confirm-heading">You're In.</h2>
-          <p class="lede confirm-lede" id="confirmLede">Confirmation sent to both players. See you courtside.</p>
+          <p class="lede confirm-lede" id="confirmLede">Confirmation sent to your inbox. See you courtside — partners rotate on the night.</p>
 
           <div class="team-card" id="teamCard">
             <div class="team-card-head">
               <span>PARTY PADEL</span>
               <span id="tcDivision"></span>
             </div>
-            <h3 id="tcTeamName"></h3>
+            <h3 id="tcPlayerName"></h3>
             <p id="tcEventLine"></p>
             <div class="team-card-players">
-              <span id="tcPlayer1"></span>
-              <span id="tcPlayer2"></span>
+              <span id="tcSkillLevel"></span>
             </div>
           </div>
 
           <div class="form-alert" id="confirmFallback" style="display:none;">
-            Payment received, but this browser doesn't have your team details on file (a different device or browser than the one you registered on, or the cache was cleared). Check your inbox for Ticket Tailor's order confirmation, and email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your team name so we can confirm your entry.
+            Payment received, but this browser doesn't have your entry details on file (a different device or browser than the one you registered on, or the cache was cleared). Check your inbox for Ticket Tailor's order confirmation, and email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your name so we can confirm your entry.
           </div>
 
           <div class="form-actions confirm-actions">
-            <button type="button" class="btn btn-outline" id="copyLinkBtn">Copy Team Card Link</button>
+            <button type="button" class="btn btn-outline" id="copyLinkBtn">Copy My Entry Link</button>
             <a href="index.html" class="btn btn-primary">Back to Home</a>
           </div>
         </div>
@@ -220,6 +212,14 @@
     emailFields.forEach(function(f){
       if (f.value.trim() && !emailPattern.test(f.value.trim())){ f.classList.add('error'); valid = false; }
     });
+    var skillField = stepEl.querySelector('#fSkillLevel');
+    if (skillField && skillField.value.trim()){
+      var skillValue = parseFloat(skillField.value.trim());
+      if (isNaN(skillValue) || skillValue < 1.0 || skillValue > 5.0){
+        skillField.classList.add('error');
+        valid = false;
+      }
+    }
     return valid;
   }
 
@@ -257,7 +257,7 @@
       o.disabled = d.spacesLeft === 0;
       fDivision.appendChild(o);
     });
-    divisionAvailability.textContent = ev.city + ', ' + ev.dateLabel + ' — £' + ev.priceTeam + ' per team.';
+    divisionAvailability.textContent = ev.city + ', ' + ev.dateLabel + ' — £' + ev.pricePlayer + ' per player.';
   }
   fEvent.addEventListener('change', populateDivisions);
 
@@ -284,8 +284,9 @@
     summary.innerHTML =
       '<div class="order-row"><span>Event</span><span>' + selectedEvent.city + ' — ' + selectedEvent.dateLabel + '</span></div>' +
       '<div class="order-row"><span>Division</span><span>' + fDivision.value + '</span></div>' +
-      '<div class="order-row"><span>Team</span><span>' + document.getElementById('fTeamName').value + '</span></div>' +
-      '<div class="order-row order-total"><span>Total</span><span>£' + selectedEvent.priceTeam + '</span></div>';
+      '<div class="order-row"><span>Name</span><span>' + document.getElementById('fPlayerName').value + '</span></div>' +
+      '<div class="order-row"><span>Skill level</span><span>' + document.getElementById('fSkillLevel').value + '</span></div>' +
+      '<div class="order-row order-total"><span>Total</span><span>£' + selectedEvent.pricePlayer + '</span></div>';
     document.getElementById('paymentUnavailable').style.display = selectedEvent.ticketTailorCheckoutUrl ? 'none' : 'block';
   }
 
@@ -303,18 +304,17 @@
       city: selectedEvent.city,
       dateLabel: selectedEvent.dateLabel,
       division: fDivision.value,
-      teamName: document.getElementById('fTeamName').value,
-      p1Name: document.getElementById('fP1Name').value,
-      p1Email: document.getElementById('fP1Email').value,
-      p2Name: document.getElementById('fP2Name').value
+      playerName: document.getElementById('fPlayerName').value,
+      playerEmail: document.getElementById('fPlayerEmail').value,
+      skillLevel: document.getElementById('fSkillLevel').value
     };
     try { localStorage.setItem(PENDING_KEY, JSON.stringify(pending)); } catch (e){ /* private browsing etc — confirmation falls back gracefully */ }
 
     /* Straight to Ticket Tailor's checkout for this event — no query
        params appended, since we're not assuming a specific prefill/
-       reference URL scheme on their end. If you want the team name
-       captured on Ticket Tailor's side too, add it as a custom question
-       in their dashboard for the buyer to re-enter at checkout. */
+       reference URL scheme on their end. If you want the name/skill
+       level captured on Ticket Tailor's side too, add it as a custom
+       question in their dashboard for the buyer to re-enter at checkout. */
     window.location.href = selectedEvent.ticketTailorCheckoutUrl;
   });
 
@@ -341,11 +341,10 @@
     var pending = raw ? JSON.parse(raw) : null;
     if (pending){
       selectedEvent = { slug: pending.eventSlug, city: pending.city, dateLabel: pending.dateLabel };
-      document.getElementById('tcTeamName').textContent = pending.teamName;
+      document.getElementById('tcPlayerName').textContent = pending.playerName;
       document.getElementById('tcDivision').textContent = pending.division;
       document.getElementById('tcEventLine').textContent = pending.city + ' — ' + pending.dateLabel;
-      document.getElementById('tcPlayer1').textContent = pending.p1Name;
-      document.getElementById('tcPlayer2').textContent = pending.p2Name;
+      document.getElementById('tcSkillLevel').textContent = 'Skill level: ' + pending.skillLevel;
       try { localStorage.removeItem(PENDING_KEY); } catch (e){}
     } else {
       document.getElementById('teamCard').style.display = 'none';
