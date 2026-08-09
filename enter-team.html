@@ -109,7 +109,7 @@
           <div class="form-row">
             <label for="fSkillLevel">Skill level (1.0–5.0)</label>
             <input type="text" id="fSkillLevel" placeholder="e.g. 3.5" inputmode="decimal" required>
-            <p class="form-note">Self-rate honestly — this is how we seed fair rotations on the night. 1.0 is first-timer, 5.0 is competitive.</p>
+            <p class="form-note">Not sure? 1.0–2.0 — never played or a few times. 2.5–3.5 — play occasionally, know the rules. 4.0–5.0 — regular club player or coached. Self-rate honestly, it's how we seed fair rotations on the night.</p>
           </div>
           <div class="form-actions">
             <button type="button" class="btn btn-outline" data-back>Back</button>
@@ -264,7 +264,8 @@
     ev.divisions.forEach(function(d){
       var o = document.createElement('option');
       o.value = d.name;
-      o.textContent = d.name + (d.spacesLeft === 0 ? ' — Full' : ' — ' + d.spacesLeft + ' left');
+      var range = (d.skillMin != null && d.skillMax != null) ? ' (' + d.skillMin.toFixed(1) + '–' + d.skillMax.toFixed(1) + ')' : '';
+      o.textContent = d.name + range + (d.spacesLeft === 0 ? ' — Full' : ' — ' + d.spacesLeft + ' left');
       o.disabled = d.spacesLeft === 0;
       fDivision.appendChild(o);
     });

@@ -273,9 +273,11 @@
     var divWrap = tpl.querySelector('[data-field="divisions"]');
     ev.divisions.forEach(function(d){
       var full = d.spacesLeft === 0;
+      var range = (d.skillMin != null && d.skillMax != null) ? '<p>Self-rated ' + d.skillMin.toFixed(1) + '–' + d.skillMax.toFixed(1) + '</p>' : '';
       divWrap.insertAdjacentHTML('beforeend',
         '<div class="division-card">' +
           '<h3>' + d.name + '</h3>' +
+          range +
           '<span class="division-status" style="' + (full ? 'color:var(--color-text-tertiary)' : '') + '">' +
             (full ? 'Full' : d.spacesLeft + ' spaces left') +
           '</span>' +
