@@ -32,7 +32,18 @@ ul{ list-style:none; margin:0; padding:0; }
 button{ font-family: inherit; }
 :focus-visible{ outline: 2px solid var(--color-border-focus); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce){
-  *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior:auto !important; }
+  *, *::before, *::after{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior:auto !important; }
+}
+
+/* Native cross-page transitions — this is a multi-page site (no router),
+   so every nav click is normally a hard cut. Browsers that support the
+   View Transitions API cross-fade between pages automatically with zero
+   JS; unsupported browsers just navigate normally, no fallback needed.
+   Skipped under reduced-motion, matching the rest of the site's motion. */
+@media (prefers-reduced-motion: no-preference){
+  @view-transition{
+    navigation: auto;
+  }
 }
 
 .container{ max-width: var(--max-width-page); margin: 0 auto; padding: 0 var(--space-5); }
@@ -208,9 +219,17 @@ button{ font-family: inherit; }
   color: var(--color-text-primary); margin-top: var(--space-6);
   border-bottom: var(--line-weight-court) solid var(--color-accent-primary);
   padding-bottom: 2px;
+  transition: color var(--duration-fast) var(--easing-default);
 }
 .see-all-link:hover{ color: var(--color-accent-primary); }
 .see-all-link .icon{ transition: transform var(--duration-fast) var(--easing-default); }
+/* .see-all-link always carries .reveal in markup — both set the
+   transition shorthand, and .reveal's would otherwise win the cascade
+   (later, equal specificity) and silently drop the hover colour
+   transition. This compound selector outranks both. */
+.see-all-link.reveal{
+  transition: opacity .6s var(--easing-out), transform .6s var(--easing-out), color var(--duration-fast) var(--easing-default);
+}
 .see-all-link:hover .icon{ transform: translateX(4px); }
 
 /* ---------- reveal on scroll ---------- */
@@ -284,6 +303,20 @@ button{ font-family: inherit; }
 .status-open{ background: var(--color-accent-primary); color: var(--color-text-inverse); }
 .status-limited{ background: transparent; color: var(--color-status-limited); border-color: var(--color-status-limited); }
 .status-closed{ background: transparent; color: var(--color-text-secondary); border-color: var(--color-border-primary); }
+
+/* Subtle live-urgency cue on "Limited" only — reinforces the existing
+   scarcity copy (spaces left), doesn't compete with it. Slow opacity
+   breathe, no scale/bounce, frozen under reduced-motion by the global
+   override above. */
+.status-limited::before{
+  content:''; display:inline-block; width:6px; height:6px; margin-right: var(--space-2);
+  border-radius:50%; background: var(--color-status-limited);
+  animation: statusPulse 1.8s ease-in-out infinite;
+}
+@keyframes statusPulse{
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
 
 /* ---------- format ---------- */
 .format-steps{ display:grid; grid-template-columns: repeat(4,1fr); gap: var(--space-5); }
@@ -363,6 +396,7 @@ button{ font-family: inherit; }
   font-family: var(--font-family-display); font-weight: var(--font-weight-semibold);
   letter-spacing: var(--letter-spacing-wide); text-transform:uppercase; font-size: var(--font-size-sm);
   color: var(--color-accent-primary);
+  transition: color var(--duration-fast) var(--easing-default);
 }
 .follow-link:hover{ color: var(--color-accent-primary-hover); }
 
@@ -389,7 +423,7 @@ button{ font-family: inherit; }
   letter-spacing: var(--letter-spacing-wide); text-transform:uppercase; color: var(--color-text-tertiary);
   margin-bottom: var(--space-4);
 }
-.footer-col a, .footer-note{ display:block; font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-bottom: var(--space-3); }
+.footer-col a, .footer-note{ display:block; font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-bottom: var(--space-3); transition: color var(--duration-fast) var(--easing-default); }
 .footer-col a:hover{ color: var(--color-accent-primary); }
 .footer-bottom{
   border-top: var(--line-weight-hairline) solid var(--color-border-secondary);
