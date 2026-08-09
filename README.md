@@ -1,6 +1,6 @@
 # Party Padel
 
-Competitive padel league platform — built against the official client brand
+Competitive padel tournament platform — built against the official client brand
 guidelines (`.design/party-padel/DESIGN_BRIEF.md`). Static, multi-page site,
 no build step, no framework, no backend.
 
