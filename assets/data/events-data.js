@@ -26,9 +26,7 @@
    registration form shows a friendly "payments not yet open" message
    instead of sending people to a broken link. See README.md.
 
-   pricePlayer is still 60, carried over unchanged from when this was a
-   per-team price — now that entry is per person rather than per pair,
-   decide whether that number should actually change before launch. */
+   pricePlayer is £32 per player, per event. */
 window.PARTY_PADEL_EVENTS = [
   {
     "slug": "london-2026-09-14",
@@ -41,7 +39,7 @@ window.PARTY_PADEL_EVENTS = [
     "status": "entries-open",
     "playersEntered": 68,
     "playersCapacity": 100,
-    "pricePlayer": 60,
+    "pricePlayer": 32,
     "priceSpectator": 15,
     "ticketTailorCheckoutUrl": "",
     "divisions": [
@@ -88,7 +86,7 @@ window.PARTY_PADEL_EVENTS = [
     "status": "limited",
     "playersEntered": 92,
     "playersCapacity": 100,
-    "pricePlayer": 60,
+    "pricePlayer": 32,
     "priceSpectator": 15,
     "ticketTailorCheckoutUrl": "",
     "divisions": [
@@ -135,7 +133,7 @@ window.PARTY_PADEL_EVENTS = [
     "status": "coming-soon",
     "playersEntered": 0,
     "playersCapacity": 100,
-    "pricePlayer": 60,
+    "pricePlayer": 32,
     "priceSpectator": 15,
     "ticketTailorCheckoutUrl": "",
     "divisions": [
@@ -182,7 +180,7 @@ window.PARTY_PADEL_EVENTS = [
     "status": "entries-open",
     "playersEntered": 10,
     "playersCapacity": 100,
-    "pricePlayer": 60,
+    "pricePlayer": 32,
     "priceSpectator": 15,
     "ticketTailorCheckoutUrl": "",
     "divisions": [

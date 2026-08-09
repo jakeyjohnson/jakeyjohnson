@@ -90,10 +90,7 @@ entries.
 **Keep `pricePlayer` (the on-site display price) and the ticket price you
 set in Ticket Tailor in sync manually** — they're two separate places by
 necessity (reading Ticket Tailor's live price back into the page would need
-a backend call), so if you change one, change the other. Note this price
-carried over unchanged from when entry was priced per team rather than per
-player — worth deciding whether the number itself should change now that
-it's charged per person.
+a backend call), so if you change one, change the other.
 
 There's no backend, so there's no database of entries on our side either —
 the source of truth for "who paid" is the Ticket Tailor dashboard. The
