@@ -7,6 +7,12 @@
       "skillPath": "brief-to-tasks/SKILL.md",
       "computedHash": "8cf913dde5f87b8e5774a5d042dcf7e0dabf69fb511c57ef91eab8e6568927e1"
     },
+    "context-optimization": {
+      "source": "muratcankoylan/Agent-Skills-for-Context-Engineering",
+      "sourceType": "github",
+      "skillPath": "skills/context-optimization/SKILL.md",
+      "computedHash": "8cecc30872ec76752aadd7b6dceb40033e3b3efbc5dd2ee52c5d09bb4229b706"
+    },
     "design-brief": {
       "source": "julianoczkowski/designer-skills",
       "sourceType": "github",
