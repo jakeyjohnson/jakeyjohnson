@@ -151,7 +151,7 @@ h4{ font-size: var(--font-size-lg); }
 }
 .nav__links a:hover::after, .nav__links a[aria-current="page"]::after{ width: 100%; }
 .nav__links a[aria-current="page"]{ color: var(--color-accent-primary); }
-.nav__cta{ display: none; }
+a.nav__cta{ display: none; } /* selector bumped to a.nav__cta (0,0,1,1) so it reliably beats .btn's display:inline-flex (0,0,1,0) regardless of source order */
 .nav__toggle{
   width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
@@ -193,7 +193,7 @@ h4{ font-size: var(--font-size-lg); }
 
 @media (min-width: 1024px){
   .nav__links{ display: flex; }
-  .nav__cta{ display: inline-flex; }
+  a.nav__cta{ display: inline-flex; }
   .nav__toggle{ display: none; }
   .nav__drawer{ display: none; }
 }
