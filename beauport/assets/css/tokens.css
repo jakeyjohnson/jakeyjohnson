@@ -51,4 +51,10 @@
   /* Motion */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --duration: 220ms;
+
+  /* An unhurried, engineered ease for hero/interaction moments — an
+     instrument settling into place, not a UI snapping shut. */
+  --ease-fine: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fine: 550ms;
+  --duration-cinematic: 900ms;
 }

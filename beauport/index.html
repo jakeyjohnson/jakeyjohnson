@@ -35,20 +35,33 @@
 <main>
 
   <section class="hero">
+    <svg class="hero-dial" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+      <circle class="dial-ring" cx="100" cy="100" r="92" fill="none" stroke-width="1"></circle>
+      <circle class="dial-ring" cx="100" cy="100" r="70" fill="none" stroke-width="1" opacity="0.5"></circle>
+      <g class="dial-ticks"></g>
+      <text class="dial-cardinal" x="100" y="15" text-anchor="middle" font-size="7" letter-spacing="2">N</text>
+      <text class="dial-cardinal" x="185" y="103" text-anchor="middle" font-size="7" letter-spacing="2">E</text>
+      <text class="dial-cardinal" x="100" y="193" text-anchor="middle" font-size="7" letter-spacing="2">S</text>
+      <text class="dial-cardinal" x="15" y="103" text-anchor="middle" font-size="7" letter-spacing="2">W</text>
+      <line class="dial-needle" x1="100" y1="100" x2="100" y2="26" stroke-width="1"></line>
+      <circle cx="100" cy="100" r="2.5" fill="var(--color-brass)"></circle>
+    </svg>
     <div class="wrap split">
       <div class="hero-grid">
-        <p class="eyebrow">Jersey — by introduction only</p>
-        <h1>A private concierge, not an app.</h1>
-        <p class="lede">Beauport handles the logistics of corporate life and
+        <p class="eyebrow rise" style="--delay:60ms;">Jersey — by introduction only</p>
+        <h1 class="rise" style="--delay:160ms;">A private concierge, not an app.</h1>
+        <p class="lede rise" style="--delay:300ms;">Beauport handles the logistics of corporate life and
           private life for principals connected to Jersey — in person, by
           a named team you speak to directly, on the island and in the
           cities you move through.</p>
-        <div class="actions">
+        <div class="actions rise" style="--delay:440ms;">
           <a href="membership.html" class="btn btn--primary">Request an introduction</a>
           <a href="philosophy.html" class="btn">Why in-person</a>
         </div>
       </div>
-      <div class="horizon horizon--tall" role="img" aria-label="Horizon line over the Channel, Jersey coast"></div>
+      <div class="horizon horizon--tall rise" style="--delay:220ms;" role="img" aria-label="Horizon line over the Channel, Jersey coast">
+        <div class="horizon-fill"></div>
+      </div>
     </div>
   </section>
 
@@ -88,14 +101,16 @@
         a small number of people who pick up the phone themselves.
         Beauport applies that model to everything outside the trust
         deed."</p>
-      <hr class="tide-line tide-line--brass">
+      <hr class="tide-line tide-line--brass reveal tide-draw">
       <p class="reveal">Founding principle, Beauport</p>
     </div>
   </section>
 
   <section class="section">
     <div class="wrap split split--reverse">
-      <div class="horizon reveal" role="img" aria-label="Granite coastline at low tide"></div>
+      <div class="horizon reveal" role="img" aria-label="Granite coastline at low tide">
+        <div class="horizon-fill"></div>
+      </div>
       <div class="reveal">
         <p class="eyebrow">The difference</p>
         <h2>Velocity Black gets you the table.<br>Beauport is at it.</h2>
@@ -105,7 +120,7 @@
           family off the plane, walking a property before you view it
           remotely, standing in for you at a handover when you can't be
           on-island yourself.</p>
-        <hr class="tide-line">
+        <hr class="tide-line reveal tide-draw">
         <a href="services.html" class="text-link">See the full list of services →</a>
       </div>
     </div>

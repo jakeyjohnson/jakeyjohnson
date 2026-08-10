@@ -140,12 +140,43 @@ which the brand deliberately avoids as overused in coastal branding.
 Rendered in Granite Line by default, Marine or Brass only at moments of
 emphasis (e.g. under the logo).
 
+### Motion
+
+Motion is what separates "quiet luxury" from "budget minimalism" —
+it's where the brand signals that real craft went into the build, which
+is what earns trust from both an old-money principal (who reads
+restraint as confidence) and a younger corporate client (who reads
+engineering polish as competence). The rule throughout: **one
+orchestrated moment, not scattered effects.**
+
+- **Ease.** A single unhurried curve (`cubic-bezier(0.16, 1, 0.3, 1)`)
+  used everywhere something moves — an instrument settling into place,
+  never a UI snapping shut.
+- **The hero loads once, deliberately.** Headline, image and CTA rise
+  into place in a fixed sequence on page load — not on scroll, not
+  looping. It happens once, like a case opening.
+- **The instrument dial.** A large, quiet watch-bezel motif sits behind
+  the homepage headline — thin ticks, cardinal points, a fixed brass
+  needle. The tick ring turns once every 3.5 minutes; imperceptible
+  moment to moment, alive if you actually watch it. Decorative only —
+  it never carries real navigational data.
+- **The tide rises, not snaps.** Button and link states fill from the
+  bottom rather than swapping colour outright, echoing the brand's own
+  tide-line motif rather than a generic hover state.
+- **Dividers draw themselves in.** A tide-line rule animates from 0 to
+  full width as it enters view, like an instrument taking a reading —
+  used once per page transition, never on every rule.
+- **Parallax is a whisper.** Horizon panels drift a few pixels against
+  scroll — enough to read as dimensional, never enough to distract.
+- **Always respects `prefers-reduced-motion`.** Every animation above
+  has a static fallback; content is never gated behind motion completing.
+
 ### Logo
 
 Wordmark-only, no crest or icon on the primary lockup:
 
 ```
-B E A U F O R T
+B E A U P O R T
 ――――――――――――――――
 CONCIERGE
 ```

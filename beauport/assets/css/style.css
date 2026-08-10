@@ -107,6 +107,9 @@ p:last-child {
 /* Buttons / links */
 
 .btn {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -120,12 +123,28 @@ p:last-child {
   color: var(--color-ink);
   text-decoration: none;
   cursor: pointer;
-  transition: background var(--duration) var(--ease), color var(--duration) var(--ease), border-color var(--duration) var(--ease);
+  transition: color var(--duration-fine) var(--ease-fine), border-color var(--duration-fine) var(--ease-fine), letter-spacing var(--duration-fine) var(--ease-fine);
+}
+
+/* The fill rises like a tide rather than snapping to a new colour. */
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-ink);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform var(--duration-fine) var(--ease-fine);
 }
 
 .btn:hover, .btn:focus-visible {
-  background: var(--color-ink);
   color: var(--color-paper);
+  letter-spacing: 0.03em;
+}
+
+.btn:hover::before, .btn:focus-visible::before {
+  transform: scaleY(1);
 }
 
 .btn--primary {
@@ -134,19 +153,21 @@ p:last-child {
   color: var(--color-paper);
 }
 
-.btn--primary:hover, .btn--primary:focus-visible {
-  background: var(--color-marine-deep);
-  border-color: var(--color-marine-deep);
-}
+.btn--primary::before { background: var(--color-marine-deep); }
 
 .btn--on-dark {
   border-color: var(--color-paper-on-marine);
   color: var(--color-paper-on-marine);
 }
 
+.btn--on-dark::before { background: var(--color-paper-on-marine); }
+
 .btn--on-dark:hover, .btn--on-dark:focus-visible {
-  background: var(--color-paper-on-marine);
   color: var(--color-marine-deep);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .btn::before { transition: none; }
 }
 
 .text-link {
@@ -183,7 +204,10 @@ p:last-child {
   text-transform: uppercase;
   text-decoration: none;
   color: var(--color-ink);
+  transition: letter-spacing var(--duration-fine) var(--ease-fine);
 }
+
+.wordmark:hover { letter-spacing: 0.28em; }
 
 .nav-links {
   display: flex;
@@ -196,17 +220,40 @@ p:last-child {
 }
 
 .nav-links a {
+  position: relative;
   text-decoration: none;
   color: var(--color-granite);
   padding: var(--space-1) 0;
-  border-bottom: 1px solid transparent;
-  transition: color var(--duration) var(--ease), border-color var(--duration) var(--ease);
+  transition: color var(--duration-fine) var(--ease-fine);
+}
+
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--color-marine);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--duration-fine) var(--ease-fine);
 }
 
 .nav-links a:hover,
+.nav-links a:focus-visible,
 .nav-links a[aria-current="page"] {
   color: var(--color-ink);
-  border-color: var(--color-marine);
+}
+
+.nav-links a:hover::after,
+.nav-links a:focus-visible::after,
+.nav-links a[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wordmark, .nav-links a, .nav-links a::after { transition: none; }
 }
 
 .nav-cta {
@@ -260,11 +307,15 @@ p:last-child {
 /* Hero */
 
 .hero {
+  position: relative;
   padding: var(--space-8) 0 var(--space-7);
   background: linear-gradient(180deg, var(--color-paper) 0%, var(--color-paper-raised) 100%);
+  overflow: hidden;
 }
 
 .hero-grid {
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: var(--space-5);
   max-width: 760px;
@@ -281,6 +332,63 @@ p:last-child {
   margin-top: var(--space-4);
 }
 
+/* Instrument dial — a quiet, oversized watermark behind the hero copy.
+   Reads as precision-engineered rather than decorative; the tick ring
+   turns almost imperceptibly, like a chronometer bezel. */
+
+.hero-dial {
+  position: absolute;
+  top: 50%;
+  right: -6%;
+  width: min(640px, 62vw);
+  height: min(640px, 62vw);
+  transform: translateY(-50%);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-dial .dial-ticks {
+  transform-origin: 100px 100px;
+  animation: dial-turn 210s linear infinite;
+}
+
+.hero-dial .dial-tick { stroke: var(--color-granite-line); }
+.hero-dial .dial-tick--major { stroke: var(--color-marine); opacity: 0.55; }
+.hero-dial .dial-ring { stroke: var(--color-granite-line); }
+.hero-dial .dial-needle { stroke: var(--color-brass); opacity: 0.8; }
+.hero-dial .dial-cardinal { fill: var(--color-granite-soft); }
+
+@keyframes dial-turn {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 760px) {
+  .hero-dial { opacity: 0.3; right: -18%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-dial .dial-ticks { animation: none; }
+}
+
+/* Staggered entrance — a single orchestrated moment on load, not a
+   scroll effect. Each .rise element carries its own --delay. */
+
+.rise {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: rise var(--duration-cinematic) var(--ease-fine) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes rise {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise { animation: none; opacity: 1; transform: none; }
+}
+
 /* Horizon panel — stands in for commissioned photography */
 
 .horizon {
@@ -288,8 +396,18 @@ p:last-child {
   height: 340px;
   border-radius: var(--radius);
   overflow: hidden;
+  background: var(--color-marine-deep);
+}
+
+.horizon-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -12%;
+  height: 124%;
   background:
     linear-gradient(180deg, #cdd6da 0%, #aebcc3 38%, var(--color-marine) 39%, var(--color-marine-deep) 100%);
+  will-change: transform;
 }
 
 .horizon::after {
@@ -300,6 +418,7 @@ p:last-child {
   top: 38%;
   height: 1px;
   background: rgba(245, 243, 238, 0.5);
+  z-index: 1;
 }
 
 .horizon--tall { height: 480px; }
@@ -574,5 +693,30 @@ p:last-child {
 }
 
 .reveal {
-  transition: opacity 600ms var(--ease), transform 600ms var(--ease);
+  transition: opacity var(--duration-cinematic) var(--ease-fine), transform var(--duration-cinematic) var(--ease-fine);
+}
+
+/* Tide-line draw-in — a divider that measures itself onto the page,
+   like an instrument taking a reading, instead of just fading in. */
+
+.tide-line.tide-draw {
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.tide-line.tide-draw.js-pending {
+  opacity: 1;
+  transform: scaleX(0);
+}
+
+.tide-line.tide-draw {
+  transition: transform 900ms var(--ease-fine);
+}
+
+.tide-line.tide-draw:not(.js-pending) {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tide-line.tide-draw { transform: scaleX(1); transition: none; }
 }
