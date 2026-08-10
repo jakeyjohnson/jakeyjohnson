@@ -263,17 +263,19 @@
     tpl.querySelector('[data-field="time"]').textContent = ev.time;
     tpl.querySelector('[data-field="spectatorPrice"]').textContent = '£' + ev.priceSpectator;
 
+    /* Enter IS pay: division and skill level are asked by Ticket
+       Tailor itself at checkout (ticket type + custom question), so
+       this button goes straight to their hosted checkout — one click,
+       no form of our own in between. */
     var enterLink = tpl.querySelector('[data-field="enterHref"]');
-    var enterLabel = ev.status === 'sold-out' ? 'Entries Closed' : (ev.status === 'coming-soon' ? 'Get Notified' : 'Enter — £' + ev.pricePlayer);
+    var enterLabel = window.PartyPadelEvents.enterLabel(ev);
     tpl.querySelector('[data-field="enterLabel"]').textContent = enterLabel;
-    enterLink.href = ev.status === 'coming-soon' || ev.status === 'sold-out'
-      ? 'mailto:hello@partypadel.uk?subject=Notify%20me%20-%20' + encodeURIComponent(ev.city)
-      : 'enter-team.html?event=' + encodeURIComponent(ev.slug);
+    enterLink.href = window.PartyPadelEvents.enterHref(ev);
     document.getElementById('stickyCtaLink').href = enterLink.href;
     document.getElementById('stickyCtaLink').textContent = enterLabel;
 
     var divWrap = tpl.querySelector('[data-field="divisions"]');
-    var entryOpen = ev.status !== 'sold-out' && ev.status !== 'coming-soon';
+    var entryOpen = window.PartyPadelEvents.enterOpen(ev);
     ev.divisions.forEach(function(d){
       var full = d.spacesLeft === 0;
       var clickable = entryOpen && !full;
@@ -283,12 +285,11 @@
         '<h3>' + d.name + '</h3>' +
         range +
         '<span class="division-status" style="' + (full ? 'color:var(--color-text-tertiary)' : '') + '">' + statusText + '</span>';
-      /* Skips straight into the entry form with event AND division
-         already picked — one click from "which division am I in?"
-         to a fully prefilled checkout instead of picking it again. */
+      /* Straight to the same checkout as the main button — division
+         itself is picked as a Ticket Tailor ticket type once there. */
       if (clickable){
         divWrap.insertAdjacentHTML('beforeend',
-          '<a class="division-card" href="enter-team.html?event=' + encodeURIComponent(ev.slug) + '&division=' + encodeURIComponent(d.name) + '">' + inner + '</a>'
+          '<a class="division-card" href="' + enterLink.href + '">' + inner + '</a>'
         );
       } else {
         divWrap.insertAdjacentHTML('beforeend', '<div class="division-card">' + inner + '</div>');

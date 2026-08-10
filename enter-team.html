@@ -3,18 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Enter a Padel Tournament | Party Padel</title>
-<meta name="description" content="Enter a Party Padel tournament individually — rate your level, pick a division, pay securely. We handle partners on the night.">
+<title>Entry Confirmed | Party Padel</title>
+<meta name="description" content="Your Party Padel entry is confirmed — check your inbox for Ticket Tailor's order confirmation.">
+<meta name="robots" content="noindex">
 <link rel="canonical" href="https://partypadel.uk/enter-team.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Party Padel">
-<meta property="og:title" content="Enter a Padel Tournament | Party Padel">
-<meta property="og:description" content="Enter a Party Padel tournament individually — rate your level, pick a division, pay securely. We handle partners on the night.">
+<meta property="og:title" content="Entry Confirmed | Party Padel">
+<meta property="og:description" content="Your Party Padel entry is confirmed — check your inbox for Ticket Tailor's order confirmation.">
 <meta property="og:url" content="https://partypadel.uk/enter-team.html">
 <meta property="og:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Enter a Padel Tournament | Party Padel">
-<meta name="twitter:description" content="Enter a Party Padel tournament individually — rate your level, pick a division, pay securely. We handle partners on the night.">
+<meta name="twitter:title" content="Entry Confirmed | Party Padel">
+<meta name="twitter:description" content="Your Party Padel entry is confirmed — check your inbox for Ticket Tailor's order confirmation.">
 <meta name="twitter:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
 <link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,6 +29,7 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <symbol id="ci-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12.5l3 3 6-6.5"/></symbol>
+    <symbol id="ci-cross" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></symbol>
     <symbol id="ci-instagram" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.9" fill="currentColor" stroke="none"/></symbol>
   </defs>
 </svg>
@@ -53,7 +55,7 @@
     <a href="results.html">Results</a>
     <a href="partners.html">Partners</a>
     <a href="about.html">About</a>
-    
+
     </div>
   </div>
 </header>
@@ -61,92 +63,41 @@
 <main>
   <section class="section register-section">
     <div class="container narrow">
-      <div class="section-head">
-        <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-check"/></svg> Enter</span>
-        <h1>You. Your City.</h1>
-        <p class="lede">One page, one click to checkout. Pick your event and division, tell us who you are, and we'll take you straight to secure payment.</p>
+
+      <!-- Landed here from Ticket Tailor's post-checkout redirect
+           (see events-data.js). There's no backend to verify the
+           payment server-side or read back what was bought — division
+           and skill level are Ticket Tailor's own checkout questions
+           now, not ours, so this is deliberately a generic thank-you
+           rather than a personalised summary. -->
+      <div id="confirmView" hidden>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-check"/></svg> Entry Confirmed</span>
+        </div>
+        <div class="confirm-badge"><svg class="icon icon-lg"><use href="#ci-check"/></svg></div>
+        <h1 class="confirm-heading">You're In.</h1>
+        <p class="lede confirm-lede">Check your inbox — Ticket Tailor just sent your order confirmation with your ticket and event details. See you courtside; partners rotate on the night.</p>
+        <div class="form-actions confirm-actions">
+          <a href="events.html" class="btn btn-outline">Browse More Events</a>
+          <a href="index.html" class="btn btn-primary">Back to Home</a>
+        </div>
       </div>
 
-      <form id="registerForm" novalidate>
-
-        <div id="entryView">
-          <div class="form-grid">
-            <div class="form-row">
-              <label for="fEvent">Event</label>
-              <select id="fEvent" required aria-describedby="fEventError">
-                <option value="" disabled selected>Loading events…</option>
-              </select>
-              <span class="field-error" id="fEventError" aria-live="polite"></span>
-            </div>
-            <div class="form-row">
-              <label for="fDivision">Division</label>
-              <select id="fDivision" required aria-describedby="fDivisionError">
-                <option value="" disabled selected>Select an event first</option>
-              </select>
-              <span class="field-error" id="fDivisionError" aria-live="polite"></span>
-            </div>
-          </div>
-          <p class="form-note" id="divisionAvailability"></p>
-
-          <div class="form-grid">
-            <div class="form-row">
-              <label for="fPlayerName">Your name</label>
-              <input type="text" id="fPlayerName" required aria-describedby="fPlayerNameError">
-              <span class="field-error" id="fPlayerNameError" aria-live="polite"></span>
-            </div>
-            <div class="form-row">
-              <label for="fPlayerEmail">Your email</label>
-              <input type="email" id="fPlayerEmail" required aria-describedby="fPlayerEmailError">
-              <span class="field-error" id="fPlayerEmailError" aria-live="polite"></span>
-            </div>
-          </div>
-          <div class="form-row">
-            <label for="fSkillLevel">Skill level (1.0–5.0)</label>
-            <input type="text" id="fSkillLevel" placeholder="e.g. 3.5" inputmode="decimal" required aria-describedby="fSkillLevelError">
-            <span class="field-error" id="fSkillLevelError" aria-live="polite"></span>
-            <p class="form-note">Not sure? 1.0–2.0 — never played or a few times. 2.5–3.5 — play occasionally, know the rules. 4.0–5.0 — regular club player or coached. Self-rate honestly, it's how we seed fair rotations on the night.</p>
-          </div>
-
-          <div class="order-summary" id="orderSummary" hidden></div>
-          <div id="paymentUnavailable" class="form-alert" hidden>
-            Online payment isn't switched on for this event yet. Email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your name and division and we'll get you sorted.
-          </div>
-          <p class="form-note">You'll pay on Ticket Tailor's secure checkout. We never see or store your card details.</p>
-
-          <div class="form-actions">
-            <a href="events.html" class="btn btn-outline">Cancel</a>
-            <button type="button" class="btn btn-primary" id="submitBtn"><span class="btn-text">Continue to Secure Checkout</span></button>
-          </div>
+      <!-- Default state for anyone landing here directly (bookmark, back
+           button, no confirmed=1 param) rather than via a real checkout
+           return — points them at the actual entry point instead of
+           showing a stale or empty form. -->
+      <div id="noEntryView">
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Enter</span>
+          <h1>Ready To Play?</h1>
+          <p class="lede">Pick your city on the Events page — entering is one click straight through to secure checkout, no form to fill in first.</p>
         </div>
-
-        <div id="confirmView" hidden>
-          <div class="confirm-badge"><svg class="icon icon-lg"><use href="#ci-check"/></svg></div>
-          <h2 class="confirm-heading">You're In.</h2>
-          <p class="lede confirm-lede" id="confirmLede">Confirmation sent to your inbox. See you courtside — partners rotate on the night.</p>
-
-          <div class="team-card" id="teamCard">
-            <div class="team-card-head">
-              <span>PARTY PADEL</span>
-              <span id="tcDivision"></span>
-            </div>
-            <h3 id="tcPlayerName"></h3>
-            <p id="tcEventLine"></p>
-            <div class="team-card-players">
-              <span id="tcSkillLevel"></span>
-            </div>
-          </div>
-
-          <div class="form-alert" id="confirmFallback" hidden>
-            Payment received, but this browser doesn't have your entry details on file (a different device or browser than the one you registered on, or the cache was cleared). Check your inbox for Ticket Tailor's order confirmation, and email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your name so we can confirm your entry.
-          </div>
-
-          <div class="form-actions confirm-actions">
-            <button type="button" class="btn btn-outline" id="copyLinkBtn">Copy My Entry Link</button>
-            <a href="index.html" class="btn btn-primary">Back to Home</a>
-          </div>
+        <div class="form-actions">
+          <a href="events.html" class="btn btn-primary btn-large">Browse Events</a>
         </div>
+      </div>
 
-      </form>
     </div>
   </section>
 </main>
@@ -176,213 +127,13 @@
   <div class="footer-bottom"><span>© 2026 Party Padel — All rights reserved.</span></div>
 </footer>
 
-<script src="assets/data/events-data.js"></script>
-<script src="assets/js/events.js"></script>
 <script src="assets/js/main.js"></script>
 <script>
 (function(){
-  var form = document.getElementById('registerForm');
-  var entryView = document.getElementById('entryView');
-  var confirmView = document.getElementById('confirmView');
-  var events = [];
-  var selectedEvent = null;
-
-  /* Border colour alone doesn't tell anyone what's wrong — not a
-     screen reader user, not someone who can't distinguish the red from
-     the default border. Every invalid field gets an explicit, specific
-     message via aria-describedby, not just a colour change. */
-  function setFieldError(field, message){
-    field.classList.add('error');
-    field.setAttribute('aria-invalid', 'true');
-    var errorEl = document.getElementById(field.getAttribute('aria-describedby'));
-    if (errorEl) errorEl.textContent = message;
-  }
-  function clearFieldError(field){
-    field.classList.remove('error');
-    field.removeAttribute('aria-invalid');
-    var errorEl = document.getElementById(field.getAttribute('aria-describedby'));
-    if (errorEl) errorEl.textContent = '';
-  }
-
-  /* One page, one pass of validation — no gated steps to click through
-     first. Everything required gets checked at once and focus jumps to
-     the first problem, same as a single-page checkout should. */
-  function validateAll(){
-    var fields = entryView.querySelectorAll('input[required], select[required]');
-    var valid = true;
-    var firstInvalid = null;
-    fields.forEach(function(f){
-      clearFieldError(f);
-      if (!f.value.trim()){
-        setFieldError(f, f.tagName === 'SELECT' ? 'Make a selection' : 'This field is required');
-        valid = false;
-        if (!firstInvalid) firstInvalid = f;
-      }
-    });
-    var email = document.getElementById('fPlayerEmail');
-    var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (email.value.trim() && !emailPattern.test(email.value.trim())){
-      setFieldError(email, 'Enter a valid email address');
-      valid = false;
-      if (!firstInvalid) firstInvalid = email;
-    }
-    var skillField = document.getElementById('fSkillLevel');
-    if (skillField.value.trim()){
-      var skillValue = parseFloat(skillField.value.trim());
-      if (isNaN(skillValue) || skillValue < 1.0 || skillValue > 5.0){
-        setFieldError(skillField, 'Enter a number between 1.0 and 5.0');
-        valid = false;
-        if (!firstInvalid) firstInvalid = skillField;
-      }
-    }
-    if (firstInvalid) firstInvalid.focus();
-    return valid;
-  }
-
-  var fEvent = document.getElementById('fEvent');
-  var fDivision = document.getElementById('fDivision');
-  var divisionAvailability = document.getElementById('divisionAvailability');
-
-  function populateDivisions(preselectDivision){
-    var ev = events.filter(function(e){ return e.slug === fEvent.value; })[0];
-    selectedEvent = ev;
-    fDivision.innerHTML = '';
-    if (!ev){
-      fDivision.innerHTML = '<option value="" disabled selected>Select an event first</option>';
-      divisionAvailability.textContent = '';
-      updateOrderSummary();
-      return;
-    }
-    var opt = document.createElement('option');
-    opt.value = ''; opt.disabled = true; opt.selected = true; opt.textContent = 'Select a division';
-    fDivision.appendChild(opt);
-    ev.divisions.forEach(function(d){
-      var o = document.createElement('option');
-      o.value = d.name;
-      var range = (d.skillMin != null && d.skillMax != null) ? ' (' + d.skillMin.toFixed(1) + '–' + d.skillMax.toFixed(1) + ')' : '';
-      o.textContent = d.name + range + (d.spacesLeft === 0 ? ' — Full' : ' — ' + d.spacesLeft + ' left');
-      o.disabled = d.spacesLeft === 0;
-      if (preselectDivision && d.name === preselectDivision && d.spacesLeft !== 0) o.selected = true;
-      fDivision.appendChild(o);
-    });
-    divisionAvailability.textContent = ev.city + ', ' + ev.dateLabel + ' — £' + ev.pricePlayer + ' per player.';
-    updateOrderSummary();
-  }
-  fEvent.addEventListener('change', function(){ populateDivisions(); });
-  fDivision.addEventListener('change', updateOrderSummary);
-  ['fPlayerName', 'fSkillLevel'].forEach(function(id){
-    document.getElementById(id).addEventListener('input', updateOrderSummary);
-  });
-
-  /* Clear a field's error the moment it has a value again — with every
-     field on one page, making someone re-submit just to see their fix
-     acknowledged would undo the point of cutting the clicks. */
-  entryView.querySelectorAll('input[required], select[required]').forEach(function(f){
-    f.addEventListener(f.tagName === 'SELECT' ? 'change' : 'input', function(){
-      if (f.value.trim()) clearFieldError(f);
-    });
-  });
-
-  window.PartyPadelEvents.loadEvents().then(function(evs){
-    events = evs;
-    fEvent.innerHTML = '<option value="" disabled selected>Select an event</option>';
-    evs.forEach(function(ev){
-      if (ev.status === 'sold-out') return;
-      var o = document.createElement('option');
-      o.value = ev.slug;
-      o.textContent = ev.city + ' — ' + ev.dateLabel;
-      fEvent.appendChild(o);
-    });
-    var preselectEvent = window.PartyPadelEvents.getQueryParam('event');
-    var preselectDivision = window.PartyPadelEvents.getQueryParam('division');
-    if (preselectEvent && evs.some(function(e){ return e.slug === preselectEvent; })){
-      fEvent.value = preselectEvent;
-      populateDivisions(preselectDivision);
-    }
-  });
-
-  /* Updates live as fields fill in — no separate "review" step to click
-     into first, so the running total is always visible while you type. */
-  function updateOrderSummary(){
-    var summary = document.getElementById('orderSummary');
-    if (!selectedEvent || !fDivision.value){ summary.hidden = true; summary.innerHTML = ''; return; }
-    var name = document.getElementById('fPlayerName').value.trim();
-    var skill = document.getElementById('fSkillLevel').value.trim();
-    summary.hidden = false;
-    summary.innerHTML =
-      '<div class="order-row"><span>Event</span><span>' + selectedEvent.city + ' — ' + selectedEvent.dateLabel + '</span></div>' +
-      '<div class="order-row"><span>Division</span><span>' + fDivision.value + '</span></div>' +
-      (name ? '<div class="order-row"><span>Name</span><span>' + name + '</span></div>' : '') +
-      (skill ? '<div class="order-row"><span>Skill level</span><span>' + skill + '</span></div>' : '') +
-      '<div class="order-row order-total"><span>Total</span><span>£' + selectedEvent.pricePlayer + '</span></div>';
-    document.getElementById('paymentUnavailable').hidden = !!selectedEvent.ticketTailorCheckoutUrl;
-  }
-
-  /* Prevent native form submission (e.g. Enter key in a text field) —
-     everything is handled by the explicit button click below. */
-  form.addEventListener('submit', function(e){ e.preventDefault(); });
-
-  var PENDING_KEY = 'pp_pending_entry';
-
-  document.getElementById('submitBtn').addEventListener('click', function(){
-    if (!validateAll()) return;
-    if (!selectedEvent || !selectedEvent.ticketTailorCheckoutUrl) return;
-
-    var pending = {
-      eventSlug: selectedEvent.slug,
-      city: selectedEvent.city,
-      dateLabel: selectedEvent.dateLabel,
-      division: fDivision.value,
-      playerName: document.getElementById('fPlayerName').value,
-      playerEmail: document.getElementById('fPlayerEmail').value,
-      skillLevel: document.getElementById('fSkillLevel').value
-    };
-    try { localStorage.setItem(PENDING_KEY, JSON.stringify(pending)); } catch (e){ /* private browsing etc — confirmation falls back gracefully */ }
-
-    /* Straight to Ticket Tailor's checkout for this event — no query
-       params appended, since we're not assuming a specific prefill/
-       reference URL scheme on their end. If you want the name/skill
-       level captured on Ticket Tailor's side too, add it as a custom
-       question in their dashboard for the buyer to re-enter at checkout. */
-    window.location.href = selectedEvent.ticketTailorCheckoutUrl;
-  });
-
-  document.getElementById('copyLinkBtn').addEventListener('click', function(){
-    var btn = this;
-    var text = window.location.origin + window.location.pathname.replace('enter-team.html', 'event.html') + '?slug=' + (selectedEvent ? selectedEvent.slug : '');
-    if (navigator.clipboard){
-      navigator.clipboard.writeText(text).then(function(){
-        var original = btn.textContent;
-        btn.textContent = 'Copied!';
-        setTimeout(function(){ btn.textContent = original; }, 1800);
-      });
-    }
-  });
-
-  /* Returning from Ticket Tailor's hosted checkout after a successful
-     payment (the event's post-checkout redirect — see events-data.js).
-     There's no backend here to verify the payment server-side; this reads
-     back the details saved just before redirecting to Ticket Tailor,
-     which is only present if this browser actually went through the form. */
-  if (window.PartyPadelEvents.getQueryParam('confirmed') === '1'){
-    var raw = null;
-    try { raw = localStorage.getItem(PENDING_KEY); } catch (e){}
-    var pending = raw ? JSON.parse(raw) : null;
-    if (pending){
-      selectedEvent = { slug: pending.eventSlug, city: pending.city, dateLabel: pending.dateLabel };
-      document.getElementById('tcPlayerName').textContent = pending.playerName;
-      document.getElementById('tcDivision').textContent = pending.division;
-      document.getElementById('tcEventLine').textContent = pending.city + ' — ' + pending.dateLabel;
-      document.getElementById('tcSkillLevel').textContent = 'Skill level: ' + pending.skillLevel;
-      try { localStorage.removeItem(PENDING_KEY); } catch (e){}
-    } else {
-      document.getElementById('teamCard').hidden = true;
-      document.getElementById('confirmLede').hidden = true;
-      document.getElementById('confirmFallback').hidden = false;
-    }
-    entryView.hidden = true;
-    confirmView.hidden = false;
-  }
+  var params = new URLSearchParams(window.location.search);
+  var confirmed = params.get('confirmed') === '1';
+  document.getElementById('confirmView').hidden = !confirmed;
+  document.getElementById('noEntryView').hidden = confirmed;
 })();
 </script>
 </body>

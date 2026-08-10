@@ -8,23 +8,36 @@
    — self-rated 1.0-5.0 scale, boundary is a placeholder, adjust freely).
 
    PAYMENTS — ticketTailorCheckoutUrl
-   Each event needs its own Ticket Tailor checkout URL (Ticket Tailor
-   Dashboard > Events > your event > Box Office — no code required):
-     1. Create a "Player Entry" ticket type priced to match pricePlayer
-        below EXACTLY. pricePlayer here is just display copy — the amount
-        actually charged is whatever that ticket type is priced at in
+   The site has no form of its own any more — every "Enter" button goes
+   straight to Ticket Tailor's hosted checkout, one click, no page in
+   between. That means Ticket Tailor has to be the one collecting
+   division and skill level, not us (Ticket Tailor Dashboard > Events >
+   your event > Box Office — no code required):
+     1. Create TWO ticket types, "Beginners Entry" and "Advanced Entry",
+        each priced to match pricePlayer below EXACTLY (the division's
+        own skillMin/skillMax stays informational, display-only copy —
+        it's the ticket type itself that records which division someone
+        bought into). pricePlayer here is just display copy — the amount
+        actually charged is whatever those ticket types are priced at in
         Ticket Tailor. If you change one, change the other, or you'll
         show a price on-site that doesn't match what people are charged.
-     2. Don't duplicate name/skill-level questions as Ticket Tailor
-        "custom questions" — our own form already collects those. Ticket
-        Tailor still needs a buyer name + email for the order itself.
+     2. Add a custom question at checkout: "Skill level (1.0–5.0,
+        self-rated)" — free text or a number field, required. This is
+        how skill level reaches us now instead of via our own form.
+        Ticket Tailor already asks for a buyer name + email as part of
+        any order, so there's no need to duplicate those as questions.
      3. In the event's checkout settings, set the post-checkout redirect
-        URL to: https://YOURDOMAIN/enter-team.html?confirmed=1
+        URL to: https://YOURDOMAIN/enter-team.html?confirmed=1 — that
+        page is a generic "you're in, check your email" landing screen
+        now (Ticket Tailor's own confirmation email carries the actual
+        order details), not a form.
      4. Copy that event's checkout/Box Office URL into
-        ticketTailorCheckoutUrl below.
-   Leave ticketTailorCheckoutUrl empty until it's set up — the
-   registration form shows a friendly "payments not yet open" message
-   instead of sending people to a broken link. See README.md.
+        ticketTailorCheckoutUrl below — one URL per event; Ticket
+        Tailor's own page is where the buyer picks Beginners or
+        Advanced as a ticket type.
+   Leave ticketTailorCheckoutUrl empty until it's set up — every "Enter"
+   button on the site falls back to a "Get Notified" mailto instead of
+   sending people to a blank link. See README.md.
 
    pricePlayer is £32 per player, per event. */
 window.PARTY_PADEL_EVENTS = [

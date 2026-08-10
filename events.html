@@ -168,6 +168,17 @@
     grid.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
   }
 
+  /* Lets a division card elsewhere on the site (play.html, the homepage)
+     link straight into the filtered list — one click from "I'm a
+     beginner" to "here are the events I can enter". */
+  var presetDivision = window.PartyPadelEvents.getQueryParam('division');
+  if (presetDivision === 'Beginners' || presetDivision === 'Advanced'){
+    divisionFilter = presetDivision;
+    document.querySelectorAll('[data-filter-division]').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-filter-division') === presetDivision);
+    });
+  }
+
   window.PartyPadelEvents.loadEvents().then(function(events){
     allEvents = events;
     render();

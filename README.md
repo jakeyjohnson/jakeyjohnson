@@ -11,7 +11,7 @@ no build step, no framework, no backend.
 | `index.html` | Homepage — hero, next events, format, divisions, experience, results teaser |
 | `events.html` | All events, filterable by status and division |
 | `event.html?slug=...` | Single event — registration status, divisions, schedule, tickets, FAQ |
-| `enter-team.html` | 4-step individual registration (event+division → your details+skill level → payment → confirmation) |
+| `enter-team.html` | Post-checkout landing page only — Ticket Tailor's redirect target after payment, not a form |
 | `format.html` | How the competition works, rules and scoring |
 | `play.html` | Divisions overview and entry requirements |
 | `results.html` | Standings and fixtures |
@@ -24,10 +24,10 @@ no build step, no framework, no backend.
 assets/css/tokens.css   Design tokens — every colour/type/spacing/radius/
                           line-weight value used anywhere on the site
 assets/css/style.css     Component styles, all referencing tokens.css
-assets/js/main.js        Nav, mobile menu, scroll-reveal, accordion, counters
+assets/js/main.js        Nav, mobile menu, scroll-reveal, accordion
 assets/js/events.js      Shared event-data helpers (filter, status labels,
-                          card rendering) used by events.html, event.html,
-                          enter-team.html and results.html
+                          checkout links, card rendering) used by
+                          events.html, event.html and results.html
 assets/data/events-data.js Event data — add a city here, not a new page.
                           Loaded as a plain <script> (window.PARTY_PADEL_EVENTS),
                           not fetch, so pages work opened directly as a file
@@ -52,38 +52,39 @@ python3 -m http.server 8000
 
 Add an object to the array in `assets/data/events-data.js` — no HTML changes
 needed. Events listing, the homepage teaser (top 3, edit `index.html`
-directly since that one's intentionally static), the event detail page, and
-the registration flow's event picker all read from this file. Status must be
-one of: `coming-soon`, `entries-open`, `limited`, `sold-out`, `completed`.
+directly since that one's intentionally static), and the event detail page
+all read from this file. Status must be one of: `coming-soon`,
+`entries-open`, `limited`, `sold-out`, `completed`.
 
 ## Taking payment (Ticket Tailor)
 
-The registration flow (`enter-team.html`) collects a player's own details
-(name, email, self-rated skill level) on your own branded form, then sends
-them to Ticket Tailor's hosted checkout to actually pay, so no card data
-ever touches this site or your server. This works on plain static hosting
-with **zero backend code**. Ticket Tailor is purpose-built event ticketing
-(vs. a generic payment processor), which is why it's the better fit here —
-it gives you real per-division capacity limits, box office/reporting, and
-check-in tooling on their side if you want to use it, on top of just taking
-payment.
+There's no entry form on this site at all — every "Enter" button (on
+event.html, events.html and the homepage) goes straight to Ticket Tailor's
+hosted checkout, one click, no page of ours in between. No card data ever
+touches this site or your server, and it works on plain static hosting with
+**zero backend code**. Ticket Tailor is purpose-built event ticketing (vs. a
+generic payment processor), which is why it's the better fit here — it
+collects the buyer's name/email as part of any order, and division +
+skill level as ticket types/custom questions on its own checkout page, so
+nothing needs asking twice.
 
 To switch payments on for an event:
 
-1. In Ticket Tailor: create the event, then a **"Player Entry"** ticket type
-   priced to match that event's `pricePlayer` — the amount there is what's
-   actually charged.
-2. **Don't** add name/skill-level questions as Ticket Tailor "custom
-   questions" — our form already collects those, and asking twice adds
-   clicks instead of removing them. Ticket Tailor still needs a buyer name
-   + email for the order regardless.
+1. In Ticket Tailor: create the event, then two ticket types, **"Beginners
+   Entry"** and **"Advanced Entry"**, each priced to match that event's
+   `pricePlayer` — the amount there is what's actually charged. Buying one
+   of these IS how someone picks their division now.
+2. Add a custom checkout question: **"Skill level (1.0–5.0, self-rated)"**
+   — required. This is how skill level reaches you, since the site no
+   longer asks for it itself.
 3. In the event's checkout settings, set the post-checkout redirect URL to:
-   `https://YOURDOMAIN/enter-team.html?confirmed=1`
+   `https://YOURDOMAIN/enter-team.html?confirmed=1` — that page is just a
+   generic "you're in, check your email" landing screen now.
 4. Copy that event's checkout/Box Office URL into its
    `ticketTailorCheckoutUrl` field in `assets/data/events-data.js`.
 
-Until `ticketTailorCheckoutUrl` is filled in, the form shows a friendly
-"payments aren't switched on yet" message instead of sending people to a
+Until `ticketTailorCheckoutUrl` is filled in, every "Enter" button for that
+event falls back to a "Get Notified" mailto instead of sending people to a
 broken link — so it's always safe to publish events ahead of opening
 entries.
 
@@ -93,13 +94,11 @@ necessity (reading Ticket Tailor's live price back into the page would need
 a backend call), so if you change one, change the other.
 
 There's no backend, so there's no database of entries on our side either —
-the source of truth for "who paid" is the Ticket Tailor dashboard. The
-confirmation screen a customer sees after paying is read from their own
-browser's local storage (saved right before they left for checkout) —
-reliable for the normal case, but if they pay on one device/browser and
-land back on another, or clear their browser storage mid-flow, they'll see
-a graceful fallback message pointing them to email you instead of a
-fabricated confirmation.
+the source of truth for "who paid," and for who's in which division at what
+skill level, is entirely the Ticket Tailor dashboard now. The confirmation
+page a customer lands on after paying (`enter-team.html?confirmed=1`) is
+deliberately generic — Ticket Tailor's own confirmation email is what
+carries their actual order details.
 
 Note: Ticket Tailor charges its own per-ticket booking fee on top of card
 processing — check their current pricing before launch, it isn't reflected
