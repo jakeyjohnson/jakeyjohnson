@@ -2,6 +2,8 @@
 
 Source: `Party_Padel_Brand_Guidelines_Website_Brief.docx` (client-supplied, v1.0), imported verbatim below. This is the authoritative brand and product spec — it supersedes earlier informal direction taken from Instagram references.
 
+> **Addendum — 2026-08-10, competition format superseded.** §8 ("Core competition: Teams of two... three divisions (Men's, Women's, Mixed)") and §9's team-based registration journey and "ENTER A TEAM" CTA reflect the original v1.0 brief, but the shipped product has since moved to an **individual/solo-entry adapted Americano format**: players sign up alone (no partner required), rate their own skill level, and rotate partners and opponents every round. Divisions are **Beginners (self-rated 1.0–2.5)** and **Advanced (self-rated 3.0–5.0)**, not Men's/Women's/Mixed. The persistent primary CTA is **GET TICKETS**, not "Enter a Team." This pivot is implemented consistently across `index.html`, `about.html`, `format.html`, `play.html`, and `enter-team.html` — the wording below in §8/§9 describing team-of-two entry is retained for historical/brand-provenance reasons but should not be used to judge the current build.
+
 ---
 
 ## 1. Brand Foundation

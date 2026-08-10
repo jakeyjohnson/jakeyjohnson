@@ -47,7 +47,7 @@
 
   --color-text-primary:    var(--raw-clean-white);
   --color-text-secondary:  var(--raw-concrete-grey);
-  --color-text-tertiary:   rgba(255,255,255,0.38);    /* [assumption] placeholders, disabled */
+  --color-text-tertiary:   rgba(255,255,255,0.5);     /* [assumption] placeholders, disabled — 0.5 chosen to clear WCAG AA 4.5:1 against Event Black at small sizes (was 0.38 ≈ 3.46:1, failing) */
   --color-text-inverse:    var(--raw-event-black);    /* black text on acid buttons */
   --color-text-link:       var(--color-accent-primary);
 
