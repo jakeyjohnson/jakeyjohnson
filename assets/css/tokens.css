@@ -1,169 +1,136 @@
 /* =========================================================
-   Party Padel — Design Tokens
-   Source: .design/party-padel/DESIGN_BRIEF.md (client brand
-   guidelines v1.0). Every component should reference these
-   variables — no hardcoded colour, spacing, radius or line
-   weight in component CSS.
+   Flair Entertainment — Design Tokens
+   Source: .design/flair-entertainment/DESIGN_BRIEF.md
 
-   Philosophy: closest named direction is Brutalist/Raw crossed
-   with Swiss/International Typographic — flat black ground,
-   one disciplined accent, square-cornered UI, hairline rules
-   as structure. Not a literal copy of either: the brief's own
-   language ("architectural grid," "premium broadcast graphics,"
-   "confident, not arrogant") is the actual spec; the named
-   philosophies are just the closest vocabulary for it.
-
-   Deviation from the design-tokens skill default: NO light-mode
-   palette is generated. The brief mandates Event Black (#090909)
-   as the fixed primary background, never framed as one of two
-   themes — "the site should be predominantly black" is brand
-   identity, not a dark-mode preference. A light variant would
-   contradict the brief. Single committed visual world.
+   Philosophy: Art Deco / Geometric, bent toward stage & nightlife
+   energy (see brief §3). Single committed visual world — "walking
+   into a dark venue right before a show starts" is brand identity,
+   not a dark-mode preference, so no light palette is generated
+   (same reasoning the brief documents for photography: this is a
+   deliberate choice, flagged, not an oversight).
    ========================================================= */
 
 :root{
 
-  /* ---------- Raw brand colours (brief §3 — exact hex, do not adjust) ---------- */
-  --raw-party-acid:     #DFFF00;
-  --raw-event-black:    #090909;
-  --raw-clean-white:    #FFFFFF;
-  --raw-concrete-grey:  #B9B9B9;
-  --raw-carbon:         #171717;
-
-  /* status colours — NOT in the brief; the brief has no vocabulary for
-     5 distinct event states (Coming Soon / Entries Open / Limited /
-     Sold Out / Completed) without one. Kept desaturated and used only
-     as small status-pill text/borders, never as page-level colour, so
-     they stay functional rather than becoming "rainbow nightclub
-     colour" the brief explicitly rejects. [assumption] */
-  --raw-status-limited: #FFB020;
-  --raw-status-error:   #E5484D;
+  /* ---------- Raw brand colours (brief §3) ---------- */
+  --raw-event-black:     #0A0908;   /* warm-black ground, not cool tech-black */
+  --raw-stage-charcoal:  #17140F;   /* card/panel bg — one step up from ground */
+  --raw-stage-charcoal-2:#211C15;   /* nested surfaces (inputs inside cards) */
+  --raw-brass-gold:      #C9A45C;   /* structural accent — rules, borders, CTAs */
+  --raw-brass-gold-hi:   #E0C283;   /* hover/active lift on gold */
+  --raw-brass-gold-lo:   #9C7C42;   /* pressed/active state, deeper not brighter */
+  --raw-spotlight-pink:  #E23B8B;   /* energy accent — glows, "live" motif only */
+  --raw-spotlight-pink-hi:#FF5CA8;
+  --raw-ivory:           #F5F1E8;   /* warm off-white text, ties to gold */
+  --raw-ivory-dim:       #C9C2B2;   /* secondary text */
+  --raw-status-error:    #F2735B;
 
   /* ---------- Semantic colour tokens ---------- */
   --color-bg-primary:    var(--raw-event-black);
-  --color-bg-secondary:  var(--raw-carbon);          /* cards/panels — only where grouping is necessary, brief §10 */
-  --color-bg-tertiary:   #1f1f1f;                     /* [assumption] one step above Carbon, for inputs nested inside cards */
-  --color-bg-inverse:    var(--raw-clean-white);
+  --color-bg-secondary:  var(--raw-stage-charcoal);
+  --color-bg-tertiary:   var(--raw-stage-charcoal-2);
+  --color-bg-inverse:    var(--raw-ivory);
 
-  --color-text-primary:    var(--raw-clean-white);
-  --color-text-secondary:  var(--raw-concrete-grey);
-  --color-text-tertiary:   rgba(255,255,255,0.52);    /* form notes, filter labels, loading/empty states, stepper numbers — used for real informational text sitewide (not just placeholders/disabled), so kept at the minimum alpha that clears WCAG AA 4.5:1 on Event Black (~5.7:1) */
-  --color-text-inverse:    var(--raw-event-black);    /* black text on acid buttons */
-  --color-text-link:       var(--color-accent-primary);
+  --color-text-primary:    var(--raw-ivory);
+  --color-text-secondary:  var(--raw-ivory-dim);
+  --color-text-tertiary:   rgba(245,241,232,0.56);  /* clears WCAG AA on Event Black */
+  --color-text-inverse:    var(--raw-event-black);
+  --color-text-link:       var(--raw-brass-gold-hi);
 
-  --color-border-primary:   rgba(255,255,255,0.14);   /* [assumption] brief specifies no border colour; kept hairline-thin per court-line language */
-  --color-border-secondary: rgba(255,255,255,0.08);
-  --color-border-focus:     var(--raw-party-acid);
+  --color-border-primary:   rgba(201,164,92,0.35);   /* gold hairline, brief's "structural accent" */
+  --color-border-secondary: rgba(245,241,232,0.12);
+  --color-border-focus:     var(--raw-brass-gold-hi);
 
-  --color-accent-primary:         var(--raw-party-acid);
-  --color-accent-primary-hover:   #C7E600;  /* [assumption] deeper, not brighter — hover is a state change, not a glow */
-  --color-accent-primary-active:  #B3CC00;
-  --color-accent-secondary:       var(--raw-concrete-grey); /* [assumption] for ghost/outline interactive elements — brief defines no second accent by design */
+  --color-accent-primary:         var(--raw-brass-gold);
+  --color-accent-primary-hover:   var(--raw-brass-gold-hi);
+  --color-accent-primary-active:  var(--raw-brass-gold-lo);
+  --color-accent-secondary:       var(--raw-spotlight-pink); /* used sparingly per brief — max ~5% of viewport */
+  --color-accent-secondary-hover: var(--raw-spotlight-pink-hi);
 
-  --color-status-open:     var(--raw-party-acid);   /* Entries Open */
-  --color-status-limited:  var(--raw-status-limited);
-  --color-status-closed:   var(--raw-concrete-grey); /* Sold Out / Completed — deliberately neutral, not red (nothing failed) */
-  --color-status-error:    var(--raw-status-error);  /* form validation only */
+  --color-status-success:  var(--raw-brass-gold);
+  --color-status-warning:  #E0A83C;
+  --color-status-error:    var(--raw-status-error);
+  --color-status-info:     var(--raw-spotlight-pink);
 
-  --color-surface-overlay: rgba(9,9,9,0.88);
+  --color-surface-overlay: rgba(10,9,8,0.90);
 
-  /* ---------- Spacing (4px base — matches the brief's "architectural grid" language)
-     rem-based so spacing scales with the user's browser text-size preference,
-     same as the font-size scale below. ---------- */
+  /* glow tokens — the "spotlight hits you" hover motif (brief §3 Motion) */
+  --glow-gold:   0 0 32px rgba(201,164,92,0.35);
+  --glow-pink:   0 0 40px rgba(226,59,139,0.40);
+
+  /* ---------- Spacing (8px base — deco is structured/architectural, not tight) ---------- */
   --space-0:  0;
-  --space-1:  0.25rem;
-  --space-2:  0.5rem;
-  --space-3:  0.75rem;
-  --space-4:  1rem;
-  --space-5:  1.5rem;
-  --space-6:  2rem;
-  --space-7:  3rem;
-  --space-8:  4rem;
-  --space-9:  6rem;
-  --space-10: 8rem;
+  --space-1:  0.25rem;   /* 4px */
+  --space-2:  0.5rem;    /* 8px */
+  --space-3:  0.75rem;   /* 12px */
+  --space-4:  1rem;      /* 16px */
+  --space-5:  1.5rem;    /* 24px */
+  --space-6:  2rem;      /* 32px */
+  --space-7:  3rem;      /* 48px */
+  --space-8:  4rem;      /* 64px */
+  --space-9:  6rem;      /* 96px */
+  --space-10: 8rem;      /* 128px */
+  --space-11: 10rem;     /* 160px */
+  --space-12: 12rem;     /* 192px */
 
-  /* ---------- Typography ----------
-     Brief §4: heavyweight condensed/semi-condensed grotesk, strong
-     rectangular proportions, sport/fashion not esports/motorsport,
-     no italics, no stencil. Anton (used in the prior draft) reads
-     esports/gaming in real-world use — dropped. Archivo Black has
-     the rectangular, architectural character the brief describes
-     without that association. [assumption — swap for the licensed
-     brand font the moment it's supplied; that's the entire point
-     of routing every headline through this variable.] */
-  --font-family-display: 'Archivo', 'Arial Narrow', sans-serif;
-  --font-family-body:    'Inter', system-ui, sans-serif;
-  --font-family-mono:    'JetBrains Mono', ui-monospace, monospace;
+  /* ---------- Typography ---------- */
+  --font-family-display: 'Fraunces', Georgia, serif;
+  --font-family-eyebrow: 'Big Shoulders Display', 'Fraunces', sans-serif;
+  --font-family-body:    'Manrope', -apple-system, sans-serif;
 
-  --font-size-xs:   0.75rem;   /* 12px — metadata, fine print */
-  --font-size-sm:   0.875rem;  /* 14px — secondary copy, labels */
-  --font-size-base: 1rem;      /* 16px — body */
-  --font-size-md:   1.125rem;  /* 18px — lead paragraphs */
-  --font-size-lg:   1.5rem;    /* 24px — card headings */
-  --font-size-xl:   2rem;      /* 32px — section subheads */
-  --font-size-2xl:  2.75rem;   /* 44px — section headlines */
-  --font-size-3xl:  4rem;      /* 64px — page headlines */
-  --font-size-4xl:  6rem;      /* 96px — large display */
-  --font-size-hero: clamp(2.75rem, 6.4vw, 6.25rem); /* hero wordmark scale, brief's "oversized typography" */
+  --font-size-xs:   0.75rem;    /* 12px */
+  --font-size-sm:   0.875rem;   /* 14px */
+  --font-size-base: 1rem;       /* 16px — never smaller on mobile body text */
+  --font-size-md:   1.125rem;   /* 18px */
+  --font-size-lg:   1.375rem;   /* 22px */
+  --font-size-xl:   1.75rem;    /* 28px */
+  --font-size-2xl:  2.5rem;     /* 40px */
+  --font-size-3xl:  3.5rem;     /* 56px */
+  --font-size-4xl:  5rem;       /* 80px — hero display */
 
-  --font-weight-normal:    400;
-  --font-weight-medium:    500;
-  --font-weight-semibold:  600;
-  --font-weight-bold:      700;
-  --font-weight-black:     900;  /* display headlines — brief: "heavy weight" */
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+  --font-weight-black:    900;
 
-  --line-height-tight:   1.05;  /* display headlines */
-  --line-height-normal:  1.5;   /* body */
-  --line-height-relaxed: 1.7;   /* longer-form copy (About, rules) */
+  --line-height-tight:   1.08;
+  --line-height-normal:  1.5;
+  --line-height-relaxed: 1.7;
 
-  --letter-spacing-tight:  -0.01em; /* display */
+  --letter-spacing-tight:  -0.02em;
   --letter-spacing-normal: 0;
-  --letter-spacing-wide:   0.1em;   /* uppercase labels, nav, eyebrows — brief: "tight tracking" on headlines but wide on all-caps micro-labels is the standard pairing that keeps small caps legible */
+  --letter-spacing-wide:   0.08em;
+  --letter-spacing-wider:  0.18em;  /* eyebrow / all-caps labels */
 
   /* ---------- Layout ---------- */
-  --max-width-content: 68ch;   /* body copy reading width */
-  --max-width-wide:    1100px; /* card grids, forms */
-  --max-width-page:    1320px; /* outer container — brief wants "immersive full-width," wider than a typical marketing site */
+  --max-width-content: 65ch;
+  --max-width-wide:    1200px;
+  --max-width-page:    1440px;
 
-  /* Brief §6: "Corners mostly square or subtly rounded... avoid
-     large pill-shaped interfaces except compact filters/tags." */
-  --radius-sm:   2px;
-  --radius-md:   4px;
-  --radius-lg:   6px;
-  --radius-full: 999px; /* reserved for compact status/filter chips ONLY — never buttons or cards */
+  --border-radius-sm:   2px;   /* deco is geometric, near-square, not soft/rounded */
+  --border-radius-md:   4px;
+  --border-radius-lg:   8px;
+  --border-radius-full: 999px;
 
-  /* Line weights — brief §12 explicitly requires this as its own
-     token category (the court-line device is the master graphic). */
-  --line-weight-hairline: 1px;  /* dividers, table rules */
-  --line-weight-court:    1.5px; /* the signature court-line device itself — "substantially thinner than letter strokes" */
-  --line-weight-heavy:    2px;  /* emphasis rules, active tab underline */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.6);
+  --shadow-focus: 0 0 0 3px rgba(224,194,131,0.45);
 
-  /* Shadows — neutral only. No colour-tinted / glowing shadows
-     anywhere: brief §10 bans "glowing neon buttons" outright. */
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
-  --shadow-md: 0 8px 24px rgba(0,0,0,0.45);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,0.5);
-
-  /* ---------- Motion ----------
-     Brief: "fast cuts for event content, restrained motion for
-     core UI" — no bounce/overshoot easing anywhere; that reads
-     playful/Memphis, off brand personality ("confident, not
-     arrogant"). */
+  /* ---------- Motion ---------- */
   --duration-instant: 50ms;
   --duration-fast:    150ms;
-  --duration-normal:  250ms;
-  --duration-slow:    400ms;
-  --duration-slower:  600ms;
+  --duration-normal:  300ms;
+  --duration-slow:    500ms;
+  --duration-slower:  700ms;
 
   --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
   --easing-in:      cubic-bezier(0.4, 0, 1, 1);
   --easing-out:     cubic-bezier(0, 0, 0.2, 1);
+  --easing-deco:    cubic-bezier(0.16, 1, 0.3, 1); /* elegant reveal, no bounce */
 
-  /* ---------- Breakpoints ----------
-     Referenced in comments only — CSS custom properties can't
-     be used inside @media conditions, so component CSS repeats
-     these as literal values. Kept here as the single source of
-     truth for what those literals should be. */
+  /* ---------- Breakpoints (referenced in comments — media queries can't read vars) ---------- */
   --breakpoint-sm:  375px;
   --breakpoint-md:  768px;
   --breakpoint-lg:  1024px;
@@ -171,13 +138,11 @@
   --breakpoint-2xl: 1536px;
 }
 
-/* Strengthen hairline borders and tertiary text for users who've asked
-   the OS for more contrast — same palette, no new colours, just less
-   translucency where the base tokens lean on subtlety. */
-@media (prefers-contrast: more){
-  :root{
-    --color-border-primary:   rgba(255,255,255,0.32);
-    --color-border-secondary: rgba(255,255,255,0.2);
-    --color-text-tertiary:    rgba(255,255,255,0.72);
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

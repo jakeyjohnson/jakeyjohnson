@@ -1,44 +1,33 @@
-# Party Padel
+# Flair Entertainment Jersey
 
-Competitive padel tournament platform — built against the official client brand
-guidelines (`.design/party-padel/DESIGN_BRIEF.md`). Static, multi-page site,
-no build step, no framework, no backend.
+Marketing site for Flair Entertainment Jersey — built against
+`.design/flair-entertainment/DESIGN_BRIEF.md`. Static, multi-page site, no
+build step, no framework, no backend.
 
 ## What's here
 
 | Page | Purpose |
 |---|---|
-| `index.html` | Homepage — hero, next events, format, divisions, experience, results teaser |
-| `events.html` | All events, filterable by status and division |
-| `event.html?slug=...` | Single event — registration status, divisions, schedule, tickets, FAQ |
-| `enter-team.html` | Post-checkout landing page only — Ticket Tailor's redirect target after payment, not a form |
-| `format.html` | How the competition works, rules and scoring |
-| `play.html` | Divisions overview and entry requirements |
-| `results.html` | Standings and fixtures |
-| `partners.html` | Commercial pitch and enquiry form |
-| `about.html` | Brand story and north star |
+| `index.html` | Homepage — hero, mission, service pillars, CTA |
+| `acts.html` | Speciality Acts & Performers — the full roster, categorised |
+| `production-shows.html` | The bespoke Production Show offer, process, use cases |
+| `themes.html` | Event theming and the Pop-Up Picnic offering |
+| `team.html` | Meet the Team (placeholder structure — see below) |
+| `events.html` | Public events listing, honest empty state |
+| `contact.html` | Enquiry form, contact details, map |
 
 ## Structure
 
 ```
-assets/css/tokens.css   Design tokens — every colour/type/spacing/radius/
-                          line-weight value used anywhere on the site
-assets/css/style.css     Component styles, all referencing tokens.css
-assets/js/main.js        Nav, mobile menu, scroll-reveal, accordion
-assets/js/events.js      Shared event-data helpers (filter, status labels,
-                          checkout links, card rendering) used by
-                          events.html, event.html and results.html
-assets/data/events-data.js Event data — add a city here, not a new page.
-                          Loaded as a plain <script> (window.PARTY_PADEL_EVENTS),
-                          not fetch, so pages work opened directly as a file
-                          too, not just from a real web server
-assets/data/results.json Standings/fixtures, keyed by event slug (empty
-                          until the first event happens — see below)
-assets/data/partners.json Confirmed partners only — empty by design
-assets/img/              Logo assets (WebP) + brand moodboard reference
-.design/party-padel/      DESIGN_BRIEF.md, INFORMATION_ARCHITECTURE.md,
-                          TASKS.md — the brief this was built against and
-                          what's left to do
+assets/css/tokens.css     Design tokens — every colour/type/spacing/radius/
+                            motion value used anywhere on the site
+assets/css/style.css      Component styles, all referencing tokens.css
+assets/js/main.js         Nav drawer, scroll-reveal, hero word-stagger,
+                            marquee loop, contact form validation
+assets/data/events-data.js  Public events data (empty by design — see
+                            "Adding an event" below)
+.design/flair-entertainment/DESIGN_BRIEF.md  The brief this was built
+                            against, including sourcing and assumptions
 ```
 
 Run locally with any static file server:
@@ -48,85 +37,69 @@ python3 -m http.server 8000
 # then visit http://localhost:8000
 ```
 
-## Adding a new city/event
+## Important: this was built without access to the live site or brand assets
 
-Add an object to the array in `assets/data/events-data.js` — no HTML changes
-needed. Events listing, the homepage teaser (top 3, edit `index.html`
-directly since that one's intentionally static), and the event detail page
-all read from this file. Status must be one of: `coming-soon`,
-`entries-open`, `limited`, `sold-out`, `completed`.
+The current flairentertainment.je site was not reachable from the build
+environment, and no logo, brand guideline, photography or team bios were
+supplied. Everything here was built from:
 
-## Taking payment (Ticket Tailor)
+- Public facts about the business (roster, location, contact details,
+  the Production Shows concept, Themes & Pop-Up Picnics) sourced via web
+  search — see `.design/flair-entertainment/DESIGN_BRIEF.md` §1 for the
+  full list with sources.
+- A deliberately chosen visual direction (Art Deco / Geometric bent
+  toward stage & nightlife — gold, black, magenta spotlight accent) since
+  no brand guideline existed to build against. See brief §3.
+- **No fabricated content**: no invented team member names/bios, no fake
+  testimonials, no invented pricing, no stock photography presented as
+  real performers. Where real content doesn't exist yet, the site says so
+  honestly (see `team.html`'s placeholder cards, `events.html`'s empty
+  state) rather than making something up.
 
-There's no entry form on this site at all — every "Enter" button (on
-event.html, events.html and the homepage) goes straight to Ticket Tailor's
-hosted checkout, one click, no page of ours in between. No card data ever
-touches this site or your server, and it works on plain static hosting with
-**zero backend code**. Ticket Tailor is purpose-built event ticketing (vs. a
-generic payment processor), which is why it's the better fit here — it
-collects the buyer's name/email as part of any order, and division +
-skill level as ticket types/custom questions on its own checkout page, so
-nothing needs asking twice.
+**Before launch, replace:**
+1. **Real logo** — currently a text wordmark (`.nav__logo`) styled with
+   the Fraunces/Big Shoulders type pairing. Drop a real logo file in
+   `assets/img/` and swap the `<a class="nav__logo">` markup for an
+   `<img>` if the client has one.
+2. **Team page** (`team.html`) — swap the four placeholder role cards for
+   real names, photos and bios. The `placeholder-note` badges make it
+   obvious in-browser that this is pending, so it should not go live
+   as-is for long.
+3. **Photography/video** — the whole site is currently typography- and
+   motion-led with no photography (none could be sourced). Once the
+   client supplies real performance photos/video, the hero and act cards
+   are the highest-impact places to add full-bleed imagery.
+4. **Contact form submit target** — the form in `contact.html` validates
+   client-side and shows a success state, but doesn't send anywhere yet
+   (no backend on static hosting). Wire it to Formspree, Netlify Forms,
+   or similar before launch — see the comment in `assets/js/main.js`.
+5. **Canonical URLs** — every page's `<link rel="canonical">` and Open
+   Graph `og:url` assume `https://www.flairentertainment.je/`. Update if
+   the final domain/subdomain differs.
 
-To switch payments on for an event:
+## Adding a public event
 
-1. In Ticket Tailor: create the event, then two ticket types, **"Beginners
-   Entry"** and **"Advanced Entry"**, each priced to match that event's
-   `pricePlayer` — the amount there is what's actually charged. Buying one
-   of these IS how someone picks their division now.
-2. Add a custom checkout question: **"Skill level (1.0–5.0, self-rated)"**
-   — required. This is how skill level reaches you, since the site no
-   longer asks for it itself.
-3. In the event's checkout settings, set the post-checkout redirect URL to:
-   `https://YOURDOMAIN/enter-team.html?confirmed=1` — that page is just a
-   generic "you're in, check your email" landing screen now.
-4. Copy that event's checkout/Box Office URL into its
-   `ticketTailorCheckoutUrl` field in `assets/data/events-data.js`.
+Add an object to the array in `assets/data/events-data.js` — no HTML
+changes needed. `events.html` reads this file and renders cards, or an
+honest "no events currently listed" state when the array is empty.
 
-Until `ticketTailorCheckoutUrl` is filled in, every "Enter" button for that
-event falls back to a "Get Notified" mailto instead of sending people to a
-broken link — so it's always safe to publish events ahead of opening
-entries.
+## Content honesty rules
 
-**Keep `pricePlayer` (the on-site display price) and the ticket price you
-set in Ticket Tailor in sync manually** — they're two separate places by
-necessity (reading Ticket Tailor's live price back into the page would need
-a backend call), so if you change one, change the other.
-
-There's no backend, so there's no database of entries on our side either —
-the source of truth for "who paid," and for who's in which division at what
-skill level, is entirely the Ticket Tailor dashboard now. The confirmation
-page a customer lands on after paying (`enter-team.html?confirmed=1`) is
-deliberately generic — Ticket Tailor's own confirmation email is what
-carries their actual order details.
-
-Note: Ticket Tailor charges its own per-ticket booking fee on top of card
-processing — check their current pricing before launch, it isn't reflected
-in `pricePlayer`.
-
-- **Spectator tickets** (`event.html`) — routes to a `mailto:` enquiry until
-  a ticketing platform is integrated. Wire it up the same way as player
-  entry if you want online spectator sales too.
-- **Partner enquiry form** (`partners.html`) — validates and shows a success
-  state client-side; doesn't send anywhere yet.
-- **Results/standings** — `assets/data/results.json` is intentionally empty.
-  The Results page and homepage teaser show an honest "no fixtures played
-  yet" state rather than fabricated scores.
-- **Partners** — `assets/data/partners.json` is intentionally empty per the
-  brief ("never fabricate sponsor logos or partner claims"). The Partners
-  page shows a "coming soon" state instead of placeholder logos.
+Per the design brief: no fabricated named team members, no fabricated
+testimonials, no invented pricing (this is a bespoke, quote-based
+business), no stock photography presented as the client's own performers.
+Where a section would otherwise need placeholder content, it's marked as
+such in-browser (`.placeholder-note`) or shown as an honest empty state.
 
 ## Editing content
 
-- **Colours/type/spacing**: `assets/css/tokens.css` — nothing else should
-  have a hardcoded value.
+- **Colours/type/spacing/motion**: `assets/css/tokens.css` — nothing else
+  should have a hardcoded value.
 - **Copy**: written directly in each page's HTML, in the tone defined in
-  the brief (§7) — short, direct, British English, no forced slang.
-- **Logo**: `assets/img/logo-lockup.webp` (full wordmark) and
-  `assets/img/logo-icon-pp.webp` (PP mark, used as favicon and compact nav
-  logo) are the client-supplied assets. Swap the files directly if a
-  vector/updated version is supplied later — nothing recreates the
-  lettering in CSS.
+  the brief (§7) — confident, warm, a little theatrical, British English.
+- **Roster**: the act categories on `acts.html` map directly to the
+  sourced roster in the brief (§1) — extend the `card__tags` list in each
+  category as new acts join, rather than adding new categories casually.
 
 ## Deploying
 
