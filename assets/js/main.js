@@ -13,8 +13,8 @@
     var y = window.scrollY || window.pageYOffset;
     var doc = document.documentElement;
     var scrollable = doc.scrollHeight - doc.clientHeight;
-    var pct = scrollable > 0 ? (y / scrollable) * 100 : 0;
-    progressBar.style.width = pct + '%';
+    var pct = scrollable > 0 ? y / scrollable : 0;
+    progressBar.style.transform = 'scaleX(' + pct + ')';
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
@@ -51,38 +51,6 @@
     revealEls.forEach(function(el){ el.classList.add('in'); });
   }
 
-  /* ================= Animated counters (stats, standings, etc.) ================= */
-  var counters = document.querySelectorAll('.stat-num[data-target]');
-  function animateCounter(el){
-    var target = parseFloat(el.getAttribute('data-target'));
-    var suffix = el.getAttribute('data-suffix') || '';
-    var duration = 1600;
-    var start = null;
-
-    function step(ts){
-      if (!start) start = ts;
-      var progress = Math.min((ts - start) / duration, 1);
-      var eased = 1 - Math.pow(1 - progress, 3);
-      var value = Math.floor(eased * target);
-      el.textContent = value.toLocaleString('en-GB') + suffix;
-      if (progress < 1) requestAnimationFrame(step);
-      else el.textContent = target.toLocaleString('en-GB') + suffix;
-    }
-    if (reduceMotion){ el.textContent = target.toLocaleString('en-GB') + suffix; return; }
-    requestAnimationFrame(step);
-  }
-  if (counters.length && 'IntersectionObserver' in window){
-    var counterIO = new IntersectionObserver(function(entries){
-      entries.forEach(function(entry){
-        if (entry.isIntersecting){
-          animateCounter(entry.target);
-          counterIO.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.5 });
-    counters.forEach(function(c){ counterIO.observe(c); });
-  }
-
   /* ================= Accordion (FAQ pages) ================= */
   document.querySelectorAll('.accordion-item').forEach(function(item){
     var trigger = item.querySelector('.accordion-trigger');
@@ -91,19 +59,9 @@
     trigger.addEventListener('click', function(){
       var isOpen = item.classList.contains('open');
       document.querySelectorAll('.accordion-item.open').forEach(function(other){
-        if (other !== item){
-          other.classList.remove('open');
-          var otherPanel = other.querySelector('.accordion-panel');
-          if (otherPanel) otherPanel.style.maxHeight = null;
-        }
+        if (other !== item) other.classList.remove('open');
       });
-      if (isOpen){
-        item.classList.remove('open');
-        panel.style.maxHeight = null;
-      } else {
-        item.classList.add('open');
-        panel.style.maxHeight = panel.scrollHeight + 'px';
-      }
+      item.classList.toggle('open', !isOpen);
     });
   });
 

@@ -46,6 +46,7 @@
         <button class="burger" id="burger" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
   </div>
   <div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-menu-inner">
     <a href="events.html">Events</a>
     <a href="play.html">Play</a>
     <a href="format.html">Format</a>
@@ -53,6 +54,7 @@
     <a href="partners.html">Partners</a>
     <a href="about.html">About</a>
     
+    </div>
   </div>
 </header>
 
@@ -125,7 +127,7 @@
         <!-- STEP 3 -->
         <div class="form-step" data-step="3">
           <div class="order-summary" id="orderSummary"></div>
-          <div id="paymentUnavailable" class="form-alert" style="display:none;">
+          <div id="paymentUnavailable" class="form-alert" hidden>
             Online payment isn't switched on for this event yet. Email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your name and division and we'll get you sorted.
           </div>
           <p class="form-note">You'll pay on Ticket Tailor's secure checkout. We never see or store your card details.</p>
@@ -153,7 +155,7 @@
             </div>
           </div>
 
-          <div class="form-alert" id="confirmFallback" style="display:none;">
+          <div class="form-alert" id="confirmFallback" hidden>
             Payment received, but this browser doesn't have your entry details on file (a different device or browser than the one you registered on, or the cache was cleared). Check your inbox for Ticket Tailor's order confirmation, and email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your name so we can confirm your entry.
           </div>
 
@@ -327,7 +329,7 @@
       '<div class="order-row"><span>Name</span><span>' + document.getElementById('fPlayerName').value + '</span></div>' +
       '<div class="order-row"><span>Skill level</span><span>' + document.getElementById('fSkillLevel').value + '</span></div>' +
       '<div class="order-row order-total"><span>Total</span><span>£' + selectedEvent.pricePlayer + '</span></div>';
-    document.getElementById('paymentUnavailable').style.display = selectedEvent.ticketTailorCheckoutUrl ? 'none' : 'block';
+    document.getElementById('paymentUnavailable').hidden = !!selectedEvent.ticketTailorCheckoutUrl;
   }
 
   /* Prevent native form submission (e.g. Enter key in a text field) —
@@ -387,9 +389,9 @@
       document.getElementById('tcSkillLevel').textContent = 'Skill level: ' + pending.skillLevel;
       try { localStorage.removeItem(PENDING_KEY); } catch (e){}
     } else {
-      document.getElementById('teamCard').style.display = 'none';
-      document.getElementById('confirmLede').style.display = 'none';
-      document.getElementById('confirmFallback').style.display = 'block';
+      document.getElementById('teamCard').hidden = true;
+      document.getElementById('confirmLede').hidden = true;
+      document.getElementById('confirmFallback').hidden = false;
     }
     goToStep(4);
   }

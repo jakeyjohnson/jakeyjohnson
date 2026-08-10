@@ -168,52 +168,5 @@ window.PARTY_PADEL_EVENTS = [
         "label": "Presentation & afterparty"
       }
     ]
-  },
-  {
-    "slug": "demo-event",
-    "city": "Demo City (TEST — remove before launch)",
-    "date": "2026-12-31",
-    "dateLabel": "31 December 2026",
-    "time": "19:00",
-    "venue": "Test Venue",
-    "address": "For checking the sign-up flow only",
-    "status": "entries-open",
-    "playersEntered": 10,
-    "playersCapacity": 100,
-    "pricePlayer": 32,
-    "priceSpectator": 15,
-    "ticketTailorCheckoutUrl": "",
-    "divisions": [
-      {
-        "name": "Beginners",
-        "skillMin": 1.0,
-        "skillMax": 2.5,
-        "spacesLeft": 45
-      },
-      {
-        "name": "Advanced",
-        "skillMin": 3.0,
-        "skillMax": 5.0,
-        "spacesLeft": 45
-      }
-    ],
-    "schedule": [
-      {
-        "time": "19:00",
-        "label": "Check-in & warm-up"
-      },
-      {
-        "time": "20:00",
-        "label": "Rotating rounds begin"
-      },
-      {
-        "time": "22:00",
-        "label": "Finals — feature court"
-      },
-      {
-        "time": "23:00",
-        "label": "Presentation & afterparty"
-      }
-    ]
   }
 ];

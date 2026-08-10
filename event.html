@@ -55,6 +55,7 @@
     <button class="burger" id="burger" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
   </div>
   <div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-menu-inner">
     <a href="events.html">Events</a>
     <a href="play.html">Play</a>
     <a href="format.html">Format</a>
@@ -63,6 +64,7 @@
     <a href="about.html">About</a>
     
     <a href="events.html" class="btn btn-primary">Get Tickets</a>
+    </div>
   </div>
 </header>
 
@@ -298,14 +300,13 @@
     // accordion needs re-binding since this content was injected after main.js ran
     document.querySelectorAll('.accordion-item').forEach(function(item){
       var trigger = item.querySelector('.accordion-trigger');
-      var panel = item.querySelector('.accordion-panel');
+      if (!trigger) return;
       trigger.addEventListener('click', function(){
         var isOpen = item.classList.contains('open');
         document.querySelectorAll('.accordion-item.open').forEach(function(other){
-          if (other !== item){ other.classList.remove('open'); other.querySelector('.accordion-panel').style.maxHeight = null; }
+          if (other !== item) other.classList.remove('open');
         });
-        if (isOpen){ item.classList.remove('open'); panel.style.maxHeight = null; }
-        else { item.classList.add('open'); panel.style.maxHeight = panel.scrollHeight + 'px'; }
+        item.classList.toggle('open', !isOpen);
       });
     });
 
