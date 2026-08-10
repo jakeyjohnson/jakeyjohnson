@@ -336,11 +336,16 @@ button{ font-family: inherit; }
 /* ---------- divisions ---------- */
 .division-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap: var(--space-4); }
 .division-card{
+  display:block;
   background: var(--color-bg-secondary);
   border: var(--line-weight-hairline) solid var(--color-border-secondary);
   border-radius: var(--radius-md);
   padding: var(--space-6) var(--space-5);
 }
+/* Clickable divisions (deep-link straight into the entry form) get the
+   same hover affordance as event cards — border-only, no shadow/glow. */
+a.division-card{ transition: border-color var(--duration-fast) var(--easing-default); }
+a.division-card:hover{ border-color: var(--color-accent-primary); }
 .division-card h3{ font-size: var(--font-size-xl); margin-bottom: var(--space-2); }
 .division-card p{ font-size: var(--font-size-sm); margin-bottom: var(--space-4); }
 .division-status{
@@ -563,22 +568,8 @@ input.error, select.error, textarea.error{ border-color: var(--color-status-erro
 .accordion-item.open .accordion-panel{ grid-template-rows: 1fr; }
 .accordion-panel p{ overflow:hidden; min-height:0; padding: 0 0 var(--space-4); font-size: var(--font-size-sm); }
 
-/* ---------- enter-team: stepper + form steps ---------- */
+/* ---------- enter-team: single-page entry form ---------- */
 .register-section{ padding-top: calc(var(--space-9) + 40px); }
-.stepper{ display:flex; gap: var(--space-5); margin-bottom: var(--space-7); border-bottom: var(--line-weight-hairline) solid var(--color-border-secondary); padding-bottom: var(--space-4); }
-.stepper-item{
-  font-family: var(--font-family-display); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-wide); text-transform:uppercase; color: var(--color-text-tertiary);
-  display:flex; align-items:center; gap: var(--space-2);
-}
-.stepper-item em{ font-style:normal; color: var(--color-text-tertiary); }
-.stepper-item.active{ color: var(--color-text-primary); }
-.stepper-item.active em{ color: var(--color-accent-primary); }
-.stepper-item.done{ color: var(--color-text-secondary); }
-.stepper-item.done em{ color: var(--color-accent-primary); }
-
-.form-step{ display:none; }
-.form-step.active{ display:block; }
 
 .order-summary{
   background: var(--color-bg-secondary); border: var(--line-weight-hairline) solid var(--color-border-secondary);
@@ -650,11 +641,6 @@ input.error, select.error, textarea.error{ border-color: var(--color-status-erro
 }
 @media (max-width: 640px){
   .filter-bar{ flex-direction:column; gap: var(--space-4); }
-  .stepper{
-    overflow-x:auto;
-    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
-  }
   .ticket-box{ flex-direction:column; align-items:flex-start; }
   .rules-row{ flex-direction:column; gap: var(--space-1); }
   .rules-row span:last-child{ text-align:left; }

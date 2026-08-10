@@ -64,42 +64,30 @@
       <div class="section-head">
         <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-check"/></svg> Enter</span>
         <h1>You. Your City.</h1>
-      </div>
-
-      <div class="stepper" id="stepper">
-        <span class="stepper-item active" data-step-indicator="1"><em>01</em> Event</span>
-        <span class="stepper-item" data-step-indicator="2"><em>02</em> You</span>
-        <span class="stepper-item" data-step-indicator="3"><em>03</em> Payment</span>
-        <span class="stepper-item" data-step-indicator="4"><em>04</em> Confirmed</span>
+        <p class="lede">One page, one click to checkout. Pick your event and division, tell us who you are, and we'll take you straight to secure payment.</p>
       </div>
 
       <form id="registerForm" novalidate>
 
-        <!-- STEP 1 -->
-        <div class="form-step active" data-step="1">
-          <div class="form-row">
-            <label for="fEvent">Event</label>
-            <select id="fEvent" required aria-describedby="fEventError">
-              <option value="" disabled selected>Loading events…</option>
-            </select>
-            <span class="field-error" id="fEventError" aria-live="polite"></span>
-          </div>
-          <div class="form-row">
-            <label for="fDivision">Division</label>
-            <select id="fDivision" required aria-describedby="fDivisionError">
-              <option value="" disabled selected>Select an event first</option>
-            </select>
-            <span class="field-error" id="fDivisionError" aria-live="polite"></span>
+        <div id="entryView">
+          <div class="form-grid">
+            <div class="form-row">
+              <label for="fEvent">Event</label>
+              <select id="fEvent" required aria-describedby="fEventError">
+                <option value="" disabled selected>Loading events…</option>
+              </select>
+              <span class="field-error" id="fEventError" aria-live="polite"></span>
+            </div>
+            <div class="form-row">
+              <label for="fDivision">Division</label>
+              <select id="fDivision" required aria-describedby="fDivisionError">
+                <option value="" disabled selected>Select an event first</option>
+              </select>
+              <span class="field-error" id="fDivisionError" aria-live="polite"></span>
+            </div>
           </div>
           <p class="form-note" id="divisionAvailability"></p>
-          <div class="form-actions">
-            <a href="events.html" class="btn btn-outline">Cancel</a>
-            <button type="button" class="btn btn-primary" data-next>Continue</button>
-          </div>
-        </div>
 
-        <!-- STEP 2 -->
-        <div class="form-step" data-step="2">
           <div class="form-grid">
             <div class="form-row">
               <label for="fPlayerName">Your name</label>
@@ -118,27 +106,20 @@
             <span class="field-error" id="fSkillLevelError" aria-live="polite"></span>
             <p class="form-note">Not sure? 1.0–2.0 — never played or a few times. 2.5–3.5 — play occasionally, know the rules. 4.0–5.0 — regular club player or coached. Self-rate honestly, it's how we seed fair rotations on the night.</p>
           </div>
-          <div class="form-actions">
-            <button type="button" class="btn btn-outline" data-back>Back</button>
-            <button type="button" class="btn btn-primary" data-next>Continue to Payment</button>
-          </div>
-        </div>
 
-        <!-- STEP 3 -->
-        <div class="form-step" data-step="3">
-          <div class="order-summary" id="orderSummary"></div>
+          <div class="order-summary" id="orderSummary" hidden></div>
           <div id="paymentUnavailable" class="form-alert" hidden>
             Online payment isn't switched on for this event yet. Email <a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a> with your name and division and we'll get you sorted.
           </div>
           <p class="form-note">You'll pay on Ticket Tailor's secure checkout. We never see or store your card details.</p>
+
           <div class="form-actions">
-            <button type="button" class="btn btn-outline" data-back>Back</button>
+            <a href="events.html" class="btn btn-outline">Cancel</a>
             <button type="button" class="btn btn-primary" id="submitBtn"><span class="btn-text">Continue to Secure Checkout</span></button>
           </div>
         </div>
 
-        <!-- STEP 4 -->
-        <div class="form-step" data-step="4">
+        <div id="confirmView" hidden>
           <div class="confirm-badge"><svg class="icon icon-lg"><use href="#ci-check"/></svg></div>
           <h2 class="confirm-heading">You're In.</h2>
           <p class="lede confirm-lede" id="confirmLede">Confirmation sent to your inbox. See you courtside — partners rotate on the night.</p>
@@ -201,21 +182,10 @@
 <script>
 (function(){
   var form = document.getElementById('registerForm');
-  var steps = Array.prototype.slice.call(document.querySelectorAll('.form-step'));
-  var indicators = Array.prototype.slice.call(document.querySelectorAll('.stepper-item'));
-  var current = 1;
+  var entryView = document.getElementById('entryView');
+  var confirmView = document.getElementById('confirmView');
   var events = [];
   var selectedEvent = null;
-
-  function goToStep(n){
-    current = n;
-    steps.forEach(function(s){ s.classList.toggle('active', Number(s.getAttribute('data-step')) === n); });
-    indicators.forEach(function(ind, i){
-      ind.classList.toggle('active', i + 1 === n);
-      ind.classList.toggle('done', i + 1 < n);
-    });
-    window.scrollTo({ top: document.getElementById('stepper').offsetTop - 100, behavior: 'smooth' });
-  }
 
   /* Border colour alone doesn't tell anyone what's wrong — not a
      screen reader user, not someone who can't distinguish the red from
@@ -234,58 +204,53 @@
     if (errorEl) errorEl.textContent = '';
   }
 
-  function validateStep(n){
-    var stepEl = steps[n - 1];
-    var fields = stepEl.querySelectorAll('input[required], select[required]');
+  /* One page, one pass of validation — no gated steps to click through
+     first. Everything required gets checked at once and focus jumps to
+     the first problem, same as a single-page checkout should. */
+  function validateAll(){
+    var fields = entryView.querySelectorAll('input[required], select[required]');
     var valid = true;
+    var firstInvalid = null;
     fields.forEach(function(f){
       clearFieldError(f);
       if (!f.value.trim()){
         setFieldError(f, f.tagName === 'SELECT' ? 'Make a selection' : 'This field is required');
         valid = false;
+        if (!firstInvalid) firstInvalid = f;
       }
     });
-    var emailFields = stepEl.querySelectorAll('input[type="email"]');
+    var email = document.getElementById('fPlayerEmail');
     var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    emailFields.forEach(function(f){
-      if (f.value.trim() && !emailPattern.test(f.value.trim())){
-        setFieldError(f, 'Enter a valid email address');
-        valid = false;
-      }
-    });
-    var skillField = stepEl.querySelector('#fSkillLevel');
-    if (skillField && skillField.value.trim()){
+    if (email.value.trim() && !emailPattern.test(email.value.trim())){
+      setFieldError(email, 'Enter a valid email address');
+      valid = false;
+      if (!firstInvalid) firstInvalid = email;
+    }
+    var skillField = document.getElementById('fSkillLevel');
+    if (skillField.value.trim()){
       var skillValue = parseFloat(skillField.value.trim());
       if (isNaN(skillValue) || skillValue < 1.0 || skillValue > 5.0){
         setFieldError(skillField, 'Enter a number between 1.0 and 5.0');
         valid = false;
+        if (!firstInvalid) firstInvalid = skillField;
       }
     }
+    if (firstInvalid) firstInvalid.focus();
     return valid;
   }
-
-  document.querySelectorAll('[data-next]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      if (!validateStep(current)) return;
-      if (current === 2) buildOrderSummary();
-      goToStep(current + 1);
-    });
-  });
-  document.querySelectorAll('[data-back]').forEach(function(btn){
-    btn.addEventListener('click', function(){ goToStep(current - 1); });
-  });
 
   var fEvent = document.getElementById('fEvent');
   var fDivision = document.getElementById('fDivision');
   var divisionAvailability = document.getElementById('divisionAvailability');
 
-  function populateDivisions(){
+  function populateDivisions(preselectDivision){
     var ev = events.filter(function(e){ return e.slug === fEvent.value; })[0];
     selectedEvent = ev;
     fDivision.innerHTML = '';
     if (!ev){
       fDivision.innerHTML = '<option value="" disabled selected>Select an event first</option>';
       divisionAvailability.textContent = '';
+      updateOrderSummary();
       return;
     }
     var opt = document.createElement('option');
@@ -297,11 +262,26 @@
       var range = (d.skillMin != null && d.skillMax != null) ? ' (' + d.skillMin.toFixed(1) + '–' + d.skillMax.toFixed(1) + ')' : '';
       o.textContent = d.name + range + (d.spacesLeft === 0 ? ' — Full' : ' — ' + d.spacesLeft + ' left');
       o.disabled = d.spacesLeft === 0;
+      if (preselectDivision && d.name === preselectDivision && d.spacesLeft !== 0) o.selected = true;
       fDivision.appendChild(o);
     });
     divisionAvailability.textContent = ev.city + ', ' + ev.dateLabel + ' — £' + ev.pricePlayer + ' per player.';
+    updateOrderSummary();
   }
-  fEvent.addEventListener('change', populateDivisions);
+  fEvent.addEventListener('change', function(){ populateDivisions(); });
+  fDivision.addEventListener('change', updateOrderSummary);
+  ['fPlayerName', 'fSkillLevel'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', updateOrderSummary);
+  });
+
+  /* Clear a field's error the moment it has a value again — with every
+     field on one page, making someone re-submit just to see their fix
+     acknowledged would undo the point of cutting the clicks. */
+  entryView.querySelectorAll('input[required], select[required]').forEach(function(f){
+    f.addEventListener(f.tagName === 'SELECT' ? 'change' : 'input', function(){
+      if (f.value.trim()) clearFieldError(f);
+    });
+  });
 
   window.PartyPadelEvents.loadEvents().then(function(evs){
     events = evs;
@@ -313,32 +293,39 @@
       o.textContent = ev.city + ' — ' + ev.dateLabel;
       fEvent.appendChild(o);
     });
-    var preselect = window.PartyPadelEvents.getQueryParam('event');
-    if (preselect && evs.some(function(e){ return e.slug === preselect; })){
-      fEvent.value = preselect;
-      populateDivisions();
+    var preselectEvent = window.PartyPadelEvents.getQueryParam('event');
+    var preselectDivision = window.PartyPadelEvents.getQueryParam('division');
+    if (preselectEvent && evs.some(function(e){ return e.slug === preselectEvent; })){
+      fEvent.value = preselectEvent;
+      populateDivisions(preselectDivision);
     }
   });
 
-  function buildOrderSummary(){
+  /* Updates live as fields fill in — no separate "review" step to click
+     into first, so the running total is always visible while you type. */
+  function updateOrderSummary(){
     var summary = document.getElementById('orderSummary');
-    if (!selectedEvent) return;
+    if (!selectedEvent || !fDivision.value){ summary.hidden = true; summary.innerHTML = ''; return; }
+    var name = document.getElementById('fPlayerName').value.trim();
+    var skill = document.getElementById('fSkillLevel').value.trim();
+    summary.hidden = false;
     summary.innerHTML =
       '<div class="order-row"><span>Event</span><span>' + selectedEvent.city + ' — ' + selectedEvent.dateLabel + '</span></div>' +
       '<div class="order-row"><span>Division</span><span>' + fDivision.value + '</span></div>' +
-      '<div class="order-row"><span>Name</span><span>' + document.getElementById('fPlayerName').value + '</span></div>' +
-      '<div class="order-row"><span>Skill level</span><span>' + document.getElementById('fSkillLevel').value + '</span></div>' +
+      (name ? '<div class="order-row"><span>Name</span><span>' + name + '</span></div>' : '') +
+      (skill ? '<div class="order-row"><span>Skill level</span><span>' + skill + '</span></div>' : '') +
       '<div class="order-row order-total"><span>Total</span><span>£' + selectedEvent.pricePlayer + '</span></div>';
     document.getElementById('paymentUnavailable').hidden = !!selectedEvent.ticketTailorCheckoutUrl;
   }
 
   /* Prevent native form submission (e.g. Enter key in a text field) —
-     everything is handled by explicit button clicks below. */
+     everything is handled by the explicit button click below. */
   form.addEventListener('submit', function(e){ e.preventDefault(); });
 
   var PENDING_KEY = 'pp_pending_entry';
 
   document.getElementById('submitBtn').addEventListener('click', function(){
+    if (!validateAll()) return;
     if (!selectedEvent || !selectedEvent.ticketTailorCheckoutUrl) return;
 
     var pending = {
@@ -393,7 +380,8 @@
       document.getElementById('confirmLede').hidden = true;
       document.getElementById('confirmFallback').hidden = false;
     }
-    goToStep(4);
+    entryView.hidden = true;
+    confirmView.hidden = false;
   }
 })();
 </script>

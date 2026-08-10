@@ -273,18 +273,26 @@
     document.getElementById('stickyCtaLink').textContent = enterLabel;
 
     var divWrap = tpl.querySelector('[data-field="divisions"]');
+    var entryOpen = ev.status !== 'sold-out' && ev.status !== 'coming-soon';
     ev.divisions.forEach(function(d){
       var full = d.spacesLeft === 0;
+      var clickable = entryOpen && !full;
       var range = (d.skillMin != null && d.skillMax != null) ? '<p>Self-rated ' + d.skillMin.toFixed(1) + '–' + d.skillMax.toFixed(1) + '</p>' : '';
-      divWrap.insertAdjacentHTML('beforeend',
-        '<div class="division-card">' +
-          '<h3>' + d.name + '</h3>' +
-          range +
-          '<span class="division-status" style="' + (full ? 'color:var(--color-text-tertiary)' : '') + '">' +
-            (full ? 'Full' : d.spacesLeft + ' spaces left') +
-          '</span>' +
-        '</div>'
-      );
+      var statusText = full ? 'Full' : (clickable ? d.spacesLeft + ' spaces left — enter this division' : d.spacesLeft + ' spaces left');
+      var inner =
+        '<h3>' + d.name + '</h3>' +
+        range +
+        '<span class="division-status" style="' + (full ? 'color:var(--color-text-tertiary)' : '') + '">' + statusText + '</span>';
+      /* Skips straight into the entry form with event AND division
+         already picked — one click from "which division am I in?"
+         to a fully prefilled checkout instead of picking it again. */
+      if (clickable){
+        divWrap.insertAdjacentHTML('beforeend',
+          '<a class="division-card" href="enter-team.html?event=' + encodeURIComponent(ev.slug) + '&division=' + encodeURIComponent(d.name) + '">' + inner + '</a>'
+        );
+      } else {
+        divWrap.insertAdjacentHTML('beforeend', '<div class="division-card">' + inner + '</div>');
+      }
     });
 
     var schedWrap = tpl.querySelector('[data-field="schedule"]');
