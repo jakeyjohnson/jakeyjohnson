@@ -3,6 +3,11 @@
 Private, in-person concierge for corporate principals and private clients,
 based in Jersey.
 
+A compiled, print-ready version of this guide — 12 pages, with real
+screenshots of the built site standing in for photography plates — is at
+[`Beauport-Brand-Style-Guide.pdf`](./Beauport-Brand-Style-Guide.pdf).
+Source plates are in `images/`.
+
 ---
 
 ## 1. Positioning
