@@ -37,10 +37,10 @@ This is a full platform build, not a single session. Tasks are ordered so founda
 
 ## Responsive & Polish
 - [x] **Mobile pass**: every page checked at 375–390px — nav drawer, filter chips, stepper, ticket box, form grids all reflow correctly. Sticky Enter-a-Team bar confirmed on Event detail (hides once the in-page CTA scrolls into view, shows once it scrolls past).
-- [ ] **Accessibility pass**: focus-visible states and reduced-motion are in from the token system, but a dedicated WCAG contrast check (acid-on-black and black-on-acid at small text sizes) and full keyboard-nav sweep of the registration stepper haven't been run yet.
+- [x] **Accessibility pass**: WCAG contrast check run 2026-08-10 (see `DESIGN_REVIEW.md`). Acid-on-black and black-on-acid both measure 17:1+ (well past AA). `--color-text-tertiary` (rgba(255,255,255,0.38)) fails at ~3.46:1 across 12 usages site-wide — flagged as Must Fix. Full keyboard-nav sweep of the registration stepper still outstanding.
 
 ## Review
-- [ ] **Design review**: run `/design-review` against the brief now that the core pages exist.
+- [x] **Design review**: run 2026-08-10 against `DESIGN_BRIEF.md` + the `apple-design` skill. See `DESIGN_REVIEW.md`. 3 must-fix (leftover test event live on site, tertiary-text contrast, stale brief vs. shipped individual-entry model), 4 should-fix, 2 could-improve.
 
 ---
 
