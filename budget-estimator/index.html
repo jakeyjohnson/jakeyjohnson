@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jake's Budget Estimator</title>
+<meta name="description" content="Describe a luxury pop-up or storefront build and get an instant, itemised budget estimate — every rate used shown in full.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/print.css" media="print">
+</head>
+<body>
+
+<div class="page">
+
+  <header class="site-header">
+    <p class="eyebrow">AI Budget Estimator</p>
+    <h1 class="site-title">Jake's Budget Estimator</h1>
+    <p class="site-lede">Describe the build. Get an instant, itemised estimate for luxury pop-up and storefront production — every rate shown, nothing hidden.</p>
+  </header>
+
+  <main class="layout">
+
+    <section class="panel form-panel" aria-labelledby="form-heading">
+      <h2 id="form-heading" class="panel-heading">Project details</h2>
+
+      <form id="estimator-form" novalidate>
+
+        <div class="field">
+          <label for="project-type">Project type</label>
+          <select id="project-type" name="projectType" required>
+            <option value="pop-up">Pop-up store</option>
+            <option value="flagship">Flagship storefront fit-out</option>
+            <option value="activation">Brand activation &amp; event space</option>
+            <option value="window-display">Window display &amp; installation</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="location">Location</label>
+          <select id="location" name="location" required>
+            <option value="central-london">Central London (Mayfair, Bond St, Carnaby St)</option>
+            <option value="other-uk">Other UK city</option>
+            <option value="international">International</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="size">Size (sqm)</label>
+            <input type="number" id="size" name="sqm" min="1" step="1" inputmode="numeric" required>
+            <p class="field-note" id="size-note" hidden></p>
+          </div>
+          <div class="field">
+            <label for="duration">Duration (weeks)</label>
+            <input type="number" id="duration" name="weeks" min="1" step="1" inputmode="numeric" required>
+            <p class="field-note" id="duration-note" hidden></p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="finish-tier">Finish tier</label>
+          <select id="finish-tier" name="tier" required>
+            <option value="standard">Standard</option>
+            <option value="premium">Premium</option>
+            <option value="luxury">Ultra-luxury (bespoke)</option>
+          </select>
+        </div>
+
+        <fieldset class="field extras-group">
+          <legend>Extras</legend>
+          <label class="checkbox-field">
+            <input type="checkbox" name="bespokeJoinery">
+            <span>Bespoke joinery &amp; finishes</span>
+          </label>
+          <label class="checkbox-field">
+            <input type="checkbox" name="structuralGlazing">
+            <span>Structural &amp; glazing work</span>
+          </label>
+          <label class="checkbox-field">
+            <input type="checkbox" name="signage">
+            <span>Custom signage &amp; graphics production</span>
+          </label>
+          <label class="checkbox-field">
+            <input type="checkbox" name="furniture">
+            <span>Furniture, fixtures &amp; styling props</span>
+          </label>
+          <label class="checkbox-field">
+            <input type="checkbox" name="av">
+            <span>AV, lighting &amp; technical production</span>
+          </label>
+          <label class="checkbox-field">
+            <input type="checkbox" name="staffing">
+            <span>On-site staffing (brand ambassadors / install crew)</span>
+          </label>
+        </fieldset>
+
+        <div class="field">
+          <label for="notes">Notes <span class="optional">— optional, for context only, doesn't affect the estimate</span></label>
+          <textarea id="notes" name="notes" rows="3"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="calculate-btn">Calculate estimate</button>
+      </form>
+    </section>
+
+    <section class="panel results-panel" aria-labelledby="results-heading" aria-live="polite">
+      <h2 id="results-heading" class="panel-heading">Estimate</h2>
+
+      <div class="results-empty" id="results-empty">
+        <p>Fill in the project details to generate an estimate.</p>
+      </div>
+
+      <div class="results-content" id="results-content" hidden>
+
+        <div class="results-total">
+          <p class="results-total-label">Estimated budget</p>
+          <p class="results-total-value"><span id="range-low"></span>&ndash;<span id="range-high"></span></p>
+          <p class="results-total-caption">Includes 10% contingency. Shown as a range, not a fixed price.</p>
+        </div>
+
+        <div class="results-categories" id="results-categories"></div>
+
+        <details class="assumptions-panel" id="assumptions-panel">
+          <summary>How this was calculated</summary>
+          <ul class="assumptions-list" id="assumptions-list"></ul>
+        </details>
+
+        <div class="results-notes" id="results-notes" hidden>
+          <h3>Notes</h3>
+          <p id="results-notes-text"></p>
+        </div>
+
+        <div class="results-actions">
+          <button type="button" class="btn btn-secondary" id="print-btn">Print estimate</button>
+          <button type="button" class="btn btn-text" id="edit-btn">Edit details</button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>This is an automated estimate for planning purposes only &mdash; not a quote. Every figure is built from documented assumptions, not real AI reasoning; expand &ldquo;How this was calculated&rdquo; above to see exactly what was used.</p>
+  </footer>
+
+</div>
+
+<script src="assets/js/rates.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

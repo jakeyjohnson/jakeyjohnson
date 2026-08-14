@@ -32,7 +32,7 @@
 
   /* status colours — brief has no vocabulary for validation states,
      kept desaturated/functional rather than decorative [assumption] */
-  --raw-status-warning: #9C6B14;   /* inline "unusual size/duration" note text */
+  --raw-status-warning: #875C11;   /* inline "unusual size/duration" note text — darkened from initial #9C6B14 (4.37:1) to clear WCAG AA 4.5:1 on paper */
   --raw-status-error:   #A3271D;
 
   /* ---------- Semantic colour tokens (light — default) ---------- */

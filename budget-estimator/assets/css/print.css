@@ -1,0 +1,77 @@
+/* =========================================================
+   Jake's Budget Estimator — Print Stylesheet
+   Only loaded for @media print. Produces a clean one-pager:
+   project summary + full itemised breakdown + total + notes +
+   disclaimer. Form UI and interactive chrome are hidden.
+   ========================================================= */
+
+body {
+  background: #fff;
+  color: #000;
+}
+
+.eyebrow,
+.form-panel,
+.results-empty,
+.results-actions,
+.site-lede {
+  display: none !important;
+}
+
+.page {
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+
+.site-header {
+  border-bottom: 2px solid #000;
+  margin-bottom: 1cm;
+  padding-bottom: 0.5cm;
+}
+
+.site-title { font-size: 24pt; color: #000; }
+
+.layout {
+  display: block;
+}
+
+.panel {
+  border: none;
+  padding: 0;
+  background: #fff;
+}
+
+.panel-heading { display: none; }
+
+.results-total { border-bottom: 1px solid #000; }
+
+.results-total-value { color: #000; }
+
+.category-heading,
+.category-subtotal,
+.line-item-amount,
+.results-total-value {
+  color: #000 !important;
+}
+
+.assumptions-panel {
+  page-break-inside: avoid;
+}
+
+.assumptions-panel summary::before {
+  content: none;
+}
+
+/* The panel is forced open via the beforeprint/afterprint listeners in
+   main.js — <details> content visibility can't be reliably overridden
+   with CSS alone in Chromium. */
+
+.site-footer {
+  margin-top: 1cm;
+  border-top: 1px solid #000;
+}
+
+.site-footer p { color: #000; max-width: none; }
+
+a { color: #000; text-decoration: none; }
