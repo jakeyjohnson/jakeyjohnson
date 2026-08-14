@@ -1,0 +1,226 @@
+/* =========================================================
+   Jake's Budget Estimator — Design Tokens
+   Source: .design/budget-estimator/DESIGN_BRIEF.md
+
+   Philosophy: Swiss/International Typographic crossed with an
+   architecture-studio "spec sheet" sensibility — rigid grid,
+   hairline rules as structure, flatness (no gradients, no
+   drop shadows), dramatic scale contrast between headline and
+   body type, all-caps labels with generous letterspacing.
+
+   Standalone from Party Padel's tokens.css by design (see
+   brief's Anti-references) — different product, different
+   audience, no shared visual language. Warm paper background
+   rather than Party Padel's flat black, and a single "redline"
+   accent (an architect's red-pencil markup colour) instead of
+   acid green — chosen because it reads as annotation/precision,
+   reinforcing the brief's "transparency over magic" principle:
+   the estimate looks marked-up and traceable, not generated.
+   ========================================================= */
+
+:root {
+
+  /* ---------- Raw brand colours ---------- */
+  --raw-paper:          #FAF8F4;   /* [assumption] warm off-white, not stark #FFF — studio paper, not screen glare */
+  --raw-ink:            #17140F;   /* near-black, warm not blue-black */
+  --raw-ink-soft:       #4A453C;   /* secondary ink — warm grey, not neutral grey */
+  --raw-stone:          #D8D2C4;   /* hairline rules, borders */
+  --raw-stone-light:    #EDE9DF;   /* subtle fills — input backgrounds, zebra rows */
+  --raw-redline:        #B8391F;   /* accent — "redline" markup red */
+  --raw-redline-hover:  #9A2F19;   /* deeper, not brighter — hover is a state change, not a glow */
+  --raw-redline-active: #7D2513;
+
+  /* status colours — brief has no vocabulary for validation states,
+     kept desaturated/functional rather than decorative [assumption] */
+  --raw-status-warning: #9C6B14;   /* inline "unusual size/duration" note text */
+  --raw-status-error:   #A3271D;
+
+  /* ---------- Semantic colour tokens (light — default) ---------- */
+  --color-bg-primary:    var(--raw-paper);
+  --color-bg-secondary:  #FFFFFF;              /* results panel sits on pure white, one step "cleaner" than paper */
+  --color-bg-tertiary:   var(--raw-stone-light); /* input fields, disabled states */
+  --color-bg-inverse:    var(--raw-ink);
+
+  --color-text-primary:    var(--raw-ink);
+  --color-text-secondary:  var(--raw-ink-soft);
+  --color-text-tertiary:   rgba(23, 20, 15, 0.5);   /* placeholders, helper text — clears 4.5:1 on paper */
+  --color-text-inverse:    var(--raw-paper);
+  --color-text-link:       var(--color-accent-primary);
+
+  --color-border-primary:    var(--raw-stone);
+  --color-border-secondary:  rgba(23, 20, 15, 0.08);
+  --color-border-focus:      var(--raw-redline);
+
+  --color-accent-primary:         var(--raw-redline);
+  --color-accent-primary-hover:   var(--raw-redline-hover);
+  --color-accent-primary-active:  var(--raw-redline-active);
+  --color-accent-secondary:       var(--raw-ink);   /* used sparingly — e.g. secondary buttons */
+
+  --color-status-success:  #3A6B3E;  /* [assumption] not used at v1 launch, reserved */
+  --color-status-warning:  var(--raw-status-warning);
+  --color-status-error:    var(--raw-status-error);
+  --color-status-info:     var(--raw-ink-soft);
+
+  --color-surface-overlay: rgba(23, 20, 15, 0.4);
+
+  /* ---------- Spacing — 4px base, Swiss/tight per philosophy ---------- */
+  --space-0:  0;
+  --space-1:  0.25rem;   /* 4px */
+  --space-2:  0.5rem;    /* 8px */
+  --space-3:  0.75rem;   /* 12px */
+  --space-4:  1rem;      /* 16px */
+  --space-5:  1.5rem;    /* 24px */
+  --space-6:  2rem;      /* 32px */
+  --space-7:  3rem;      /* 48px */
+  --space-8:  4rem;      /* 64px */
+  --space-9:  6rem;      /* 96px */
+  --space-10: 8rem;      /* 128px */
+  --space-11: 12rem;     /* 192px */
+  --space-12: 16rem;     /* 256px */
+
+  /* ---------- Typography ---------- */
+  /* Loaded via Google Fonts <link> in each page's <head> — no build
+     step, matches this repo's static-site convention. */
+  --font-family-display:  'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --font-family-body:     'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono:     'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace; /* every £ figure uses this — spec-sheet precision cue */
+
+  --font-size-xs:   0.75rem;    /* 12px — micro-labels, footer */
+  --font-size-sm:   0.875rem;   /* 14px — helper text, assumptions panel body */
+  --font-size-base: 1rem;       /* 16px — form labels, body */
+  --font-size-md:   1.125rem;   /* 18px — line-item rows */
+  --font-size-lg:   1.5rem;     /* 24px — category subtotals, section headings */
+  --font-size-xl:   2rem;       /* 32px — page header */
+  --font-size-2xl:  2.75rem;    /* 44px */
+  --font-size-3xl:  3.5rem;     /* 56px — headline total (range) */
+  --font-size-4xl:  4.5rem;     /* 72px — reserved, unused at v1 */
+
+  --font-weight-normal:    400;
+  --font-weight-medium:    500;
+  --font-weight-semibold:  600;
+  --font-weight-bold:      700;
+
+  --line-height-tight:   1.15;  /* headings */
+  --line-height-normal:  1.5;   /* body */
+  --line-height-relaxed: 1.7;   /* notes, disclaimer copy */
+
+  --letter-spacing-tight:  -0.01em;  /* large display numerals */
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide:   0.08em;   /* all-caps category labels, per Swiss philosophy */
+
+  /* ---------- Layout ---------- */
+  --max-width-content: 65ch;
+  --max-width-wide:    90rem;
+  --max-width-page:    90rem;
+
+  --border-radius-sm:   2px;   /* inputs — just enough to not look broken, still reads flat */
+  --border-radius-md:   2px;
+  --border-radius-lg:   2px;
+  --border-radius-full: 999px; /* reserved — pill/badge use, e.g. status notes */
+
+  /* Flatness is the point (Swiss): shadows exist only as near-invisible
+     separation, never as decoration. Structure comes from --color-border-*
+     hairlines instead. */
+  --shadow-sm: none;
+  --shadow-md: 0 1px 2px rgba(23, 20, 15, 0.06);
+  --shadow-lg: 0 2px 8px rgba(23, 20, 15, 0.08);
+  --shadow-focus: 0 0 0 2px var(--color-bg-primary), 0 0 0 4px var(--color-border-focus);
+
+  /* ---------- Motion — minimal, purposeful only ---------- */
+  --duration-instant: 50ms;
+  --duration-fast:    150ms;
+  --duration-normal:  250ms;
+  --duration-slow:    400ms;
+  --duration-slower:  600ms;
+
+  --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-in:      cubic-bezier(0.4, 0, 1, 1);
+  --easing-out:     cubic-bezier(0, 0, 0.2, 1);
+  --easing-bounce:  cubic-bezier(0.4, 0, 0.2, 1); /* no bounce, per Swiss — aliased to default on purpose */
+
+  /* ---------- Responsive breakpoints ---------- */
+  --breakpoint-sm:  375px;
+  --breakpoint-md:  768px;
+  --breakpoint-lg:  1024px;
+  --breakpoint-xl:  1280px;
+  --breakpoint-2xl: 1536px;
+}
+
+/* ---------- Dark mode ---------- */
+/* Not a brand requirement in the brief (personal desk tool, print export
+   is the "take it with you" path) — generated anyway per design-tokens
+   convention, as a genuine warm-charcoal studio palette, not an inversion. */
+
+[data-theme="dark"] {
+  --color-bg-primary:    #1C1913;
+  --color-bg-secondary:  #262219;
+  --color-bg-tertiary:   #322D22;
+  --color-bg-inverse:    var(--raw-paper);
+
+  --color-text-primary:    #EDE9DF;
+  --color-text-secondary:  #B4AC9B;
+  --color-text-tertiary:   rgba(237, 233, 223, 0.55);
+  --color-text-inverse:    var(--raw-ink);
+
+  --color-border-primary:    rgba(237, 233, 223, 0.16);
+  --color-border-secondary:  rgba(237, 233, 223, 0.08);
+  --color-border-focus:      #D6512F;
+
+  --color-accent-primary:         #D6512F;  /* lightened redline — maintains contrast on dark ground */
+  --color-accent-primary-hover:   #E2694A;
+  --color-accent-primary-active:  #C4432B;
+  --color-accent-secondary:       var(--raw-paper);
+
+  --color-status-warning: #C99A3F;
+  --color-status-error:   #D65A4E;
+  --color-status-info:    #B4AC9B;
+
+  --color-surface-overlay: rgba(0, 0, 0, 0.6);
+
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-focus: 0 0 0 2px var(--color-bg-primary), 0 0 0 4px var(--color-border-focus);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg-primary:    #1C1913;
+    --color-bg-secondary:  #262219;
+    --color-bg-tertiary:   #322D22;
+    --color-bg-inverse:    var(--raw-paper);
+
+    --color-text-primary:    #EDE9DF;
+    --color-text-secondary:  #B4AC9B;
+    --color-text-tertiary:   rgba(237, 233, 223, 0.55);
+    --color-text-inverse:    var(--raw-ink);
+
+    --color-border-primary:    rgba(237, 233, 223, 0.16);
+    --color-border-secondary:  rgba(237, 233, 223, 0.08);
+    --color-border-focus:      #D6512F;
+
+    --color-accent-primary:         #D6512F;
+    --color-accent-primary-hover:   #E2694A;
+    --color-accent-primary-active:  #C4432B;
+    --color-accent-secondary:       var(--raw-paper);
+
+    --color-status-warning: #C99A3F;
+    --color-status-error:   #D65A4E;
+    --color-status-info:    #B4AC9B;
+
+    --color-surface-overlay: rgba(0, 0, 0, 0.6);
+
+    --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-focus: 0 0 0 2px var(--color-bg-primary), 0 0 0 4px var(--color-border-focus);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast:    0ms;
+    --duration-normal:  0ms;
+    --duration-slow:    0ms;
+    --duration-slower:  0ms;
+  }
+}
