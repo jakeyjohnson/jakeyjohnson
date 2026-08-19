@@ -75,8 +75,8 @@
       <div id="scoringView" hidden>
         <div class="section-head">
           <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Event Manager</span>
-          <h1>Enter Scores</h1>
-          <p class="lede">Pick an event and league, then update scores as matches finish — saves the moment you tab or click away, no separate save step.</p>
+          <h1>Fixtures &amp; Live Scores</h1>
+          <p class="lede">Pick an event and league. Add or fix players, regenerate the schedule if something's wrong, and enter scores — saves the moment you tab or click away, no separate save step. Event details (city, venue, price, tickets) aren't editable here.</p>
         </div>
 
         <div class="form-row">
@@ -85,6 +85,33 @@
         </div>
 
         <div id="fixtureLeagueTabs" class="fixture-league-tabs"></div>
+
+        <div class="admin-fieldset">
+          <span class="admin-fieldset-legend">Players</span>
+          <div id="playersList" class="players-list"></div>
+          <div class="players-count-row">
+            <p class="form-note" id="playerCountNote"></p>
+            <button type="button" class="btn btn-outline btn-small" id="clearAllPlayersBtn" hidden>Remove All Players</button>
+          </div>
+          <textarea id="bulkAddPlayers" class="players-bulk-textarea" rows="3" placeholder="One name per line, e.g.&#10;Sam Turner&#10;Priya Shah"></textarea>
+          <div class="players-add-actions">
+            <button type="button" class="btn btn-outline btn-small" id="addTypedPlayersBtn">+ Add Names Above</button>
+            <span class="players-add-or">or</span>
+            <input type="number" id="placeholderCount" min="1" max="50" value="10" aria-label="Number of placeholder players to add">
+            <button type="button" class="btn btn-outline btn-small" id="addPlaceholderPlayersBtn">+ Add Placeholder Players</button>
+          </div>
+        </div>
+
+        <div class="admin-fieldset">
+          <span class="admin-fieldset-legend">Generate Schedule</span>
+          <p class="form-note">Auto-builds the whole round list from whoever's in the Players list above, working out how many rounds that needs and giving everyone as close to that many games as possible (never more than 1 apart). Rebuilding replaces any fixtures (and scores) already entered for this league.</p>
+          <div class="schedule-gen-row">
+            <div class="form-row"><label for="fxCourts">Courts available</label><input type="number" id="fxCourts" min="1" max="20" value="4"></div>
+            <div class="form-row"><label for="fxGamesPerPlayer">Games per player</label><input type="number" id="fxGamesPerPlayer" min="1" max="20" value="4"></div>
+            <button type="button" class="btn btn-primary btn-small" id="generateScheduleBtn">Generate Fixtures</button>
+          </div>
+          <span class="field-error" id="scheduleGenError" aria-live="polite"></span>
+        </div>
 
         <div id="fixtureStandings"></div>
         <div id="fixtureRoundsList"></div>
@@ -223,6 +250,14 @@
   /* ===================== Fixtures & live scores (Americano) ===================== */
 
   var fixtureLeagueTabs = document.getElementById('fixtureLeagueTabs');
+  var playersListEl = document.getElementById('playersList');
+  var playerCountNote = document.getElementById('playerCountNote');
+  var clearAllPlayersBtn = document.getElementById('clearAllPlayersBtn');
+  var bulkAddPlayers = document.getElementById('bulkAddPlayers');
+  var placeholderCount = document.getElementById('placeholderCount');
+  var fxCourts = document.getElementById('fxCourts');
+  var fxGamesPerPlayer = document.getElementById('fxGamesPerPlayer');
+  var scheduleGenError = document.getElementById('scheduleGenError');
   var fixtureStandingsEl = document.getElementById('fixtureStandings');
   var fixtureRoundsListEl = document.getElementById('fixtureRoundsList');
 
@@ -270,6 +305,7 @@
 
   function loadLeagueData(){
     if (!currentLeague){
+      playersListEl.innerHTML = ''; playerCountNote.textContent = '';
       fixtureStandingsEl.innerHTML = ''; fixtureRoundsListEl.innerHTML = '';
       return;
     }
@@ -279,9 +315,128 @@
     ]).then(function(results){
       playersCache = results[0];
       fixturesCache = results[1];
+      renderPlayers();
       renderStandingsAndRounds();
     });
   }
+
+  /* ---------- Players ---------- */
+
+  function playerRowHTML(p){
+    return '<div class="player-row" data-player-id="' + p.id + '">' +
+      '<input type="text" class="player-name" value="' + esc(p.name) + '" aria-label="Player name">' +
+      '<button type="button" class="btn btn-outline btn-small player-remove">Remove</button>' +
+    '</div>';
+  }
+
+  function renderPlayers(){
+    playersListEl.innerHTML = playersCache.length
+      ? playersCache.map(playerRowHTML).join('')
+      : '<p class="empty-note">No players yet — add some below.</p>';
+    playersListEl.querySelectorAll('[data-player-id]').forEach(wirePlayerRow);
+    playerCountNote.textContent = playersCache.length + (playersCache.length === 1 ? ' player' : ' players') + ' in this league.';
+    clearAllPlayersBtn.hidden = playersCache.length === 0;
+  }
+
+  clearAllPlayersBtn.addEventListener('click', function(){
+    if (!window.confirm('Remove all ' + playersCache.length + ' players from ' + currentLeague + '? This also removes every fixture for this league. This can\'t be undone.')) return;
+    clearAllPlayersBtn.disabled = true;
+    db.from('players').delete().eq('event_id', currentFixturesEvent.id).eq('league_name', currentLeague).then(function(res){
+      clearAllPlayersBtn.disabled = false;
+      if (res.error){ window.alert('Couldn\'t remove players: ' + res.error.message); return; }
+      loadLeagueData();
+    });
+  });
+
+  function wirePlayerRow(row){
+    var id = row.getAttribute('data-player-id');
+    row.querySelector('.player-name').addEventListener('change', function(e){
+      var name = e.target.value.trim();
+      if (!name){ e.target.value = (playersCache.filter(function(x){ return x.id === id; })[0] || {}).name || ''; return; }
+      db.from('players').update({ name: name }).eq('id', id).then(function(res){
+        if (res.error){ window.alert('Couldn\'t save: ' + res.error.message); return; }
+        var p = playersCache.filter(function(x){ return x.id === id; })[0];
+        if (p) p.name = name;
+        renderStandingsAndRounds();
+      });
+    });
+    row.querySelector('.player-remove').addEventListener('click', function(){
+      if (!window.confirm('Remove this player? Any fixture they\'re part of is removed too.')) return;
+      db.from('players').delete().eq('id', id).then(function(res){
+        if (res.error){ window.alert('Couldn\'t remove: ' + res.error.message); return; }
+        loadLeagueData();
+      });
+    });
+  }
+
+  /* btn is disabled for the round trip so a slow connection + an
+     impatient extra click can't fire this twice and silently double
+     up the roster — the visible "Adding…" state answers "did that
+     work?" a lot faster than a second click would have. */
+  function addPlayers(names, btn){
+    if (!currentLeague){ window.alert('This event has no leagues yet.'); return; }
+    var startOrder = playersCache.length;
+    var payload = names.map(function(name, i){
+      return { event_id: currentFixturesEvent.id, league_name: currentLeague, name: name, sort_order: startOrder + i };
+    });
+    btn.disabled = true;
+    var originalLabel = btn.textContent;
+    btn.textContent = 'Adding…';
+    db.from('players').insert(payload).then(function(res){
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+      if (res.error){ window.alert('Couldn\'t add players: ' + res.error.message); return; }
+      bulkAddPlayers.value = '';
+      loadLeagueData();
+    });
+  }
+
+  document.getElementById('addTypedPlayersBtn').addEventListener('click', function(e){
+    var names = bulkAddPlayers.value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    if (!names.length) return;
+    addPlayers(names, e.currentTarget);
+  });
+
+  /* Typing straight into the number field bypasses the HTML max
+     attribute (that only guards the spinner arrows), so this is the
+     real limit — without it, a mistyped extra digit here creates
+     hundreds of players in one click with no way to know until
+     they're already saved. */
+  document.getElementById('addPlaceholderPlayersBtn').addEventListener('click', function(e){
+    var n = Math.min(50, Math.max(0, parseInt(placeholderCount.value, 10) || 0));
+    if (n < 1) return;
+    var startAt = playersCache.length + 1;
+    var names = [];
+    for (var i = 0; i < n; i++) names.push('Player ' + (startAt + i));
+    addPlayers(names, e.currentTarget);
+  });
+
+  /* ---------- Generate schedule ---------- */
+
+  document.getElementById('generateScheduleBtn').addEventListener('click', function(e){
+    scheduleGenError.textContent = '';
+    if (!currentLeague){ scheduleGenError.textContent = 'This event has no leagues yet.'; return; }
+    if (playersCache.length < 4){ scheduleGenError.textContent = 'Add at least 4 players first.'; return; }
+    var courts = parseInt(fxCourts.value, 10) || 1;
+    var gamesPerPlayer = parseInt(fxGamesPerPlayer.value, 10) || 1;
+    if (!window.confirm('Regenerate the schedule for ' + currentLeague + '? Any fixtures and scores already entered for this league will be replaced.')) return;
+
+    var btn = e.currentTarget;
+    btn.disabled = true;
+    db.from('fixtures').delete().eq('event_id', currentFixturesEvent.id).eq('league_name', currentLeague).then(function(delRes){
+      if (delRes.error){ btn.disabled = false; scheduleGenError.textContent = delRes.error.message; return; }
+      var schedule = window.PartyPadelFixtures.generateSchedule(playersCache, courts, gamesPerPlayer);
+      if (!schedule.length){ btn.disabled = false; scheduleGenError.textContent = 'Not enough players for even one court — add more players first.'; return; }
+      var payload = schedule.map(function(f){
+        return Object.assign({ event_id: currentFixturesEvent.id, league_name: currentLeague, status: 'scheduled' }, f);
+      });
+      db.from('fixtures').insert(payload).then(function(res){
+        btn.disabled = false;
+        if (res.error){ scheduleGenError.textContent = res.error.message; return; }
+        loadLeagueData();
+      });
+    });
+  });
 
   function playerNameById(id){
     var p = playersCache.filter(function(x){ return x.id === id; })[0];
