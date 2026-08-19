@@ -16,6 +16,7 @@
 <meta name="twitter:title" content="Padel Tournament Results &amp; Standings | Party Padel">
 <meta name="twitter:description" content="Live padel tournament standings and fixtures from every Party Padel event across the UK.">
 <meta name="twitter:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
+<link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -92,7 +93,9 @@
   <div class="footer-bottom"><span>© 2026 Party Padel — All rights reserved.</span></div>
 </footer>
 
-<script src="assets/data/events-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/supabase-config.js"></script>
+<script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/events.js"></script>
 <script src="assets/js/main.js"></script>
 <script>
@@ -101,10 +104,11 @@
   window.PartyPadelEvents.loadEvents().then(function(events){
     var upcoming = events.filter(function(e){ return e.status !== 'sold-out' && e.status !== 'completed'; });
     if (!upcoming.length){ list.innerHTML = '<p class="empty-note">No upcoming fixtures.</p>'; return; }
+    var esc = window.PartyPadelEvents.escapeHTML;
     list.innerHTML = upcoming.map(function(ev){
       return '<a class="fixture-link-row" href="event.html?slug=' + encodeURIComponent(ev.slug) + '">' +
-        '<span><svg class="icon icon-sm"><use href="#ci-calendar"/></svg> ' + ev.dateLabel + '</span>' +
-        '<span>' + ev.city + ' — ' + ev.venue + '</span>' +
+        '<span><svg class="icon icon-sm"><use href="#ci-calendar"/></svg> ' + esc(ev.dateLabel) + '</span>' +
+        '<span>' + esc(ev.city) + ' — ' + esc(ev.venue) + '</span>' +
         '<span class="status-pill ' + window.PartyPadelEvents.statusMeta(ev.status).pillClass + '">' + window.PartyPadelEvents.statusMeta(ev.status).label + '</span>' +
       '</a>';
     }).join('');

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin | Party Padel</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ci-cross" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="120" height="120"></a>
+    <nav class="nav-links" id="navLinks">
+      <a href="index.html">View Site</a>
+    </nav>
+    <div class="nav-cta" id="signedInBar" hidden>
+      <span class="admin-user" id="adminUserEmail"></span>
+      <button type="button" class="btn btn-outline btn-small" id="signOutBtn">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="section register-section">
+    <div class="container narrow">
+
+      <!-- Shown if assets/js/supabase-config.js still has placeholder
+           values — see README.md "Back office" section. -->
+      <div id="configMissingView" hidden>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Admin</span>
+          <h1>Not Set Up Yet</h1>
+          <p class="lede">This admin panel needs a Supabase project connected before it'll work. Follow the "Back office" section in README.md — run <code>supabase/schema.sql</code>, create your login in Authentication &gt; Users, then fill in <code>assets/js/supabase-config.js</code> with your project's URL and anon key.</p>
+        </div>
+      </div>
+
+      <div id="loginView" hidden>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Admin</span>
+          <h1>Sign In</h1>
+          <p class="lede">Manage Party Padel's events. There's no public sign-up — this only works with the login created in the Supabase dashboard.</p>
+        </div>
+        <form id="loginForm" novalidate>
+          <div class="form-row">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" required autocomplete="username" aria-describedby="loginEmailError">
+            <span class="field-error" id="loginEmailError" aria-live="polite"></span>
+          </div>
+          <div class="form-row">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" required autocomplete="current-password" aria-describedby="loginPasswordError">
+            <span class="field-error" id="loginPasswordError" aria-live="polite"></span>
+          </div>
+          <div class="form-alert" id="loginError" hidden></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large" id="loginSubmit"><span class="btn-text">Sign In</span></button>
+          </div>
+        </form>
+      </div>
+
+      <div id="dashboardView" hidden>
+        <div class="admin-header-row section-head">
+          <div>
+            <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Admin</span>
+            <h1>Events</h1>
+          </div>
+        </div>
+
+        <div class="admin-toolbar">
+          <button type="button" class="btn btn-primary" id="addEventBtn">+ Add Event</button>
+        </div>
+
+        <div id="eventsList" class="admin-list">
+          <p class="loading-note">Loading events…</p>
+        </div>
+      </div>
+
+      <div id="eventFormView" hidden>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Admin</span>
+          <h1 id="eventFormHeading">Add Event</h1>
+        </div>
+
+        <form id="eventForm" novalidate>
+          <div class="form-grid">
+            <div class="form-row">
+              <label for="fCity">City</label>
+              <input type="text" id="fCity" required aria-describedby="fCityError">
+              <span class="field-error" id="fCityError" aria-live="polite"></span>
+            </div>
+            <div class="form-row">
+              <label for="fSlug">URL slug</label>
+              <input type="text" id="fSlug" required aria-describedby="fSlugError" placeholder="e.g. london-2026-09-14">
+              <span class="field-error" id="fSlugError" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-row">
+              <label for="fDate">Date</label>
+              <input type="date" id="fDate" required aria-describedby="fDateError">
+              <span class="field-error" id="fDateError" aria-live="polite"></span>
+            </div>
+            <div class="form-row">
+              <label for="fTime">Start time</label>
+              <input type="time" id="fTime" required aria-describedby="fTimeError">
+              <span class="field-error" id="fTimeError" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-row">
+              <label for="fVenue">Venue</label>
+              <input type="text" id="fVenue" required aria-describedby="fVenueError">
+              <span class="field-error" id="fVenueError" aria-live="polite"></span>
+            </div>
+            <div class="form-row">
+              <label for="fAddress">Address</label>
+              <input type="text" id="fAddress" required aria-describedby="fAddressError">
+              <span class="field-error" id="fAddressError" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="fStatus">Status</label>
+            <select id="fStatus" required aria-describedby="fStatusError">
+              <option value="coming-soon">Coming Soon</option>
+              <option value="entries-open">Entries Open</option>
+              <option value="limited">Limited</option>
+              <option value="sold-out">Sold Out</option>
+              <option value="completed">Completed</option>
+            </select>
+            <span class="field-error" id="fStatusError" aria-live="polite"></span>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-row">
+              <label for="fPlayersEntered">Players entered</label>
+              <input type="number" id="fPlayersEntered" min="0" step="1" required aria-describedby="fPlayersEnteredError">
+              <span class="field-error" id="fPlayersEnteredError" aria-live="polite"></span>
+            </div>
+            <div class="form-row">
+              <label for="fPlayersCapacity">Players capacity</label>
+              <input type="number" id="fPlayersCapacity" min="1" step="1" required aria-describedby="fPlayersCapacityError">
+              <span class="field-error" id="fPlayersCapacityError" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-row">
+              <label for="fPricePlayer">Price per player (£)</label>
+              <input type="number" id="fPricePlayer" min="0" step="0.01" required aria-describedby="fPricePlayerError">
+              <span class="field-error" id="fPricePlayerError" aria-live="polite"></span>
+            </div>
+            <div class="form-row">
+              <label for="fPriceSpectator">Spectator price (£)</label>
+              <input type="number" id="fPriceSpectator" min="0" step="0.01" required aria-describedby="fPriceSpectatorError">
+              <span class="field-error" id="fPriceSpectatorError" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="fCheckoutUrl">Ticket Tailor checkout URL</label>
+            <input type="text" id="fCheckoutUrl" placeholder="https://checkout.tickettailor.com/... (leave blank until payments are live)" aria-describedby="fCheckoutUrlError">
+            <span class="field-error" id="fCheckoutUrlError" aria-live="polite"></span>
+            <p class="form-note">Must start with https:// or the site treats it the same as blank — every "Enter" button falls back to a "Get Notified" email link until this is a real Ticket Tailor URL.</p>
+          </div>
+
+          <div class="admin-fieldset">
+            <span class="admin-fieldset-legend">Beginners division</span>
+            <div class="form-grid">
+              <div class="form-row">
+                <label for="fBegMin">Skill min</label>
+                <input type="number" id="fBegMin" min="1" max="5" step="0.1" required aria-describedby="fBegMinError">
+                <span class="field-error" id="fBegMinError" aria-live="polite"></span>
+              </div>
+              <div class="form-row">
+                <label for="fBegMax">Skill max</label>
+                <input type="number" id="fBegMax" min="1" max="5" step="0.1" required aria-describedby="fBegMaxError">
+                <span class="field-error" id="fBegMaxError" aria-live="polite"></span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="fBegSpaces">Spaces left</label>
+              <input type="number" id="fBegSpaces" min="0" step="1" required aria-describedby="fBegSpacesError">
+              <span class="field-error" id="fBegSpacesError" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="admin-fieldset">
+            <span class="admin-fieldset-legend">Advanced division</span>
+            <div class="form-grid">
+              <div class="form-row">
+                <label for="fAdvMin">Skill min</label>
+                <input type="number" id="fAdvMin" min="1" max="5" step="0.1" required aria-describedby="fAdvMinError">
+                <span class="field-error" id="fAdvMinError" aria-live="polite"></span>
+              </div>
+              <div class="form-row">
+                <label for="fAdvMax">Skill max</label>
+                <input type="number" id="fAdvMax" min="1" max="5" step="0.1" required aria-describedby="fAdvMaxError">
+                <span class="field-error" id="fAdvMaxError" aria-live="polite"></span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="fAdvSpaces">Spaces left</label>
+              <input type="number" id="fAdvSpaces" min="0" step="1" required aria-describedby="fAdvSpacesError">
+              <span class="field-error" id="fAdvSpacesError" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="admin-fieldset">
+            <span class="admin-fieldset-legend">Running order</span>
+            <div id="scheduleRows"></div>
+            <button type="button" class="btn btn-outline btn-small" id="addScheduleRowBtn">+ Add Row</button>
+          </div>
+
+          <div class="form-alert" id="eventFormError" hidden></div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline" id="deleteEventBtn" hidden>Delete Event</button>
+            <button type="button" class="btn btn-outline" id="cancelEventBtn">Cancel</button>
+            <button type="button" class="btn btn-primary" id="saveEventBtn"><span class="btn-text">Save Event</span></button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="40" height="40">
+      <p>Serious sport. Social energy.</p>
+    </div>
+    <div class="footer-col"><h4>Site</h4><a href="index.html">Home</a><a href="events.html">Events</a></div>
+    <div class="footer-col"><h4>Contact</h4><a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 Party Padel — Admin</span></div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/supabase-config.js"></script>
+<script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/events.js"></script>
+<script>
+(function(){
+  var db = window.PartyPadelDB;
+  var esc = window.PartyPadelEvents.escapeHTML;
+
+  var configMissingView = document.getElementById('configMissingView');
+  var loginView = document.getElementById('loginView');
+  var dashboardView = document.getElementById('dashboardView');
+  var eventFormView = document.getElementById('eventFormView');
+  var signedInBar = document.getElementById('signedInBar');
+
+  if (!db){
+    configMissingView.hidden = false;
+    return;
+  }
+
+  function setFieldError(field, message){
+    field.classList.add('error');
+    field.setAttribute('aria-invalid', 'true');
+    var errorEl = document.getElementById(field.getAttribute('aria-describedby'));
+    if (errorEl) errorEl.textContent = message;
+  }
+  function clearFieldError(field){
+    field.classList.remove('error');
+    field.removeAttribute('aria-invalid');
+    var errorEl = document.getElementById(field.getAttribute('aria-describedby'));
+    if (errorEl) errorEl.textContent = '';
+  }
+
+  /* ===================== Auth ===================== */
+
+  function showSignedOut(){
+    loginView.hidden = false;
+    dashboardView.hidden = true;
+    eventFormView.hidden = true;
+    signedInBar.hidden = true;
+  }
+  function showSignedIn(session){
+    loginView.hidden = true;
+    dashboardView.hidden = false;
+    eventFormView.hidden = true;
+    signedInBar.hidden = false;
+    document.getElementById('adminUserEmail').textContent = session.user.email;
+    loadEventsList();
+  }
+
+  db.auth.getSession().then(function(res){
+    var session = res.data && res.data.session;
+    if (session) showSignedIn(session); else showSignedOut();
+  });
+  db.auth.onAuthStateChange(function(event, session){
+    if (session) showSignedIn(session); else showSignedOut();
+  });
+
+  var loginForm = document.getElementById('loginForm');
+  var loginEmail = document.getElementById('loginEmail');
+  var loginPassword = document.getElementById('loginPassword');
+  var loginError = document.getElementById('loginError');
+  var loginSubmit = document.getElementById('loginSubmit');
+
+  loginForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    loginError.hidden = true;
+    clearFieldError(loginEmail);
+    clearFieldError(loginPassword);
+    var valid = true;
+    if (!loginEmail.value.trim()){ setFieldError(loginEmail, 'This field is required'); valid = false; }
+    if (!loginPassword.value){ setFieldError(loginPassword, 'This field is required'); valid = false; }
+    if (!valid) return;
+
+    loginSubmit.classList.add('loading'); loginSubmit.disabled = true;
+    db.auth.signInWithPassword({ email: loginEmail.value.trim(), password: loginPassword.value }).then(function(res){
+      loginSubmit.classList.remove('loading'); loginSubmit.disabled = false;
+      if (res.error){
+        loginError.hidden = false;
+        loginError.textContent = res.error.message === 'Invalid login credentials'
+          ? 'Incorrect email or password.'
+          : res.error.message;
+        return;
+      }
+      loginPassword.value = '';
+    });
+  });
+
+  document.getElementById('signOutBtn').addEventListener('click', function(){
+    db.auth.signOut();
+  });
+
+  /* ===================== Dashboard / list ===================== */
+
+  var eventsList = document.getElementById('eventsList');
+  var eventsCache = [];
+
+  function loadEventsList(){
+    eventsList.innerHTML = '<p class="loading-note">Loading events…</p>';
+    window.PartyPadelEvents.loadEvents().then(function(events){
+      eventsCache = events;
+      if (!events.length){
+        eventsList.innerHTML = '<p class="empty-note">No events yet — add one to get started.</p>';
+        return;
+      }
+      eventsList.innerHTML = events.map(adminRowHTML).join('');
+      eventsList.querySelectorAll('[data-edit-slug]').forEach(function(btn){
+        btn.addEventListener('click', function(){ openEditForm(btn.getAttribute('data-edit-slug')); });
+      });
+      eventsList.querySelectorAll('[data-delete-slug]').forEach(function(btn){
+        btn.addEventListener('click', function(){ deleteEvent(btn.getAttribute('data-delete-slug')); });
+      });
+    }).catch(function(){
+      eventsList.innerHTML = '<p class="empty-note">Couldn\'t load events — try refreshing.</p>';
+    });
+  }
+
+  function adminRowHTML(ev){
+    var meta = window.PartyPadelEvents.statusMeta(ev.status);
+    return '' +
+      '<div class="admin-row">' +
+        '<div class="admin-row-main">' +
+          '<span class="status-pill ' + meta.pillClass + '">' + meta.label + '</span>' +
+          '<div>' +
+            '<h3>' + esc(ev.city) + '</h3>' +
+            '<p>' + esc(ev.dateLabel) + ' · ' + esc(ev.venue) + '</p>' +
+          '</div>' +
+        '</div>' +
+        '<div class="admin-row-actions">' +
+          '<button type="button" class="btn btn-outline btn-small" data-edit-slug="' + esc(ev.slug) + '">Edit</button>' +
+          '<button type="button" class="btn btn-outline btn-small" data-delete-slug="' + esc(ev.slug) + '">Delete</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function deleteEvent(slug, onDeleted){
+    var ev = eventsCache.filter(function(e){ return e.slug === slug; })[0];
+    if (!ev) return;
+    if (!window.confirm('Delete ' + ev.city + ' (' + ev.dateLabel + ')? This can\'t be undone.')) return;
+    db.from('events').delete().eq('slug', slug).then(function(res){
+      if (res.error){ window.alert('Couldn\'t delete: ' + res.error.message); return; }
+      loadEventsList();
+      if (onDeleted) onDeleted();
+    });
+  }
+
+  /* ===================== Add / edit form ===================== */
+
+  var eventForm = document.getElementById('eventForm');
+  /* No type="submit" button in here — Save/Cancel/Delete are all
+     type="button" — but Enter inside a text field can still trigger a
+     native form submission in some browsers, so this is a safety net
+     against an accidental full-page reload losing whatever was typed. */
+  eventForm.addEventListener('submit', function(e){ e.preventDefault(); });
+  var eventFormHeading = document.getElementById('eventFormHeading');
+  var eventFormError = document.getElementById('eventFormError');
+  var deleteEventBtn = document.getElementById('deleteEventBtn');
+  var saveEventBtn = document.getElementById('saveEventBtn');
+  var scheduleRowsWrap = document.getElementById('scheduleRows');
+  var editingSlug = null; // null = adding a new event
+
+  var fCity = document.getElementById('fCity');
+  var fSlug = document.getElementById('fSlug');
+  var fDate = document.getElementById('fDate');
+  var fTime = document.getElementById('fTime');
+  var fVenue = document.getElementById('fVenue');
+  var fAddress = document.getElementById('fAddress');
+  var fStatus = document.getElementById('fStatus');
+  var fPlayersEntered = document.getElementById('fPlayersEntered');
+  var fPlayersCapacity = document.getElementById('fPlayersCapacity');
+  var fPricePlayer = document.getElementById('fPricePlayer');
+  var fPriceSpectator = document.getElementById('fPriceSpectator');
+  var fCheckoutUrl = document.getElementById('fCheckoutUrl');
+  var fBegMin = document.getElementById('fBegMin');
+  var fBegMax = document.getElementById('fBegMax');
+  var fBegSpaces = document.getElementById('fBegSpaces');
+  var fAdvMin = document.getElementById('fAdvMin');
+  var fAdvMax = document.getElementById('fAdvMax');
+  var fAdvSpaces = document.getElementById('fAdvSpaces');
+
+  function slugify(city, date){
+    var base = (city || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    return date ? base + '-' + date : base;
+  }
+  /* Auto-fills the slug from city+date while adding a new event, right
+     up until the admin actually types into the slug field themselves —
+     tracked explicitly rather than inferred from "is it empty", since
+     that check goes stale the moment city fills it in on its own blur
+     and then blocks date's blur from ever appending the date. */
+  var slugManuallyEdited = false;
+  fSlug.addEventListener('input', function(){ slugManuallyEdited = true; });
+  function autoFillSlug(){
+    if (editingSlug === null && !slugManuallyEdited) fSlug.value = slugify(fCity.value, fDate.value);
+  }
+  fCity.addEventListener('blur', autoFillSlug);
+  fDate.addEventListener('blur', autoFillSlug);
+
+  function addScheduleRow(time, label){
+    var row = document.createElement('div');
+    row.className = 'schedule-row-editor';
+    row.innerHTML =
+      '<div class="form-row"><label>Time</label><input type="time" class="sched-time" value="' + esc(time || '') + '"></div>' +
+      '<div class="form-row"><label>What happens</label><input type="text" class="sched-label" value="' + esc(label || '') + '" placeholder="e.g. Check-in & warm-up"></div>' +
+      '<button type="button" class="btn btn-outline btn-small">Remove</button>';
+    row.querySelector('.btn').addEventListener('click', function(){ row.remove(); });
+    scheduleRowsWrap.appendChild(row);
+  }
+  document.getElementById('addScheduleRowBtn').addEventListener('click', function(){ addScheduleRow('', ''); });
+
+  function resetForm(){
+    eventForm.querySelectorAll('input, select').forEach(function(f){ clearFieldError(f); });
+    eventFormError.hidden = true;
+    scheduleRowsWrap.innerHTML = '';
+  }
+
+  function openAddForm(){
+    resetForm();
+    editingSlug = null;
+    slugManuallyEdited = false;
+    eventFormHeading.textContent = 'Add Event';
+    deleteEventBtn.hidden = true;
+    fSlug.disabled = false;
+    eventForm.reset();
+    fStatus.value = 'coming-soon';
+    fPlayersEntered.value = 0;
+    fPlayersCapacity.value = 100;
+    fPricePlayer.value = 32;
+    fPriceSpectator.value = 15;
+    fBegMin.value = 1.0; fBegMax.value = 2.5; fBegSpaces.value = 50;
+    fAdvMin.value = 3.0; fAdvMax.value = 5.0; fAdvSpaces.value = 50;
+    addScheduleRow('', '');
+    dashboardView.hidden = true;
+    eventFormView.hidden = false;
+  }
+
+  function openEditForm(slug){
+    var ev = eventsCache.filter(function(e){ return e.slug === slug; })[0];
+    if (!ev) return;
+    resetForm();
+    editingSlug = slug;
+    eventFormHeading.textContent = 'Edit ' + ev.city;
+    deleteEventBtn.hidden = false;
+    fCity.value = ev.city;
+    fSlug.value = ev.slug;
+    fSlug.disabled = true; // slug is the row's stable key — change city, not the URL, once it's live
+    fDate.value = ev.date;
+    fTime.value = ev.time;
+    fVenue.value = ev.venue;
+    fAddress.value = ev.address;
+    fStatus.value = ev.status;
+    fPlayersEntered.value = ev.playersEntered;
+    fPlayersCapacity.value = ev.playersCapacity;
+    fPricePlayer.value = ev.pricePlayer;
+    fPriceSpectator.value = ev.priceSpectator;
+    fCheckoutUrl.value = ev.ticketTailorCheckoutUrl;
+    var beg = ev.divisions[0], adv = ev.divisions[1];
+    fBegMin.value = beg.skillMin; fBegMax.value = beg.skillMax; fBegSpaces.value = beg.spacesLeft;
+    fAdvMin.value = adv.skillMin; fAdvMax.value = adv.skillMax; fAdvSpaces.value = adv.spacesLeft;
+    ev.schedule.forEach(function(s){ addScheduleRow(s.time, s.label); });
+    if (!ev.schedule.length) addScheduleRow('', '');
+    dashboardView.hidden = true;
+    eventFormView.hidden = false;
+  }
+
+  document.getElementById('addEventBtn').addEventListener('click', openAddForm);
+  document.getElementById('cancelEventBtn').addEventListener('click', function(){
+    eventFormView.hidden = true;
+    dashboardView.hidden = false;
+  });
+
+  function validateEventForm(){
+    var fields = [fCity, fSlug, fDate, fTime, fVenue, fAddress, fStatus,
+      fPlayersEntered, fPlayersCapacity, fPricePlayer, fPriceSpectator,
+      fBegMin, fBegMax, fBegSpaces, fAdvMin, fAdvMax, fAdvSpaces];
+    var valid = true;
+    var firstInvalid = null;
+    fields.forEach(function(f){
+      clearFieldError(f);
+      if (!String(f.value).trim()){
+        setFieldError(f, f.tagName === 'SELECT' ? 'Make a selection' : 'This field is required');
+        valid = false;
+        if (!firstInvalid) firstInvalid = f;
+      }
+    });
+    if (fSlug.value.trim() && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(fSlug.value.trim())){
+      setFieldError(fSlug, 'Lowercase letters, numbers and hyphens only');
+      valid = false;
+      if (!firstInvalid) firstInvalid = fSlug;
+    }
+    if (fCheckoutUrl.value.trim() && !/^https:\/\//i.test(fCheckoutUrl.value.trim())){
+      setFieldError(fCheckoutUrl, 'Must start with https:// (or leave blank)');
+      valid = false;
+      if (!firstInvalid) firstInvalid = fCheckoutUrl;
+    }
+    var scheduleRows = scheduleRowsWrap.querySelectorAll('.schedule-row-editor');
+    var scheduleRowIssue = false;
+    scheduleRows.forEach(function(row){
+      var t = row.querySelector('.sched-time'), l = row.querySelector('.sched-label');
+      if ((t.value.trim() && !l.value.trim()) || (!t.value.trim() && l.value.trim())){
+        t.classList.add('error');
+        l.classList.add('error');
+        valid = false;
+        scheduleRowIssue = true;
+      } else {
+        t.classList.remove('error');
+        l.classList.remove('error');
+      }
+    });
+    if (scheduleRowIssue){
+      eventFormError.hidden = false;
+      eventFormError.textContent = 'Every running-order row needs both a time and a description — remove the row instead if you don\'t need it (empty rows are dropped automatically).';
+    }
+    if (firstInvalid) firstInvalid.focus();
+    return valid;
+  }
+
+  function collectSchedule(){
+    return Array.prototype.slice.call(scheduleRowsWrap.querySelectorAll('.schedule-row-editor'))
+      .map(function(row){
+        return {
+          time: row.querySelector('.sched-time').value.trim(),
+          label: row.querySelector('.sched-label').value.trim()
+        };
+      })
+      .filter(function(s){ return s.time && s.label; });
+  }
+
+  saveEventBtn.addEventListener('click', function(){
+    eventFormError.hidden = true;
+    if (!validateEventForm()) return;
+
+    var payload = {
+      slug: fSlug.value.trim(),
+      city: fCity.value.trim(),
+      event_date: fDate.value,
+      event_time: fTime.value,
+      venue: fVenue.value.trim(),
+      address: fAddress.value.trim(),
+      status: fStatus.value,
+      players_entered: parseInt(fPlayersEntered.value, 10),
+      players_capacity: parseInt(fPlayersCapacity.value, 10),
+      price_player: parseFloat(fPricePlayer.value),
+      price_spectator: parseFloat(fPriceSpectator.value),
+      ticket_tailor_checkout_url: fCheckoutUrl.value.trim(),
+      beginners_skill_min: parseFloat(fBegMin.value),
+      beginners_skill_max: parseFloat(fBegMax.value),
+      beginners_spaces_left: parseInt(fBegSpaces.value, 10),
+      advanced_skill_min: parseFloat(fAdvMin.value),
+      advanced_skill_max: parseFloat(fAdvMax.value),
+      advanced_spaces_left: parseInt(fAdvSpaces.value, 10),
+      schedule: collectSchedule()
+    };
+
+    saveEventBtn.classList.add('loading'); saveEventBtn.disabled = true;
+    var query = editingSlug === null
+      ? db.from('events').insert(payload)
+      : db.from('events').update(payload).eq('slug', editingSlug);
+
+    query.then(function(res){
+      saveEventBtn.classList.remove('loading'); saveEventBtn.disabled = false;
+      if (res.error){
+        eventFormError.hidden = false;
+        eventFormError.textContent = res.error.message.indexOf('duplicate key') !== -1
+          ? 'That URL slug is already used by another event — pick a different one.'
+          : res.error.message;
+        return;
+      }
+      eventFormView.hidden = true;
+      dashboardView.hidden = false;
+      loadEventsList();
+    });
+  });
+
+  deleteEventBtn.addEventListener('click', function(){
+    if (editingSlug === null) return;
+    deleteEvent(editingSlug, function(){
+      eventFormView.hidden = true;
+      dashboardView.hidden = false;
+    });
+  });
+
+})();
+</script>
+</body>
+</html>

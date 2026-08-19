@@ -16,6 +16,7 @@
 <meta name="twitter:title" content="Padel Tournament — Party Padel">
 <meta name="twitter:description" content="Padel tournament details, entry status, divisions and spectator tickets — adapted Americano format, solo entry from £32.">
 <meta name="twitter:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
+<link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -185,7 +186,9 @@
   <div class="footer-bottom"><span>© 2026 Party Padel — All rights reserved.</span></div>
 </footer>
 
-<script src="assets/data/events-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/supabase-config.js"></script>
+<script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/events.js"></script>
 <script src="assets/js/main.js"></script>
 <script>
@@ -276,20 +279,21 @@
 
     var divWrap = tpl.querySelector('[data-field="divisions"]');
     var entryOpen = window.PartyPadelEvents.enterOpen(ev);
+    var esc = window.PartyPadelEvents.escapeHTML;
     ev.divisions.forEach(function(d){
       var full = d.spacesLeft === 0;
       var clickable = entryOpen && !full;
       var range = (d.skillMin != null && d.skillMax != null) ? '<p>Self-rated ' + d.skillMin.toFixed(1) + '–' + d.skillMax.toFixed(1) + '</p>' : '';
       var statusText = full ? 'Full' : (clickable ? d.spacesLeft + ' spaces left — enter this division' : d.spacesLeft + ' spaces left');
       var inner =
-        '<h3>' + d.name + '</h3>' +
+        '<h3>' + esc(d.name) + '</h3>' +
         range +
-        '<span class="division-status" style="' + (full ? 'color:var(--color-text-tertiary)' : '') + '">' + statusText + '</span>';
+        '<span class="division-status" style="' + (full ? 'color:var(--color-text-tertiary)' : '') + '">' + esc(statusText) + '</span>';
       /* Straight to the same checkout as the main button — division
          itself is picked as a Ticket Tailor ticket type once there. */
       if (clickable){
         divWrap.insertAdjacentHTML('beforeend',
-          '<a class="division-card" href="' + enterLink.href + '">' + inner + '</a>'
+          '<a class="division-card" href="' + esc(enterLink.href) + '">' + inner + '</a>'
         );
       } else {
         divWrap.insertAdjacentHTML('beforeend', '<div class="division-card">' + inner + '</div>');
@@ -299,7 +303,7 @@
     var schedWrap = tpl.querySelector('[data-field="schedule"]');
     ev.schedule.forEach(function(s){
       schedWrap.insertAdjacentHTML('beforeend',
-        '<div class="schedule-row"><span class="schedule-time">' + s.time + '</span><span>' + s.label + '</span></div>'
+        '<div class="schedule-row"><span class="schedule-time">' + esc(s.time) + '</span><span>' + esc(s.label) + '</span></div>'
       );
     });
 

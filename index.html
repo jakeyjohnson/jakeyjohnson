@@ -16,6 +16,7 @@
 <meta name="twitter:title" content="Party Padel | UK Padel Tournaments — The Court After Dark">
 <meta name="twitter:description" content="Adapted Americano padel tournaments across the UK — solo sign-up, rotating partners, DJ and lighting production. London, Manchester, Bristol. Enter from £32.">
 <meta name="twitter:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
+<link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -126,53 +127,8 @@
         <p class="lede">Three cities, two divisions, spaces filling fast. Full fixture list on the Events page.</p>
       </div>
 
-      <div class="event-grid">
-        <article class="event-card reveal">
-          <div class="event-card-head">
-            <span class="status-pill status-open">Entries Open</span>
-            <span class="event-date"><svg class="icon icon-sm"><use href="#ci-calendar"/></svg> 14 Sep 2026</span>
-          </div>
-          <h3>London</h3>
-          <p class="event-venue"><svg class="icon icon-sm"><use href="#ci-pin"/></svg> Shoreditch Padel Club</p>
-          <div class="court-rule" aria-hidden="true"></div>
-          <div class="event-meta-row">
-            <span>68 of 100 players entered</span>
-            <span>From £32 / player</span>
-          </div>
-          <!-- Update once this event's ticketTailorCheckoutUrl is set in assets/data/events-data.js — should match window.PartyPadelEvents.enterHref() for this event exactly. -->
-          <a href="mailto:hello@partypadel.uk?subject=Notify%20me%20-%20London" class="btn btn-primary btn-block">Get Notified</a>
-        </article>
-
-        <article class="event-card reveal">
-          <div class="event-card-head">
-            <span class="status-pill status-limited">Limited</span>
-            <span class="event-date"><svg class="icon icon-sm"><use href="#ci-calendar"/></svg> 27 Sep 2026</span>
-          </div>
-          <h3>Manchester</h3>
-          <p class="event-venue"><svg class="icon icon-sm"><use href="#ci-pin"/></svg> Padel House</p>
-          <div class="court-rule" aria-hidden="true"></div>
-          <div class="event-meta-row">
-            <span>92 of 100 players entered</span>
-            <span>From £32 / player</span>
-          </div>
-          <!-- Update once this event's ticketTailorCheckoutUrl is set in assets/data/events-data.js — should match window.PartyPadelEvents.enterHref() for this event exactly. -->
-          <a href="mailto:hello@partypadel.uk?subject=Notify%20me%20-%20Manchester" class="btn btn-primary btn-block">Get Notified</a>
-        </article>
-
-        <article class="event-card reveal">
-          <div class="event-card-head">
-            <span class="status-pill status-closed">Coming Soon</span>
-            <span class="event-date"><svg class="icon icon-sm"><use href="#ci-calendar"/></svg> 11 Oct 2026</span>
-          </div>
-          <h3>Bristol</h3>
-          <p class="event-venue"><svg class="icon icon-sm"><use href="#ci-pin"/></svg> Harbourside Courts</p>
-          <div class="court-rule" aria-hidden="true"></div>
-          <div class="event-meta-row">
-            <span>Entries open soon</span>
-            <span>From £32 / player</span>
-          </div>
-          <a href="events.html" class="btn btn-outline btn-block">Get Notified</a>
-        </article>
+      <div class="event-grid" id="homeEventGrid">
+        <p class="loading-note">Loading events…</p>
       </div>
 
       <a href="events.html" class="see-all-link reveal">See all events <svg class="icon icon-sm"><use href="#ci-arrow"/></svg></a>
@@ -351,6 +307,29 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/supabase-config.js"></script>
+<script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/events.js"></script>
 <script src="assets/js/main.js"></script>
+<script>
+(function(){
+  var grid = document.getElementById('homeEventGrid');
+  window.PartyPadelEvents.loadEvents().then(function(events){
+    var upcoming = events.filter(function(ev){ return ev.status !== 'completed'; }).slice(0, 3);
+    if (!upcoming.length){
+      grid.innerHTML = '<p class="loading-note">No events on sale right now — check back soon.</p>';
+      return;
+    }
+    grid.innerHTML = upcoming.map(window.PartyPadelEvents.eventCardHTML).join('');
+    /* Injected after main.js's scroll-reveal observer already ran its
+       one-time setup, so these cards would never get their .in class
+       otherwise — same fix events.html uses for its own dynamic cards. */
+    grid.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+  }).catch(function(){
+    grid.innerHTML = '<p class="loading-note">Couldn\'t load events right now — try refreshing.</p>';
+  });
+})();
+</script>
 </body>
 </html>

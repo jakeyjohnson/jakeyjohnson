@@ -17,6 +17,7 @@
 <meta name="twitter:title" content="Entry Confirmed | Party Padel">
 <meta name="twitter:description" content="Your Party Padel entry is confirmed — check your inbox for Ticket Tailor's order confirmation.">
 <meta name="twitter:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
+<link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,7 +66,8 @@
     <div class="container narrow">
 
       <!-- Landed here from Ticket Tailor's post-checkout redirect
-           (see events-data.js). There's no backend to verify the
+           (see the ticket_tailor_checkout_url column in
+           supabase/schema.sql). There's no backend to verify the
            payment server-side or read back what was bought — division
            and skill level are Ticket Tailor's own checkout questions
            now, not ours, so this is deliberately a generic thank-you

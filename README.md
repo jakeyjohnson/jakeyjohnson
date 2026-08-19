@@ -2,7 +2,9 @@
 
 Competitive padel tournament platform — built against the official client brand
 guidelines (`.design/party-padel/DESIGN_BRIEF.md`). Static, multi-page site,
-no build step, no framework, no backend.
+no build step, no framework — the only backend is Supabase, used purely as a
+database + login for the admin panel (`admin.html`); everything else is
+still plain HTML/CSS/JS you deploy by uploading files.
 
 ## What's here
 
@@ -12,6 +14,7 @@ no build step, no framework, no backend.
 | `events.html` | All events, filterable by status and division |
 | `event.html?slug=...` | Single event — registration status, divisions, schedule, tickets, FAQ |
 | `enter-team.html` | Post-checkout landing page only — Ticket Tailor's redirect target after payment, not a form |
+| `admin.html` | Back office — log in, add/edit/delete events. See "Back office" below. |
 | `format.html` | How the competition works, rules and scoring |
 | `play.html` | Divisions overview and entry requirements |
 | `results.html` | Standings and fixtures |
@@ -25,13 +28,17 @@ assets/css/tokens.css   Design tokens — every colour/type/spacing/radius/
                           line-weight value used anywhere on the site
 assets/css/style.css     Component styles, all referencing tokens.css
 assets/js/main.js        Nav, mobile menu, scroll-reveal, accordion
-assets/js/events.js      Shared event-data helpers (filter, status labels,
-                          checkout links, card rendering) used by
-                          events.html, event.html and results.html
-assets/data/events-data.js Event data — add a city here, not a new page.
-                          Loaded as a plain <script> (window.PARTY_PADEL_EVENTS),
-                          not fetch, so pages work opened directly as a file
-                          too, not just from a real web server
+assets/js/events.js      Shared event-data helpers (loads events from
+                          Supabase, filter/status labels, checkout links,
+                          HTML-escaping, card rendering) — used by
+                          events.html, event.html, index.html, results.html
+                          and admin.html
+assets/js/supabase-config.js  Your Supabase project URL + anon key. Ships to
+                          every browser — that's expected, see "Back office"
+assets/js/supabase-client.js  Turns the config above into window.PartyPadelDB
+supabase/schema.sql      Run once in the Supabase SQL Editor — creates the
+                          events table, security policies, and seeds the 3
+                          events this site originally launched with
 assets/data/results.json Standings/fixtures, keyed by event slug (empty
                           until the first event happens — see below)
 assets/data/partners.json Confirmed partners only — empty by design
@@ -48,23 +55,29 @@ python3 -m http.server 8000
 # then visit http://localhost:8000
 ```
 
-## Adding a new city/event
+Event data is a real network call to Supabase now, not a bundled file, so
+`assets/js/supabase-config.js` needs real values even for local development
+— see "Back office" below. (This does mean the old "works opened directly
+as a `file://` URL" property is gone; a static file server like the one
+above, or any real host, is required now.)
 
-Add an object to the array in `assets/data/events-data.js` — no HTML changes
-needed. Events listing, the homepage teaser (top 3, edit `index.html`
-directly since that one's intentionally static), and the event detail page
-all read from this file. Status must be one of: `coming-soon`,
-`entries-open`, `limited`, `sold-out`, `completed`.
+## Managing events
+
+All event content — cities, dates, status, divisions, running order, the
+Ticket Tailor checkout link — is edited through **`admin.html`**, not by
+touching HTML or JS files. See "Back office" below to set that up. Once it's
+running, every page that lists or shows events (`index.html`, `events.html`,
+`event.html`, `results.html`) reflects changes immediately, with no
+redeploy needed.
 
 ## Taking payment (Ticket Tailor)
 
-There's no entry form on this site at all — every "Enter" button (on
-event.html, events.html and the homepage) goes straight to Ticket Tailor's
-hosted checkout, one click, no page of ours in between. No card data ever
-touches this site or your server, and it works on plain static hosting with
-**zero backend code**. Ticket Tailor is purpose-built event ticketing (vs. a
-generic payment processor), which is why it's the better fit here — it
-collects the buyer's name/email as part of any order, and division +
+There's no entry *form* on this site — every "Enter" button (on event.html,
+events.html and the homepage) goes straight to Ticket Tailor's hosted
+checkout, one click, no page of ours in between. No card data ever touches
+this site or your server. Ticket Tailor is purpose-built event ticketing
+(vs. a generic payment processor), which is why it's the better fit here —
+it collects the buyer's name/email as part of any order, and division +
 skill level as ticket types/custom questions on its own checkout page, so
 nothing needs asking twice.
 
@@ -72,37 +85,38 @@ To switch payments on for an event:
 
 1. In Ticket Tailor: create the event, then two ticket types, **"Beginners
    Entry"** and **"Advanced Entry"**, each priced to match that event's
-   `pricePlayer` — the amount there is what's actually charged. Buying one
-   of these IS how someone picks their division now.
+   price-per-player — the amount there is what's actually charged. Buying
+   one of these IS how someone picks their division now.
 2. Add a custom checkout question: **"Skill level (1.0–5.0, self-rated)"**
    — required. This is how skill level reaches you, since the site no
    longer asks for it itself.
 3. In the event's checkout settings, set the post-checkout redirect URL to:
    `https://YOURDOMAIN/enter-team.html?confirmed=1` — that page is just a
    generic "you're in, check your email" landing screen now.
-4. Copy that event's checkout/Box Office URL into its
-   `ticketTailorCheckoutUrl` field in `assets/data/events-data.js`.
+4. Paste that event's checkout/Box Office URL into its **"Ticket Tailor
+   checkout URL"** field in `admin.html`, then save.
 
-Until `ticketTailorCheckoutUrl` is filled in, every "Enter" button for that
-event falls back to a "Get Notified" mailto instead of sending people to a
-broken link — so it's always safe to publish events ahead of opening
-entries.
+Until that field is filled in, every "Enter" button for that event falls
+back to a "Get Notified" mailto instead of sending people to a broken link
+— so it's always safe to publish events ahead of opening entries.
 
-**Keep `pricePlayer` (the on-site display price) and the ticket price you
-set in Ticket Tailor in sync manually** — they're two separate places by
-necessity (reading Ticket Tailor's live price back into the page would need
-a backend call), so if you change one, change the other.
+**Keep the on-site display price (set in `admin.html`) and the ticket price
+you set in Ticket Tailor in sync manually** — they're two separate places
+by necessity (reading Ticket Tailor's live price back into the page would
+need a backend call to Ticket Tailor's API, which this site doesn't make),
+so if you change one, change the other.
 
-There's no backend, so there's no database of entries on our side either —
-the source of truth for "who paid," and for who's in which division at what
-skill level, is entirely the Ticket Tailor dashboard now. The confirmation
-page a customer lands on after paying (`enter-team.html?confirmed=1`) is
-deliberately generic — Ticket Tailor's own confirmation email is what
-carries their actual order details.
+Supabase only stores what's needed to *display* an event and where to send
+someone to pay for it — there's still no database of entries anywhere on
+our side. The source of truth for "who paid," and for who's in which
+division at what skill level, is entirely the Ticket Tailor dashboard. The
+confirmation page a customer lands on after paying
+(`enter-team.html?confirmed=1`) is deliberately generic — Ticket Tailor's
+own confirmation email is what carries their actual order details.
 
 Note: Ticket Tailor charges its own per-ticket booking fee on top of card
 processing — check their current pricing before launch, it isn't reflected
-in `pricePlayer`.
+in the price shown on-site.
 
 - **Spectator tickets** (`event.html`) — routes to a `mailto:` enquiry until
   a ticketing platform is integrated. Wire it up the same way as player
@@ -116,7 +130,43 @@ in `pricePlayer`.
   brief ("never fabricate sponsor logos or partner claims"). The Partners
   page shows a "coming soon" state instead of placeholder logos.
 
-## Editing content
+## Back office (Supabase + admin.html)
+
+Events used to live in a static JS file only a developer could edit; now
+they live in a small Supabase database, and `admin.html` is a real login +
+event editor for anyone without file/FTP access. One-time setup:
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com) —
+   free tier is plenty for this. Note its **Project URL** and **anon public
+   key** from Project Settings > API; you'll need both shortly.
+2. **Run the schema**: Supabase Dashboard > SQL Editor > New query, paste
+   in the entire contents of `supabase/schema.sql`, and run it. This
+   creates the `events` table, locks it down with row-level security
+   (anyone can read events; only a logged-in user can add/edit/delete
+   them), and seeds it with the 3 events this site originally launched
+   with, so nothing is lost in the migration off the old static file.
+3. **Create your login**: Authentication > Users > Add user — email +
+   password, whatever you want to sign in with at `admin.html`. There is
+   no sign-up form anywhere on the site; this is the only way an account
+   gets created.
+4. **Turn off public sign-up**: Authentication > Providers > Email, disable
+   "Allow new users to sign up." This matters because the anon key from
+   step 1 is meant to be public — it ships in this site's source to every
+   visitor's browser, same as any client-side API key — and the write
+   policies in `schema.sql` only check "is someone logged in," not "is it
+   specifically you." Turning off sign-up is what actually keeps that
+   narrow to the account you made in step 3, since nobody else can create
+   one to log in with.
+5. **Fill in `assets/js/supabase-config.js`** with the Project URL and anon
+   key from step 1, then upload it (along with the rest of the site) via
+   FileZilla as usual.
+6. Visit `https://YOURDOMAIN/admin.html`, sign in, and you're managing live
+   events — no redeploy needed for content changes from here on.
+
+`admin.html` is excluded from the sitemap and blocked in `robots.txt`, and
+carries a `noindex` tag, so it shouldn't show up in search — but none of
+that is real access control, only the Supabase login is. Don't rely on the
+URL being obscure.
 
 - **Colours/type/spacing**: `assets/css/tokens.css` — nothing else should
   have a hardcoded value.
@@ -131,5 +181,7 @@ in `pricePlayer`.
 ## Deploying
 
 Plain static site — deploys anywhere: GitHub Pages, Netlify, Vercel,
-Cloudflare Pages, or any web host. Upload everything except `.design/`
-(reference docs, not needed at runtime).
+Cloudflare Pages, or any web host. Upload everything except `.design/` and
+`supabase/` (reference docs and setup SQL — neither is needed at runtime,
+`supabase/schema.sql` only ever gets pasted into the Supabase SQL Editor
+once, per "Back office" above).
