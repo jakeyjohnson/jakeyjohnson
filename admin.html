@@ -209,7 +209,7 @@
           <div>
             <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Admin</span>
             <h1 id="fixturesHeading">Fixtures &amp; Live Scores</h1>
-            <p class="lede">Scores save the moment you tab out of a field — no separate save step — and update on <a href="results.html">results.html</a> straight away.</p>
+            <p class="lede">Americano format — players rotate partners every round, and the leaderboard is each player's own points added up, not a team score. Scores save the moment you tab out of a field, and update on <a href="results.html">results.html</a> straight away.</p>
           </div>
         </div>
 
@@ -219,15 +219,32 @@
 
         <div id="fixtureLeagueTabs" class="fixture-league-tabs"></div>
 
-        <div id="fixtureRowsList"></div>
-
-        <div class="fixture-add-row">
-          <div class="form-row"><input type="text" id="fxNewTeamA" placeholder="Team A name" aria-label="New fixture — Team A name"></div>
-          <span class="fixture-vs">v</span>
-          <div class="form-row"><input type="text" id="fxNewTeamB" placeholder="Team B name" aria-label="New fixture — Team B name"></div>
-          <button type="button" class="btn btn-primary btn-small" id="addFixtureBtn">+ Add Fixture</button>
+        <div class="admin-fieldset">
+          <span class="admin-fieldset-legend">Players</span>
+          <div id="playersList" class="players-list"></div>
+          <p class="form-note" id="playerCountNote"></p>
+          <textarea id="bulkAddPlayers" class="players-bulk-textarea" rows="3" placeholder="One name per line, e.g.&#10;Sam Turner&#10;Priya Shah"></textarea>
+          <div class="players-add-actions">
+            <button type="button" class="btn btn-outline btn-small" id="addTypedPlayersBtn">+ Add Names Above</button>
+            <span class="players-add-or">or</span>
+            <input type="number" id="placeholderCount" min="1" max="50" value="10" aria-label="Number of placeholder players to add">
+            <button type="button" class="btn btn-outline btn-small" id="addPlaceholderPlayersBtn">+ Add Placeholder Players</button>
+          </div>
         </div>
-        <span class="field-error" id="fixtureAddError" aria-live="polite"></span>
+
+        <div class="admin-fieldset">
+          <span class="admin-fieldset-legend">Generate Schedule</span>
+          <p class="form-note">Auto-builds the whole round list from whoever's in the Players list above, giving everyone as close to the same number of games as possible. Rebuilding replaces any fixtures (and scores) already entered for this league.</p>
+          <div class="schedule-gen-row">
+            <div class="form-row"><label for="fxCourts">Courts available</label><input type="number" id="fxCourts" min="1" max="20" value="4"></div>
+            <div class="form-row"><label for="fxRounds">Rounds</label><input type="number" id="fxRounds" min="1" max="30" value="8"></div>
+            <button type="button" class="btn btn-primary btn-small" id="generateScheduleBtn">Generate Fixtures</button>
+          </div>
+          <span class="field-error" id="scheduleGenError" aria-live="polite"></span>
+        </div>
+
+        <div id="fixtureStandings"></div>
+        <div id="fixtureRoundsList"></div>
       </div>
 
     </div>
@@ -690,17 +707,23 @@
     });
   });
 
-  /* ===================== Fixtures & live scores ===================== */
+  /* ===================== Fixtures & live scores (Americano) ===================== */
 
   var fixturesHeading = document.getElementById('fixturesHeading');
   var fixtureLeagueTabs = document.getElementById('fixtureLeagueTabs');
-  var fixtureRowsList = document.getElementById('fixtureRowsList');
-  var fixtureAddError = document.getElementById('fixtureAddError');
-  var fxNewTeamA = document.getElementById('fxNewTeamA');
-  var fxNewTeamB = document.getElementById('fxNewTeamB');
+  var playersListEl = document.getElementById('playersList');
+  var playerCountNote = document.getElementById('playerCountNote');
+  var bulkAddPlayers = document.getElementById('bulkAddPlayers');
+  var placeholderCount = document.getElementById('placeholderCount');
+  var fxCourts = document.getElementById('fxCourts');
+  var fxRounds = document.getElementById('fxRounds');
+  var scheduleGenError = document.getElementById('scheduleGenError');
+  var fixtureStandingsEl = document.getElementById('fixtureStandings');
+  var fixtureRoundsListEl = document.getElementById('fixtureRoundsList');
 
   var currentFixturesEvent = null;
   var currentLeague = null;
+  var playersCache = [];
   var fixturesCache = [];
   var fixturesChannel = null;
 
@@ -721,9 +744,9 @@
     var leagueNames = ev.divisions.map(function(d){ return d.name; }).filter(Boolean);
     currentLeague = leagueNames[0] || null;
     renderLeagueTabs(leagueNames);
-    loadAndRenderFixtures();
+    loadLeagueData();
 
-    fixturesChannel = window.PartyPadelFixtures.subscribeFixtures(ev.id, function(){ loadAndRenderFixtures(); });
+    fixturesChannel = window.PartyPadelFixtures.subscribeFixtures(ev.id, loadLeagueData);
   }
 
   document.getElementById('backToEventsBtn').addEventListener('click', function(){
@@ -744,58 +767,165 @@
       btn.addEventListener('click', function(){
         currentLeague = btn.getAttribute('data-league');
         renderLeagueTabs(names);
-        renderFixtureRows();
+        loadLeagueData();
       });
     });
   }
 
-  function loadAndRenderFixtures(){
-    fixtureRowsList.innerHTML = '<p class="loading-note">Loading fixtures…</p>';
-    window.PartyPadelFixtures.loadFixtures(currentFixturesEvent.id).then(function(fixtures){
-      fixturesCache = fixtures;
-      renderFixtureRows();
+  function loadLeagueData(){
+    if (!currentLeague){
+      playersListEl.innerHTML = ''; playerCountNote.textContent = '';
+      fixtureStandingsEl.innerHTML = ''; fixtureRoundsListEl.innerHTML = '';
+      return;
+    }
+    Promise.all([
+      window.PartyPadelFixtures.loadPlayers(currentFixturesEvent.id, currentLeague),
+      window.PartyPadelFixtures.loadFixtures(currentFixturesEvent.id, currentLeague)
+    ]).then(function(results){
+      playersCache = results[0];
+      fixturesCache = results[1];
+      renderPlayers();
+      renderStandingsAndRounds();
     });
   }
 
-  function standingsTableHTML(standings){
+  /* ---------- Players ---------- */
+
+  function playerRowHTML(p){
+    return '<div class="player-row" data-player-id="' + p.id + '">' +
+      '<input type="text" class="player-name" value="' + esc(p.name) + '" aria-label="Player name">' +
+      '<button type="button" class="btn btn-outline btn-small player-remove">Remove</button>' +
+    '</div>';
+  }
+
+  function renderPlayers(){
+    playersListEl.innerHTML = playersCache.length
+      ? playersCache.map(playerRowHTML).join('')
+      : '<p class="empty-note">No players yet — add some below.</p>';
+    playersListEl.querySelectorAll('[data-player-id]').forEach(wirePlayerRow);
+    playerCountNote.textContent = playersCache.length + (playersCache.length === 1 ? ' player' : ' players') + ' in this league.';
+  }
+
+  function wirePlayerRow(row){
+    var id = row.getAttribute('data-player-id');
+    row.querySelector('.player-name').addEventListener('change', function(e){
+      var name = e.target.value.trim();
+      if (!name){ e.target.value = (playersCache.filter(function(x){ return x.id === id; })[0] || {}).name || ''; return; }
+      db.from('players').update({ name: name }).eq('id', id).then(function(res){
+        if (res.error){ window.alert('Couldn\'t save: ' + res.error.message); return; }
+        var p = playersCache.filter(function(x){ return x.id === id; })[0];
+        if (p) p.name = name;
+        renderStandingsAndRounds();
+      });
+    });
+    row.querySelector('.player-remove').addEventListener('click', function(){
+      if (!window.confirm('Remove this player? Any fixture they\'re part of is removed too.')) return;
+      db.from('players').delete().eq('id', id).then(function(res){
+        if (res.error){ window.alert('Couldn\'t remove: ' + res.error.message); return; }
+        loadLeagueData();
+      });
+    });
+  }
+
+  function addPlayers(names){
+    if (!currentLeague){ window.alert('This event has no leagues yet.'); return; }
+    var startOrder = playersCache.length;
+    var payload = names.map(function(name, i){
+      return { event_id: currentFixturesEvent.id, league_name: currentLeague, name: name, sort_order: startOrder + i };
+    });
+    db.from('players').insert(payload).then(function(res){
+      if (res.error){ window.alert('Couldn\'t add players: ' + res.error.message); return; }
+      bulkAddPlayers.value = '';
+      loadLeagueData();
+    });
+  }
+
+  document.getElementById('addTypedPlayersBtn').addEventListener('click', function(){
+    var names = bulkAddPlayers.value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    if (!names.length) return;
+    addPlayers(names);
+  });
+
+  document.getElementById('addPlaceholderPlayersBtn').addEventListener('click', function(){
+    var n = parseInt(placeholderCount.value, 10) || 0;
+    if (n < 1) return;
+    var startAt = playersCache.length + 1;
+    var names = [];
+    for (var i = 0; i < n; i++) names.push('Player ' + (startAt + i));
+    addPlayers(names);
+  });
+
+  /* ---------- Generate schedule ---------- */
+
+  document.getElementById('generateScheduleBtn').addEventListener('click', function(){
+    scheduleGenError.textContent = '';
+    if (!currentLeague){ scheduleGenError.textContent = 'This event has no leagues yet.'; return; }
+    if (playersCache.length < 4){ scheduleGenError.textContent = 'Add at least 4 players first.'; return; }
+    var courts = parseInt(fxCourts.value, 10) || 1;
+    var rounds = parseInt(fxRounds.value, 10) || 1;
+    if (!window.confirm('Regenerate the schedule for ' + currentLeague + '? Any fixtures and scores already entered for this league will be replaced.')) return;
+
+    db.from('fixtures').delete().eq('event_id', currentFixturesEvent.id).eq('league_name', currentLeague).then(function(delRes){
+      if (delRes.error){ scheduleGenError.textContent = delRes.error.message; return; }
+      var schedule = window.PartyPadelFixtures.generateSchedule(playersCache, courts, rounds);
+      if (!schedule.length){ scheduleGenError.textContent = 'Not enough players for even one court — add more players first.'; return; }
+      var payload = schedule.map(function(f){
+        return Object.assign({ event_id: currentFixturesEvent.id, league_name: currentLeague, status: 'scheduled' }, f);
+      });
+      db.from('fixtures').insert(payload).then(function(res){
+        if (res.error){ scheduleGenError.textContent = res.error.message; return; }
+        loadLeagueData();
+      });
+    });
+  });
+
+  /* ---------- Standings + round-by-round fixture editing ---------- */
+
+  function playerNameById(id){
+    var p = playersCache.filter(function(x){ return x.id === id; })[0];
+    return p ? p.name : 'Removed player';
+  }
+
+  function playerStandingsTableHTML(standings){
     if (!standings.length) return '';
-    return '<div class="standings-header"><span>Team</span><span>P</span><span>W</span><span>L</span><span>Pts</span></div>' +
-      standings.map(function(t){
-        return '<div class="standings-row"><span>' + esc(t.name) + '</span><span>' + t.played + '</span><span>' + t.won + '</span><span>' + t.lost + '</span><span>' + t.points + '</span></div>';
+    return '<div class="player-standings-header"><span>Player</span><span>Played</span><span>Points</span></div>' +
+      standings.map(function(s){
+        return '<div class="player-standings-row"><span>' + esc(s.name) + '</span><span>' + s.played + '</span><span>' + s.points + '</span></div>';
       }).join('');
   }
 
-  function fixtureRowHTML(f){
-    return '<div class="fixture-row-editor" data-fixture-id="' + f.id + '">' +
-      '<div class="form-row"><input type="text" class="fx-team-a" value="' + esc(f.teamA) + '" placeholder="Team A" aria-label="Team A name"></div>' +
-      '<span class="fixture-vs">v</span>' +
-      '<div class="form-row"><input type="text" class="fx-team-b" value="' + esc(f.teamB) + '" placeholder="Team B" aria-label="Team B name"></div>' +
-      '<div class="form-row fixture-score"><input type="number" class="fx-score-a" min="0" step="1" value="' + (f.scoreA != null ? f.scoreA : '') + '" aria-label="Team A score"></div>' +
+  function fixtureMatchEditorHTML(f){
+    return '<div class="fixture-match-editor" data-fixture-id="' + f.id + '">' +
+      '<span class="fixture-court-label">Court ' + f.court + '</span>' +
+      '<span class="fixture-pair">' + esc(playerNameById(f.playerA1)) + ' &amp; ' + esc(playerNameById(f.playerA2)) + '</span>' +
+      '<div class="form-row fixture-score"><input type="number" class="fx-score-a" min="0" step="1" value="' + (f.scoreA != null ? f.scoreA : '') + '" aria-label="First pair score"></div>' +
       '<span class="fixture-dash">–</span>' +
-      '<div class="form-row fixture-score"><input type="number" class="fx-score-b" min="0" step="1" value="' + (f.scoreB != null ? f.scoreB : '') + '" aria-label="Team B score"></div>' +
+      '<div class="form-row fixture-score"><input type="number" class="fx-score-b" min="0" step="1" value="' + (f.scoreB != null ? f.scoreB : '') + '" aria-label="Second pair score"></div>' +
+      '<span class="fixture-pair">' + esc(playerNameById(f.playerB1)) + ' &amp; ' + esc(playerNameById(f.playerB2)) + '</span>' +
       '<div class="form-row"><select class="fx-status" aria-label="Match status">' +
         '<option value="scheduled"' + (f.status === 'scheduled' ? ' selected' : '') + '>Scheduled</option>' +
         '<option value="live"' + (f.status === 'live' ? ' selected' : '') + '>Live</option>' +
         '<option value="completed"' + (f.status === 'completed' ? ' selected' : '') + '>Completed</option>' +
       '</select></div>' +
-      '<button type="button" class="btn btn-outline btn-small fx-remove">Remove</button>' +
       '<span class="fx-saved" aria-live="polite"></span>' +
     '</div>';
   }
 
-  function renderFixtureRows(){
-    if (!currentLeague){ fixtureRowsList.innerHTML = ''; return; }
-    var rows = fixturesCache.filter(function(f){ return f.leagueName === currentLeague; });
-    var standings = window.PartyPadelFixtures.computeStandings(fixturesCache, currentLeague);
-    fixtureRowsList.innerHTML = standingsTableHTML(standings) +
-      (rows.length ? rows.map(fixtureRowHTML).join('') : '<p class="empty-note">No fixtures yet in this league — add one below.</p>');
-    fixtureRowsList.querySelectorAll('[data-fixture-id]').forEach(wireFixtureRow);
-  }
+  function renderStandingsAndRounds(){
+    fixtureStandingsEl.innerHTML = playerStandingsTableHTML(window.PartyPadelFixtures.computeIndividualStandings(playersCache, fixturesCache));
 
-  function refreshStandingsOnly(){
-    fixtureRowsList.querySelectorAll('.standings-header, .standings-row').forEach(function(el){ el.remove(); });
-    var standings = window.PartyPadelFixtures.computeStandings(fixturesCache, currentLeague);
-    fixtureRowsList.insertAdjacentHTML('afterbegin', standingsTableHTML(standings));
+    var rounds = {};
+    fixturesCache.forEach(function(f){ (rounds[f.round] = rounds[f.round] || []).push(f); });
+    var roundNumbers = Object.keys(rounds).map(Number).sort(function(a, b){ return a - b; });
+    if (!roundNumbers.length){
+      fixtureRoundsListEl.innerHTML = '<p class="empty-note">No fixtures yet — add players above, then Generate Fixtures.</p>';
+      return;
+    }
+    fixtureRoundsListEl.innerHTML = roundNumbers.map(function(rn){
+      var matches = rounds[rn].slice().sort(function(a, b){ return a.court - b.court; });
+      return '<h3 class="fixture-round-heading">Round ' + rn + '</h3>' + matches.map(fixtureMatchEditorHTML).join('');
+    }).join('');
+    fixtureRoundsListEl.querySelectorAll('[data-fixture-id]').forEach(wireFixtureRow);
   }
 
   function wireFixtureRow(row){
@@ -806,8 +936,6 @@
       var scoreAVal = row.querySelector('.fx-score-a').value;
       var scoreBVal = row.querySelector('.fx-score-b').value;
       var payload = {
-        team_a: row.querySelector('.fx-team-a').value.trim(),
-        team_b: row.querySelector('.fx-team-b').value.trim(),
         score_a: scoreAVal === '' ? null : parseInt(scoreAVal, 10),
         score_b: scoreBVal === '' ? null : parseInt(scoreBVal, 10),
         status: row.querySelector('.fx-status').value
@@ -817,48 +945,14 @@
         savedFlash.textContent = 'Saved';
         setTimeout(function(){ savedFlash.textContent = ''; }, 1500);
         var f = fixturesCache.filter(function(x){ return x.id === id; })[0];
-        if (f){
-          f.teamA = payload.team_a; f.teamB = payload.team_b;
-          f.scoreA = payload.score_a; f.scoreB = payload.score_b; f.status = payload.status;
-        }
-        refreshStandingsOnly();
+        if (f){ f.scoreA = payload.score_a; f.scoreB = payload.score_b; f.status = payload.status; }
+        fixtureStandingsEl.innerHTML = playerStandingsTableHTML(window.PartyPadelFixtures.computeIndividualStandings(playersCache, fixturesCache));
       });
     }
     row.querySelectorAll('input, select').forEach(function(field){
       field.addEventListener('change', save);
     });
-
-    row.querySelector('.fx-remove').addEventListener('click', function(){
-      if (!window.confirm('Remove this fixture?')) return;
-      db.from('fixtures').delete().eq('id', id).then(function(res){
-        if (res.error){ window.alert('Couldn\'t remove: ' + res.error.message); return; }
-        fixturesCache = fixturesCache.filter(function(x){ return x.id !== id; });
-        renderFixtureRows();
-      });
-    });
   }
-
-  document.getElementById('addFixtureBtn').addEventListener('click', function(){
-    fixtureAddError.textContent = '';
-    if (!currentLeague){ fixtureAddError.textContent = 'This event has no leagues yet.'; return; }
-    if (!fxNewTeamA.value.trim() || !fxNewTeamB.value.trim()){
-      fixtureAddError.textContent = 'Both team names are required.';
-      return;
-    }
-    var payload = {
-      event_id: currentFixturesEvent.id,
-      league_name: currentLeague,
-      team_a: fxNewTeamA.value.trim(),
-      team_b: fxNewTeamB.value.trim(),
-      status: 'scheduled',
-      sort_order: fixturesCache.length
-    };
-    db.from('fixtures').insert(payload).then(function(res){
-      if (res.error){ fixtureAddError.textContent = res.error.message; return; }
-      fxNewTeamA.value = ''; fxNewTeamB.value = '';
-      loadAndRenderFixtures();
-    });
-  });
 
 })();
 </script>

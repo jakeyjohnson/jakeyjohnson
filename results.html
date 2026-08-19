@@ -100,24 +100,34 @@
   var fixturesListEl = document.getElementById('fixturesList');
   var eventsCache = [];
   var fixturesCache = [];
+  var playersCache = [];
   var currentTabByEvent = {}; // eventId -> selected league name
 
   function statusLabel(status){
     return status === 'live' ? 'Live' : (status === 'completed' ? 'Full Time' : 'Scheduled');
   }
 
-  function standingsTableHTML(standings){
+  function playerNameById(id){
+    var p = playersCache.filter(function(x){ return x.id === id; })[0];
+    return p ? p.name : 'Player';
+  }
+
+  function playerStandingsTableHTML(standings){
     if (!standings.length) return '<p class="standings-empty">No results yet.</p>';
-    return '<div class="standings-header"><span>Team</span><span>P</span><span>W</span><span>L</span><span>Pts</span></div>' +
-      standings.map(function(t){
-        return '<div class="standings-row"><span>' + esc(t.name) + '</span><span>' + t.played + '</span><span>' + t.won + '</span><span>' + t.lost + '</span><span>' + t.points + '</span></div>';
+    return '<div class="player-standings-header"><span>Player</span><span>Played</span><span>Points</span></div>' +
+      standings.map(function(s){
+        return '<div class="player-standings-row"><span>' + esc(s.name) + '</span><span>' + s.played + '</span><span>' + s.points + '</span></div>';
       }).join('');
   }
 
   function matchRowHTML(f){
     var hasScore = f.scoreA != null && f.scoreB != null;
     return '<div class="fixture-match-row">' +
-      '<span class="fixture-match-teams">' + esc(f.teamA) + ' <span class="fixture-match-score">' + (hasScore ? (f.scoreA + ' – ' + f.scoreB) : 'v') + '</span> ' + esc(f.teamB) + '</span>' +
+      '<span class="fixture-match-teams">Round ' + f.round + ', Court ' + f.court + ': ' +
+        esc(playerNameById(f.playerA1)) + ' &amp; ' + esc(playerNameById(f.playerA2)) +
+        ' <span class="fixture-match-score">' + (hasScore ? (f.scoreA + ' – ' + f.scoreB) : 'v') + '</span> ' +
+        esc(playerNameById(f.playerB1)) + ' &amp; ' + esc(playerNameById(f.playerB2)) +
+      '</span>' +
       '<span class="status-pill ' + (f.status === 'live' ? 'status-open' : (f.status === 'completed' ? 'status-closed' : 'status-limited')) + '">' + statusLabel(f.status) + '</span>' +
     '</div>';
   }
@@ -138,13 +148,14 @@
       : '';
 
     var leagueFixtures = eventFixtures.filter(function(f){ return f.leagueName === activeLeague; });
-    var standings = window.PartyPadelFixtures.computeStandings(eventFixtures, activeLeague);
-    var matches = leagueFixtures.map(matchRowHTML).join('');
+    var leaguePlayers = playersCache.filter(function(p){ return p.eventId === ev.id && p.leagueName === activeLeague; });
+    var standings = window.PartyPadelFixtures.computeIndividualStandings(leaguePlayers, leagueFixtures);
+    var matches = leagueFixtures.slice().sort(function(a, b){ return a.round - b.round || a.court - b.court; }).map(matchRowHTML).join('');
 
     return '<div class="event-standings-block reveal" data-event-id="' + ev.id + '">' +
       '<h3>' + esc(ev.city) + ' <span class="event-standings-date">— ' + esc(ev.dateLabel) + '</span></h3>' +
       tabsHTML +
-      standingsTableHTML(standings) +
+      playerStandingsTableHTML(standings) +
       (matches ? '<div class="fixture-match-list">' + matches + '</div>' : '') +
     '</div>';
   }
@@ -192,10 +203,12 @@
   function loadAndRenderAll(){
     Promise.all([
       window.PartyPadelEvents.loadEvents(),
-      window.PartyPadelFixtures.loadAllFixtures()
+      window.PartyPadelFixtures.loadAllFixtures(),
+      window.PartyPadelFixtures.loadAllPlayers()
     ]).then(function(results){
       eventsCache = results[0];
       fixturesCache = results[1];
+      playersCache = results[2];
       renderStandings();
       renderFixturesToCome();
     });

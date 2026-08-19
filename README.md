@@ -179,29 +179,56 @@ requirements (not tied to any fixed skill scale, so "Self-rated 3.0–5.0",
 drives the "Full" vs "X spaces left" status shown on-site. An event needs
 at least one to be enterable at all.
 
-### Fixtures & live scores
+### Fixtures & live scores (Americano)
 
-Once an event is running, click **Fixtures** on its row in `admin.html` to
-enter matches and scores as they happen. Same login as everything else in
-the back office — there's no separate account for this.
+Party Padel plays Americano: players rotate partners every round instead of
+staying in one fixed pair all night, and the leaderboard is each player's
+own points added up across every round they played — not a team win/loss
+table. Click **Fixtures** on an event's row in `admin.html` to run this.
+Same login as everything else in the back office.
 
-- Pick a league (tabs at the top — only leagues that event actually has),
-  then **+ Add Fixture** with the two team/pair names. New fixtures start
-  as "Scheduled" with no score.
-- Type a score into either team's box, or change the status dropdown, and
-  it saves the moment you tab or click away — no separate save button.
-  A small "Saved" note confirms it.
-- The league table above the fixture list recalculates itself from
-  whatever's been scored so far (3 points a win, 1 a draw), live, as you go.
-- `results.html` shows the exact same table and match list to the public,
-  and updates within a second or two of you saving a score — it's
-  subscribed to Supabase's realtime feed for the `fixtures` table, not a
-  polling refresh. If that feed is ever unreachable (a strict network,
-  the table not yet added to the project's realtime publication —
-  `supabase/schema.sql` handles that automatically) it just falls back to
-  "reload the page to see the latest," rather than breaking.
-- Removing a fixture is permanent (there's a confirm prompt) — there's no
-  archive/undo, same as deleting an event.
+**1. Add players**, one league at a time (tabs at the top — only leagues
+that event actually has):
+- Paste real names, one per line, into the text box and **+ Add Names
+  Above**, and/or
+- Set a number and **+ Add Placeholder Players** for a quick "Player 1,
+  Player 2…" roster — handy before you know exactly who's turned up, or
+  for trying the schedule out.
+- Rename anyone at any time by editing their name directly in the list —
+  it saves on its own and updates everywhere they appear, without touching
+  the schedule itself.
+
+**2. Generate the schedule**: set **Courts available** and **Rounds**,
+then **Generate Fixtures**. This works out who plays with/against whom,
+round by round, automatically — nobody has to hand-build a fixture list.
+It keeps every player within one game of everyone else's total (so with,
+say, 50 players and 6 courts, some will play 3 rounds and some 4, never a
+bigger gap than that), and spreads partners/opponents around rather than
+repeating the same pairing over and over. Regenerating replaces whatever
+schedule (and scores) that league already had — there's a confirm prompt.
+
+**3. Enter scores as matches happen**: under each Round heading, type a
+score into either side of a match, or change its status
+(Scheduled/Live/Completed) — it saves the moment you tab or click away, no
+separate save button, with a small "Saved" note to confirm. The individual
+leaderboard above recalculates itself live as scores come in.
+
+`results.html` shows that same leaderboard and round-by-round match list to
+the public, updating within a second or two of you saving a score — it's
+subscribed to Supabase's realtime feed for the `fixtures` table, not a
+polling refresh. If that feed is ever unreachable (a strict network, or the
+table not yet added to the project's realtime publication —
+`supabase/schema.sql` handles that automatically) it just falls back to
+"reload the page to see the latest," rather than breaking.
+
+Removing a player removes any fixture they're part of too (there's a
+confirm prompt) — there's no archive/undo, same as deleting an event.
+
+`supabase/schema.sql` also seeds a working example: Manchester's Beginners
+league ships with 50 placeholder players ("Player 1"…"Player 50") and an
+already-generated 6-court, 8-round schedule, so there's something real to
+look at in `admin.html` and `results.html` without setting anything up
+first.
 
 ## Editing content
 

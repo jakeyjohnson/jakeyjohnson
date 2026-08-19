@@ -1,138 +1,216 @@
-/* Shared fixtures/live-scores helpers — used by admin.html (to enter
-   scores) and results.html (to display them). Mirrors the pattern in
-   events.js: a thin mapper over the Supabase "fixtures" table plus a
-   couple of pure functions any consumer can reuse. */
+/* Americano-format fixtures & live scores — used by admin.html (to
+   generate the schedule and enter scores) and results.html (to show
+   the individual leaderboard). Party Padel plays Americano: players
+   rotate partners every round, and standings are an individual points
+   tally (each player's score is their pair's score, added up across
+   every round they played), not a team win/loss table. */
 (function(window){
   'use strict';
+
+  function rowToPlayer(row){
+    return { id: row.id, eventId: row.event_id, leagueName: row.league_name, name: row.name, sortOrder: row.sort_order };
+  }
 
   function rowToFixture(row){
     return {
       id: row.id,
       eventId: row.event_id,
       leagueName: row.league_name,
-      teamA: row.team_a,
-      teamB: row.team_b,
+      round: row.round_number,
+      court: row.court_number,
+      playerA1: row.player_a1,
+      playerA2: row.player_a2,
+      playerB1: row.player_b1,
+      playerB2: row.player_b2,
       scoreA: row.score_a,
       scoreB: row.score_b,
-      status: row.status,
-      sortOrder: row.sort_order
+      status: row.status
     };
   }
 
-  function loadFixtures(eventId){
+  function loadPlayers(eventId, leagueName){
     if (!window.PartyPadelDB) return Promise.resolve([]);
     return window.PartyPadelDB
-      .from('fixtures')
-      .select('*')
-      .eq('event_id', eventId)
+      .from('players').select('*')
+      .eq('event_id', eventId).eq('league_name', leagueName)
       .order('sort_order', { ascending: true })
       .then(function(res){
-        if (res.error){
-          console.error('Party Padel: failed to load fixtures —', res.error.message);
-          return [];
-        }
+        if (res.error){ console.error('Party Padel: failed to load players —', res.error.message); return []; }
+        return res.data.map(rowToPlayer);
+      });
+  }
+
+  function loadFixtures(eventId, leagueName){
+    if (!window.PartyPadelDB) return Promise.resolve([]);
+    var query = window.PartyPadelDB.from('fixtures').select('*').eq('event_id', eventId);
+    if (leagueName) query = query.eq('league_name', leagueName);
+    return query
+      .order('round_number', { ascending: true })
+      .then(function(res){
+        if (res.error){ console.error('Party Padel: failed to load fixtures —', res.error.message); return []; }
         return res.data.map(rowToFixture);
       });
   }
 
-  /* Every match ever scored across every event, newest event first —
-     what results.html needs to build one live-standings block per
-     event without a separate round trip per event. */
+  /* Every player across every event — results.html needs this to turn
+     the player ids on each fixture into names, without a round trip
+     per event/league. */
+  function loadAllPlayers(){
+    if (!window.PartyPadelDB) return Promise.resolve([]);
+    return window.PartyPadelDB.from('players').select('*').order('sort_order', { ascending: true })
+      .then(function(res){
+        if (res.error){ console.error('Party Padel: failed to load players —', res.error.message); return []; }
+        return res.data.map(rowToPlayer);
+      });
+  }
+
+  /* Every match across every event, for results.html's "which events
+     currently have fixtures at all" pass — one round trip instead of
+     one per event. */
   function loadAllFixtures(){
     if (!window.PartyPadelDB) return Promise.resolve([]);
-    return window.PartyPadelDB
-      .from('fixtures')
-      .select('*')
-      .order('sort_order', { ascending: true })
+    return window.PartyPadelDB.from('fixtures').select('*').order('round_number', { ascending: true })
       .then(function(res){
-        if (res.error){
-          console.error('Party Padel: failed to load fixtures —', res.error.message);
-          return [];
-        }
+        if (res.error){ console.error('Party Padel: failed to load fixtures —', res.error.message); return []; }
         return res.data.map(rowToFixture);
       });
   }
 
-  /* Subscribes to live changes on the fixtures table for one event.
-     Best-effort: if realtime isn't reachable (network policy, or the
-     project hasn't got the table added to its publication yet) this
-     just never fires and the page still shows whatever it loaded on
-     open — it degrades to "refresh to see updates", not a crash. */
   function subscribeFixtures(eventId, onChange){
     if (!window.PartyPadelDB || !window.PartyPadelDB.channel) return null;
-    var channel = window.PartyPadelDB
+    return window.PartyPadelDB
       .channel('fixtures-' + eventId)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'fixtures', filter: 'event_id=eq.' + eventId
-      }, onChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fixtures', filter: 'event_id=eq.' + eventId }, onChange)
       .subscribe();
-    return channel;
   }
 
-  /* Same as subscribeFixtures but across every event — what results.html
-     needs, since several events' fixtures can be live at once and it
-     shows all of them on one page. */
   function subscribeAllFixtures(onChange){
     if (!window.PartyPadelDB || !window.PartyPadelDB.channel) return null;
-    var channel = window.PartyPadelDB
+    return window.PartyPadelDB
       .channel('fixtures-all')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'fixtures' }, onChange)
       .subscribe();
-    return channel;
   }
 
-  /* Win = 3pts, draw = 1pt, loss = 0 — standard round-robin scoring.
-     Only matches with both scores entered count; a fixture that's
-     merely scheduled shouldn't show as a 0-0 draw. Sorted by points,
-     then game difference, then games scored, then name — so the table
-     never looks arbitrarily ordered while everything's still tied
-     early in an event. */
-  function computeStandings(fixtures, leagueName){
-    var teams = {};
-    function team(name){
-      if (!teams[name]) teams[name] = { name: name, played: 0, won: 0, drawn: 0, lost: 0, scoredFor: 0, scoredAgainst: 0, points: 0 };
-      return teams[name];
+  function shuffle(arr){
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
     }
+    return a;
+  }
 
-    fixtures
-      .filter(function(f){ return f.leagueName === leagueName && f.scoreA != null && f.scoreB != null; })
-      .forEach(function(f){
-        var a = team(f.teamA), b = team(f.teamB);
-        a.played++; b.played++;
-        a.scoredFor += f.scoreA; a.scoredAgainst += f.scoreB;
-        b.scoredFor += f.scoreB; b.scoredAgainst += f.scoreA;
-        if (f.scoreA > f.scoreB){ a.won++; a.points += 3; b.lost++; }
-        else if (f.scoreB > f.scoreA){ b.won++; b.points += 3; a.lost++; }
-        else { a.drawn++; b.drawn++; a.points += 1; b.points += 1; }
-      });
+  function pairKey(id1, id2){ return id1 < id2 ? id1 + '|' + id2 : id2 + '|' + id1; }
 
-    return Object.keys(teams).map(function(name){ return teams[name]; }).sort(function(x, y){
+  /* Of the 3 ways to split 4 players into two pairs, picks whichever
+     repeats past partnerships/match-ups the least — greedy per court,
+     not a globally optimal schedule (that's the "social golfer
+     problem," NP-hard), but keeps a 50-player Americano feeling mixed
+     up without needing a solver. */
+  function bestPairing(four, partnerCounts, opponentCounts){
+    var options = [
+      [[four[0], four[1]], [four[2], four[3]]],
+      [[four[0], four[2]], [four[1], four[3]]],
+      [[four[0], four[3]], [four[1], four[2]]]
+    ];
+    var best = options[0], bestScore = Infinity;
+    options.forEach(function(opt){
+      var a = opt[0], b = opt[1];
+      var score =
+        (partnerCounts[pairKey(a[0].id, a[1].id)] || 0) * 2 +
+        (partnerCounts[pairKey(b[0].id, b[1].id)] || 0) * 2 +
+        (opponentCounts[pairKey(a[0].id, b[0].id)] || 0) +
+        (opponentCounts[pairKey(a[0].id, b[1].id)] || 0) +
+        (opponentCounts[pairKey(a[1].id, b[0].id)] || 0) +
+        (opponentCounts[pairKey(a[1].id, b[1].id)] || 0);
+      if (score < bestScore){ bestScore = score; best = opt; }
+    });
+    return best;
+  }
+
+  /* The scheduler. Every round, whoever has played the fewest games so
+     far gets priority for one of that round's court spots — so across
+     any number of rounds, no player's game count is ever more than 1
+     ahead of any other's, regardless of how unevenly the player count
+     divides into courts×4. Ties are broken by a fresh shuffle each
+     round, which also keeps who-sits-out from being predictable.
+     Returns plain objects ready to insert into "fixtures" (round_number,
+     court_number, player_a1/a2/b1/b2) — no ids, no event/league, since
+     the caller attaches those. */
+  function generateSchedule(players, courts, rounds){
+    var playersPerRound = Math.min(players.length, courts * 4);
+    playersPerRound -= playersPerRound % 4;
+    var courtsUsed = playersPerRound / 4;
+    if (courtsUsed < 1) return [];
+
+    var gamesPlayed = {};
+    players.forEach(function(p){ gamesPlayed[p.id] = 0; });
+    var partnerCounts = {}, opponentCounts = {};
+    var fixtures = [];
+
+    for (var r = 1; r <= rounds; r++){
+      var playing = shuffle(players).sort(function(a, b){ return gamesPlayed[a.id] - gamesPlayed[b.id]; }).slice(0, playersPerRound);
+      for (var c = 0; c < courtsUsed; c++){
+        var four = playing.slice(c * 4, c * 4 + 4);
+        var pairing = bestPairing(four, partnerCounts, opponentCounts);
+        var a = pairing[0], b = pairing[1];
+        fixtures.push({
+          round_number: r, court_number: c + 1,
+          player_a1: a[0].id, player_a2: a[1].id,
+          player_b1: b[0].id, player_b2: b[1].id
+        });
+        partnerCounts[pairKey(a[0].id, a[1].id)] = (partnerCounts[pairKey(a[0].id, a[1].id)] || 0) + 1;
+        partnerCounts[pairKey(b[0].id, b[1].id)] = (partnerCounts[pairKey(b[0].id, b[1].id)] || 0) + 1;
+        [[a[0], b[0]], [a[0], b[1]], [a[1], b[0]], [a[1], b[1]]].forEach(function(pair){
+          var k = pairKey(pair[0].id, pair[1].id);
+          opponentCounts[k] = (opponentCounts[k] || 0) + 1;
+        });
+        [a[0], a[1], b[0], b[1]].forEach(function(p){ gamesPlayed[p.id]++; });
+      }
+    }
+    return fixtures;
+  }
+
+  /* Individual leaderboard: each player's score is their pair's score
+     in every round they played, added up — the actual Americano
+     scoring rule ("they will just tally the points they score"), not
+     a win/loss table. Only fixtures with both scores entered count. */
+  function computeIndividualStandings(players, fixtures){
+    var stats = {};
+    players.forEach(function(p){ stats[p.id] = { id: p.id, name: p.name, played: 0, points: 0 }; });
+    fixtures.forEach(function(f){
+      if (f.scoreA == null || f.scoreB == null) return;
+      [f.playerA1, f.playerA2].forEach(function(id){ if (stats[id]){ stats[id].played++; stats[id].points += f.scoreA; } });
+      [f.playerB1, f.playerB2].forEach(function(id){ if (stats[id]){ stats[id].played++; stats[id].points += f.scoreB; } });
+    });
+    return Object.keys(stats).map(function(id){ return stats[id]; }).sort(function(x, y){
       if (y.points !== x.points) return y.points - x.points;
-      var xDiff = x.scoredFor - x.scoredAgainst, yDiff = y.scoredFor - y.scoredAgainst;
-      if (yDiff !== xDiff) return yDiff - xDiff;
-      if (y.scoredFor !== x.scoredFor) return y.scoredFor - x.scoredFor;
       return x.name.localeCompare(y.name);
     });
   }
 
-  /* Distinct league names in fixture order of first appearance, so a
-     league tab list stays stable instead of re-sorting itself as
-     scores come in. */
-  function leagueNamesIn(fixtures){
+  function leagueNamesIn(rows){
     var seen = [], names = [];
-    fixtures.forEach(function(f){
-      if (seen.indexOf(f.leagueName) === -1){ seen.push(f.leagueName); names.push(f.leagueName); }
+    rows.forEach(function(r){
+      if (seen.indexOf(r.leagueName) === -1){ seen.push(r.leagueName); names.push(r.leagueName); }
     });
     return names;
   }
 
-  window.PartyPadelFixtures = {
+  var api = {
+    loadPlayers: loadPlayers,
+    loadAllPlayers: loadAllPlayers,
     loadFixtures: loadFixtures,
     loadAllFixtures: loadAllFixtures,
     subscribeFixtures: subscribeFixtures,
     subscribeAllFixtures: subscribeAllFixtures,
-    computeStandings: computeStandings,
+    generateSchedule: generateSchedule,
+    computeIndividualStandings: computeIndividualStandings,
     leagueNamesIn: leagueNamesIn
   };
 
-})(window);
+  window.PartyPadelFixtures = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+
+})(typeof window !== 'undefined' ? window : global);
