@@ -239,24 +239,13 @@ already-generated schedule (6 courts, 4 games per player — works out to 9
 rounds), so there's something real to look at in `admin.html` and
 `results.html` without setting anything up first.
 
-### Admin subdomain (optional)
+### Shorter admin URL
 
-To reach the back office at `admin.partypadel.uk` instead of
-`partypadel.uk/admin.html`, there's no code change needed — it's a hosting
-setting plus one small redirect file:
-
-1. In your hosting control panel (cPanel, Plesk, or similar — ask your
-   host if you're not sure which), create a subdomain called `admin`. It
-   will get its own folder, separate from the main site's.
-2. Upload a single `index.html` into that new folder — not the real
-   `admin.html` itself, just a one-line redirect to
-   `https://partypadel.uk/admin.html`, so the login and everything else
-   stays exactly one place and never goes out of sync. Ask for this file
-   if you don't already have it.
-3. Point your DNS at that subdomain (most hosts do this automatically
-   when you create the subdomain in step 1 — check the panel for an
-   "admin.partypadel.uk" A/CNAME record if it doesn't resolve after a
-   few minutes).
+`partypadel.uk/admin` works as well as `partypadel.uk/admin.html` — no
+hosting setup, no DNS. `admin/index.html` is a one-line redirect to the
+real `admin.html`, so there's still only one copy of the actual panel to
+keep in sync; typing the shorter URL just bounces straight to it. Same
+`noindex` treatment as `admin.html` itself, via `robots.txt`.
 
 ## Editing content
 
