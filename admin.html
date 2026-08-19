@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/tokens.css">
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2">
+<link rel="stylesheet" href="assets/css/style.css?v=2">
 </head>
 <body>
 
@@ -222,7 +222,10 @@
         <div class="admin-fieldset">
           <span class="admin-fieldset-legend">Players</span>
           <div id="playersList" class="players-list"></div>
-          <p class="form-note" id="playerCountNote"></p>
+          <div class="players-count-row">
+            <p class="form-note" id="playerCountNote"></p>
+            <button type="button" class="btn btn-outline btn-small" id="clearAllPlayersBtn" hidden>Remove All Players</button>
+          </div>
           <textarea id="bulkAddPlayers" class="players-bulk-textarea" rows="3" placeholder="One name per line, e.g.&#10;Sam Turner&#10;Priya Shah"></textarea>
           <div class="players-add-actions">
             <button type="button" class="btn btn-outline btn-small" id="addTypedPlayersBtn">+ Add Names Above</button>
@@ -264,10 +267,10 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="assets/js/supabase-config.js"></script>
-<script src="assets/js/supabase-client.js"></script>
-<script src="assets/js/events.js"></script>
-<script src="assets/js/fixtures.js"></script>
+<script src="assets/js/supabase-config.js?v=2"></script>
+<script src="assets/js/supabase-client.js?v=2"></script>
+<script src="assets/js/events.js?v=2"></script>
+<script src="assets/js/fixtures.js?v=2"></script>
 <script>
 (function(){
   var db = window.PartyPadelDB;
@@ -713,6 +716,7 @@
   var fixtureLeagueTabs = document.getElementById('fixtureLeagueTabs');
   var playersListEl = document.getElementById('playersList');
   var playerCountNote = document.getElementById('playerCountNote');
+  var clearAllPlayersBtn = document.getElementById('clearAllPlayersBtn');
   var bulkAddPlayers = document.getElementById('bulkAddPlayers');
   var placeholderCount = document.getElementById('placeholderCount');
   var fxCourts = document.getElementById('fxCourts');
@@ -804,7 +808,18 @@
       : '<p class="empty-note">No players yet — add some below.</p>';
     playersListEl.querySelectorAll('[data-player-id]').forEach(wirePlayerRow);
     playerCountNote.textContent = playersCache.length + (playersCache.length === 1 ? ' player' : ' players') + ' in this league.';
+    clearAllPlayersBtn.hidden = playersCache.length === 0;
   }
+
+  clearAllPlayersBtn.addEventListener('click', function(){
+    if (!window.confirm('Remove all ' + playersCache.length + ' players from ' + currentLeague + '? This also removes every fixture for this league. This can\'t be undone.')) return;
+    clearAllPlayersBtn.disabled = true;
+    db.from('players').delete().eq('event_id', currentFixturesEvent.id).eq('league_name', currentLeague).then(function(res){
+      clearAllPlayersBtn.disabled = false;
+      if (res.error){ window.alert('Couldn\'t remove players: ' + res.error.message); return; }
+      loadLeagueData();
+    });
+  });
 
   function wirePlayerRow(row){
     var id = row.getAttribute('data-player-id');
@@ -827,37 +842,51 @@
     });
   }
 
-  function addPlayers(names){
+  /* btn is disabled for the round trip so a slow connection + an
+     impatient extra click can't fire this twice and silently double
+     up the roster — the visible "Adding…" state answers "did that
+     work?" a lot faster than a second click would have. */
+  function addPlayers(names, btn){
     if (!currentLeague){ window.alert('This event has no leagues yet.'); return; }
     var startOrder = playersCache.length;
     var payload = names.map(function(name, i){
       return { event_id: currentFixturesEvent.id, league_name: currentLeague, name: name, sort_order: startOrder + i };
     });
+    btn.disabled = true;
+    var originalLabel = btn.textContent;
+    btn.textContent = 'Adding…';
     db.from('players').insert(payload).then(function(res){
+      btn.disabled = false;
+      btn.textContent = originalLabel;
       if (res.error){ window.alert('Couldn\'t add players: ' + res.error.message); return; }
       bulkAddPlayers.value = '';
       loadLeagueData();
     });
   }
 
-  document.getElementById('addTypedPlayersBtn').addEventListener('click', function(){
+  document.getElementById('addTypedPlayersBtn').addEventListener('click', function(e){
     var names = bulkAddPlayers.value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
     if (!names.length) return;
-    addPlayers(names);
+    addPlayers(names, e.currentTarget);
   });
 
-  document.getElementById('addPlaceholderPlayersBtn').addEventListener('click', function(){
-    var n = parseInt(placeholderCount.value, 10) || 0;
+  /* Typing straight into the number field bypasses the HTML max
+     attribute (that only guards the spinner arrows), so this is the
+     real limit — without it, a mistyped extra digit here creates
+     hundreds of players in one click with no way to know until
+     they're already saved. */
+  document.getElementById('addPlaceholderPlayersBtn').addEventListener('click', function(e){
+    var n = Math.min(50, Math.max(0, parseInt(placeholderCount.value, 10) || 0));
     if (n < 1) return;
     var startAt = playersCache.length + 1;
     var names = [];
     for (var i = 0; i < n; i++) names.push('Player ' + (startAt + i));
-    addPlayers(names);
+    addPlayers(names, e.currentTarget);
   });
 
   /* ---------- Generate schedule ---------- */
 
-  document.getElementById('generateScheduleBtn').addEventListener('click', function(){
+  document.getElementById('generateScheduleBtn').addEventListener('click', function(e){
     scheduleGenError.textContent = '';
     if (!currentLeague){ scheduleGenError.textContent = 'This event has no leagues yet.'; return; }
     if (playersCache.length < 4){ scheduleGenError.textContent = 'Add at least 4 players first.'; return; }
@@ -865,14 +894,17 @@
     var gamesPerPlayer = parseInt(fxGamesPerPlayer.value, 10) || 1;
     if (!window.confirm('Regenerate the schedule for ' + currentLeague + '? Any fixtures and scores already entered for this league will be replaced.')) return;
 
+    var btn = e.currentTarget;
+    btn.disabled = true;
     db.from('fixtures').delete().eq('event_id', currentFixturesEvent.id).eq('league_name', currentLeague).then(function(delRes){
-      if (delRes.error){ scheduleGenError.textContent = delRes.error.message; return; }
+      if (delRes.error){ btn.disabled = false; scheduleGenError.textContent = delRes.error.message; return; }
       var schedule = window.PartyPadelFixtures.generateSchedule(playersCache, courts, gamesPerPlayer);
-      if (!schedule.length){ scheduleGenError.textContent = 'Not enough players for even one court — add more players first.'; return; }
+      if (!schedule.length){ btn.disabled = false; scheduleGenError.textContent = 'Not enough players for even one court — add more players first.'; return; }
       var payload = schedule.map(function(f){
         return Object.assign({ event_id: currentFixturesEvent.id, league_name: currentLeague, status: 'scheduled' }, f);
       });
       db.from('fixtures').insert(payload).then(function(res){
+        btn.disabled = false;
         if (res.error){ scheduleGenError.textContent = res.error.message; return; }
         loadLeagueData();
       });

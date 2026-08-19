@@ -191,12 +191,17 @@ Same login as everything else in the back office.
 that event actually has):
 - Paste real names, one per line, into the text box and **+ Add Names
   Above**, and/or
-- Set a number and **+ Add Placeholder Players** for a quick "Player 1,
-  Player 2…" roster — handy before you know exactly who's turned up, or
-  for trying the schedule out.
+- Set a number (max 50 per click) and **+ Add Placeholder Players** for a
+  quick "Player 1, Player 2…" roster — handy before you know exactly
+  who's turned up, or for trying the schedule out.
 - Rename anyone at any time by editing their name directly in the list —
   it saves on its own and updates everywhere they appear, without touching
   the schedule itself.
+- Added the wrong number, or want to start a league's roster over?
+  **Remove All Players** (next to the player count, once there's at
+  least one) clears the whole list in one click — no need to delete
+  rows one at a time. This also removes that league's fixtures, since a
+  fixture can't outlive the players in it.
 
 **2. Generate the schedule**: set **Courts available** and **Games per
 player** — how many matches you want each person to get, not a round

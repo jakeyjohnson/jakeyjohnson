@@ -33,7 +33,13 @@
     return window.PartyPadelDB
       .from('players').select('*')
       .eq('event_id', eventId).eq('league_name', leagueName)
+      /* created_at as a tiebreaker: two players can share a sort_order
+         if they were added in the same batch from a stale player
+         count (e.g. a double click before the first request's reload
+         landed) — without a secondary key, rows tied on sort_order
+         have no guaranteed order at all, not even a consistent one. */
       .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true })
       .then(function(res){
         if (res.error){ console.error('Party Padel: failed to load players —', res.error.message); return []; }
         return res.data.map(rowToPlayer);
