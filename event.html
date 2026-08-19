@@ -283,11 +283,11 @@
     ev.divisions.forEach(function(d){
       var full = d.spacesLeft === 0;
       var clickable = entryOpen && !full;
-      var range = (d.skillMin != null && d.skillMax != null) ? '<p>Self-rated ' + d.skillMin.toFixed(1) + '–' + d.skillMax.toFixed(1) + '</p>' : '';
+      var requirements = d.requirements ? '<p>' + esc(d.requirements) + '</p>' : '';
       var statusText = full ? 'Full' : (clickable ? d.spacesLeft + ' spaces left — enter this division' : d.spacesLeft + ' spaces left');
       var inner =
         '<h3>' + esc(d.name) + '</h3>' +
-        range +
+        requirements +
         '<span class="division-status" style="' + (full ? 'color:var(--color-text-tertiary)' : '') + '">' + esc(statusText) + '</span>';
       /* Straight to the same checkout as the main button — division
          itself is picked as a Ticket Tailor ticket type once there. */

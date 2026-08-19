@@ -11,7 +11,7 @@ still plain HTML/CSS/JS you deploy by uploading files.
 | Page | Purpose |
 |---|---|
 | `index.html` | Homepage — hero, next events, format, divisions, experience, results teaser |
-| `events.html` | All events, filterable by status and division |
+| `events.html` | All events, filterable by status |
 | `event.html?slug=...` | Single event — registration status, divisions, schedule, tickets, FAQ |
 | `enter-team.html` | Post-checkout landing page only — Ticket Tailor's redirect target after payment, not a form |
 | `admin.html` | Back office — log in, add/edit/delete events. See "Back office" below. |
@@ -63,7 +63,7 @@ above, or any real host, is required now.)
 
 ## Managing events
 
-All event content — cities, dates, status, divisions, running order, the
+All event content — cities, dates, status, leagues, running order, the
 Ticket Tailor checkout link — is edited through **`admin.html`**, not by
 touching HTML or JS files. See "Back office" below to set that up. Once it's
 running, every page that lists or shows events (`index.html`, `events.html`,
@@ -77,19 +77,22 @@ events.html and the homepage) goes straight to Ticket Tailor's hosted
 checkout, one click, no page of ours in between. No card data ever touches
 this site or your server. Ticket Tailor is purpose-built event ticketing
 (vs. a generic payment processor), which is why it's the better fit here —
-it collects the buyer's name/email as part of any order, and division +
-skill level as ticket types/custom questions on its own checkout page, so
-nothing needs asking twice.
+it collects the buyer's name/email as part of any order, and league +
+whatever else you need as ticket types/custom questions on its own checkout
+page, so nothing needs asking twice.
 
 To switch payments on for an event:
 
-1. In Ticket Tailor: create the event, then two ticket types, **"Beginners
-   Entry"** and **"Advanced Entry"**, each priced to match that event's
-   price-per-player — the amount there is what's actually charged. Buying
-   one of these IS how someone picks their division now.
-2. Add a custom checkout question: **"Skill level (1.0–5.0, self-rated)"**
-   — required. This is how skill level reaches you, since the site no
-   longer asks for it itself.
+1. In Ticket Tailor: create the event, then **one ticket type per league**
+   you've defined for it in `admin.html` — name them to match (e.g. a
+   "Beginners" league in admin.html gets a "Beginners Entry" ticket type),
+   each priced to match that event's price-per-player. Buying one of these
+   IS how someone picks their league now.
+2. If a league's requirements need verifying at checkout (a skill level to
+   self-report, proof of age, whatever that league calls for), add it as a
+   custom checkout question — required or not, your call. This is how that
+   detail reaches you, since the site itself only ever asked for it as free
+   text on the public event page, not collected it.
 3. In the event's checkout settings, set the post-checkout redirect URL to:
    `https://YOURDOMAIN/enter-team.html?confirmed=1` — that page is just a
    generic "you're in, check your email" landing screen now.
@@ -109,9 +112,9 @@ so if you change one, change the other.
 Supabase only stores what's needed to *display* an event and where to send
 someone to pay for it — there's still no database of entries anywhere on
 our side. The source of truth for "who paid," and for who's in which
-division at what skill level, is entirely the Ticket Tailor dashboard. The
-confirmation page a customer lands on after paying
-(`enter-team.html?confirmed=1`) is deliberately generic — Ticket Tailor's
+league, is entirely the Ticket Tailor dashboard. The confirmation page a
+customer lands on after paying (`enter-team.html?confirmed=1`) is
+deliberately generic — Ticket Tailor's
 own confirmation email is what carries their actual order details.
 
 Note: Ticket Tailor charges its own per-ticket booking fee on top of card
@@ -167,6 +170,14 @@ event editor for anyone without file/FTP access. One-time setup:
 carries a `noindex` tag, so it shouldn't show up in search — but none of
 that is real access control, only the Supabase login is. Don't rely on the
 URL being obscure.
+
+Each event can have up to 6 **leagues** — a free-text name and free-text
+requirements (not tied to any fixed skill scale, so "Self-rated 3.0–5.0",
+"Women only" and "Under 18s" are all valid) plus a spaces-left count that
+drives the "Full" vs "X spaces left" status shown on-site. An event needs
+at least one to be enterable at all.
+
+## Editing content
 
 - **Colours/type/spacing**: `assets/css/tokens.css` — nothing else should
   have a hardcoded value.

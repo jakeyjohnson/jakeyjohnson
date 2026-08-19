@@ -1,8 +1,12 @@
 -- Party Padel — events table, security policies, and starting data.
 --
 -- Run this once in Supabase Dashboard > SQL Editor > New query, on a
--- fresh project. Safe to re-run — every statement is idempotent
--- (create-if-not-exists / drop-then-create for policies).
+-- fresh project. Safe to re-run on an existing project too — every
+-- statement is idempotent (create-if-not-exists / drop-then-create /
+-- add-or-drop-column-if-(not-)exists), and includes a migration for
+-- sites that ran an earlier version of this script with fixed
+-- Beginners/Advanced columns instead of the current custom "leagues"
+-- list — see the migration block below the table definition.
 --
 -- After running this, create the admin login separately in
 -- Authentication > Users > Add user (email + password) — there's no
@@ -30,25 +34,63 @@ create table if not exists events (
   price_spectator         numeric not null,
   ticket_tailor_checkout_url text not null default '',  -- empty = site shows "Get Notified" instead of a broken link
 
-  -- The rest of the site (play.html, format.html, the events filter
-  -- chips) hardcodes exactly two divisions everywhere, so these are
-  -- flattened columns rather than an open-ended list — there is no
-  -- version of this site that knows what to do with a third division.
-  beginners_skill_min     numeric not null default 1.0,
-  beginners_skill_max     numeric not null default 2.5,
-  beginners_spaces_left   integer not null default 50,
-  advanced_skill_min      numeric not null default 3.0,
-  advanced_skill_max      numeric not null default 5.0,
-  advanced_spaces_left    integer not null default 50,
+  -- Custom leagues for this event — e.g. [{"name":"Beginners",
+  -- "requirements":"Self-rated 1.0–2.5","spacesLeft":50}, ...]. Each
+  -- league is a free-text name + free-text requirements (not tied to
+  -- any fixed skill scale) + a numeric spacesLeft that drives the
+  -- "Full" vs "X spaces left" status on-site. admin.html caps this at
+  -- 6 leagues per event — not enforced here, since jsonb can't carry
+  -- an array-length check as a simple column constraint.
+  leagues                 jsonb not null default '[]'::jsonb,
 
   -- Running order rows, e.g. [{"time":"18:00","label":"Check-in & warm-up"}, ...]
-  -- Genuinely variable in count per event, unlike divisions, so this
-  -- one stays a flexible jsonb array rather than fixed columns.
   schedule                jsonb not null default '[]'::jsonb,
 
   created_at              timestamptz not null default now(),
   updated_at              timestamptz not null default now()
 );
+
+-- create table if not exists is a no-op on a table that already
+-- exists — which is exactly the case for a project migrating from an
+-- earlier version of this script, so the leagues column from the
+-- table definition above never actually lands on it without this.
+alter table events add column if not exists leagues jsonb not null default '[]'::jsonb;
+
+-- Migration for a project that already ran an earlier version of this
+-- script (fixed beginners_*/advanced_* columns). Backfills the leagues
+-- column just added from the old columns' data if they're still
+-- present, then drops them. No-ops cleanly on a brand-new project
+-- that never had those columns, and no-ops on a project that's
+-- already been migrated (leagues already populated, old columns gone).
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_name = 'events' and column_name = 'beginners_skill_min'
+  ) then
+    update events set leagues = jsonb_build_array(
+      jsonb_build_object(
+        'name', 'Beginners',
+        'requirements', 'Self-rated ' || beginners_skill_min || '–' || beginners_skill_max,
+        'spacesLeft', beginners_spaces_left
+      ),
+      jsonb_build_object(
+        'name', 'Advanced',
+        'requirements', 'Self-rated ' || advanced_skill_min || '–' || advanced_skill_max,
+        'spacesLeft', advanced_spaces_left
+      )
+    )
+    where leagues = '[]'::jsonb;
+
+    alter table events
+      drop column if exists beginners_skill_min,
+      drop column if exists beginners_skill_max,
+      drop column if exists beginners_spaces_left,
+      drop column if exists advanced_skill_min,
+      drop column if exists advanced_skill_max,
+      drop column if exists advanced_spaces_left;
+  end if;
+end $$;
 
 -- Keep updated_at honest without every write having to set it by hand.
 create or replace function set_events_updated_at()
@@ -104,17 +146,16 @@ create policy "Authenticated can delete events"
 insert into events (
   slug, city, event_date, event_time, venue, address, status,
   players_entered, players_capacity, price_player, price_spectator,
-  ticket_tailor_checkout_url,
-  beginners_skill_min, beginners_skill_max, beginners_spaces_left,
-  advanced_skill_min, advanced_skill_max, advanced_spaces_left,
-  schedule
+  ticket_tailor_checkout_url, leagues, schedule
 ) values
   (
     'london-2026-09-14', 'London', '2026-09-14', '18:00',
     'Shoreditch Padel Club', 'Shoreditch, London', 'sold-out',
     100, 100, 32, 15, '',
-    1.0, 2.5, 0,
-    3.0, 5.0, 0,
+    '[
+      {"name":"Beginners","requirements":"Self-rated 1.0–2.5 — new to padel or still finding your feet","spacesLeft":0},
+      {"name":"Advanced","requirements":"Self-rated 3.0–5.0 — regular players who want every round to test them","spacesLeft":0}
+    ]'::jsonb,
     '[
       {"time":"18:00","label":"Check-in & warm-up"},
       {"time":"19:00","label":"Rotating rounds begin"},
@@ -126,8 +167,10 @@ insert into events (
     'manchester-2026-09-27', 'Manchester', '2026-09-27', '18:30',
     'Padel House', 'Manchester City Centre', 'sold-out',
     100, 100, 32, 15, '',
-    1.0, 2.5, 0,
-    3.0, 5.0, 0,
+    '[
+      {"name":"Beginners","requirements":"Self-rated 1.0–2.5 — new to padel or still finding your feet","spacesLeft":0},
+      {"name":"Advanced","requirements":"Self-rated 3.0–5.0 — regular players who want every round to test them","spacesLeft":0}
+    ]'::jsonb,
     '[
       {"time":"18:30","label":"Check-in & warm-up"},
       {"time":"19:30","label":"Rotating rounds begin"},
@@ -139,8 +182,10 @@ insert into events (
     'bristol-2026-10-11', 'Bristol', '2026-10-11', '17:00',
     'Harbourside Courts', 'Harbourside, Bristol', 'sold-out',
     100, 100, 32, 15, '',
-    1.0, 2.5, 0,
-    3.0, 5.0, 0,
+    '[
+      {"name":"Beginners","requirements":"Self-rated 1.0–2.5 — new to padel or still finding your feet","spacesLeft":0},
+      {"name":"Advanced","requirements":"Self-rated 3.0–5.0 — regular players who want every round to test them","spacesLeft":0}
+    ]'::jsonb,
     '[
       {"time":"17:00","label":"Check-in & warm-up"},
       {"time":"18:00","label":"Rotating rounds begin"},

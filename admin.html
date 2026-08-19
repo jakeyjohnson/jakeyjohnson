@@ -181,45 +181,11 @@
           </div>
 
           <div class="admin-fieldset">
-            <span class="admin-fieldset-legend">Beginners division</span>
-            <div class="form-grid">
-              <div class="form-row">
-                <label for="fBegMin">Skill min</label>
-                <input type="number" id="fBegMin" min="1" max="5" step="0.1" required aria-describedby="fBegMinError">
-                <span class="field-error" id="fBegMinError" aria-live="polite"></span>
-              </div>
-              <div class="form-row">
-                <label for="fBegMax">Skill max</label>
-                <input type="number" id="fBegMax" min="1" max="5" step="0.1" required aria-describedby="fBegMaxError">
-                <span class="field-error" id="fBegMaxError" aria-live="polite"></span>
-              </div>
-            </div>
-            <div class="form-row">
-              <label for="fBegSpaces">Spaces left</label>
-              <input type="number" id="fBegSpaces" min="0" step="1" required aria-describedby="fBegSpacesError">
-              <span class="field-error" id="fBegSpacesError" aria-live="polite"></span>
-            </div>
-          </div>
-
-          <div class="admin-fieldset">
-            <span class="admin-fieldset-legend">Advanced division</span>
-            <div class="form-grid">
-              <div class="form-row">
-                <label for="fAdvMin">Skill min</label>
-                <input type="number" id="fAdvMin" min="1" max="5" step="0.1" required aria-describedby="fAdvMinError">
-                <span class="field-error" id="fAdvMinError" aria-live="polite"></span>
-              </div>
-              <div class="form-row">
-                <label for="fAdvMax">Skill max</label>
-                <input type="number" id="fAdvMax" min="1" max="5" step="0.1" required aria-describedby="fAdvMaxError">
-                <span class="field-error" id="fAdvMaxError" aria-live="polite"></span>
-              </div>
-            </div>
-            <div class="form-row">
-              <label for="fAdvSpaces">Spaces left</label>
-              <input type="number" id="fAdvSpaces" min="0" step="1" required aria-describedby="fAdvSpacesError">
-              <span class="field-error" id="fAdvSpacesError" aria-live="polite"></span>
-            </div>
+            <span class="admin-fieldset-legend">Leagues</span>
+            <p class="form-note">At least one, up to 6. Requirements are free text — "Self-rated 3.0–5.0", "Women only", "Under 18s" — whatever fits.</p>
+            <div id="leagueRows"></div>
+            <button type="button" class="btn btn-outline btn-small" id="addLeagueRowBtn">+ Add League</button>
+            <span class="form-note" id="leagueCapNote" hidden>Six leagues is the limit — remove one to add another.</span>
           </div>
 
           <div class="admin-fieldset">
@@ -413,6 +379,9 @@
   var deleteEventBtn = document.getElementById('deleteEventBtn');
   var saveEventBtn = document.getElementById('saveEventBtn');
   var scheduleRowsWrap = document.getElementById('scheduleRows');
+  var leagueRowsWrap = document.getElementById('leagueRows');
+  var leagueCapNote = document.getElementById('leagueCapNote');
+  var MAX_LEAGUES = 6;
   var editingSlug = null; // null = adding a new event
 
   var fCity = document.getElementById('fCity');
@@ -427,12 +396,6 @@
   var fPricePlayer = document.getElementById('fPricePlayer');
   var fPriceSpectator = document.getElementById('fPriceSpectator');
   var fCheckoutUrl = document.getElementById('fCheckoutUrl');
-  var fBegMin = document.getElementById('fBegMin');
-  var fBegMax = document.getElementById('fBegMax');
-  var fBegSpaces = document.getElementById('fBegSpaces');
-  var fAdvMin = document.getElementById('fAdvMin');
-  var fAdvMax = document.getElementById('fAdvMax');
-  var fAdvSpaces = document.getElementById('fAdvSpaces');
 
   function slugify(city, date){
     var base = (city || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -463,10 +426,32 @@
   }
   document.getElementById('addScheduleRowBtn').addEventListener('click', function(){ addScheduleRow('', ''); });
 
+  function updateLeagueCapUI(){
+    var atCap = leagueRowsWrap.querySelectorAll('.league-row-editor').length >= MAX_LEAGUES;
+    document.getElementById('addLeagueRowBtn').hidden = atCap;
+    leagueCapNote.hidden = !atCap;
+  }
+  function addLeagueRow(name, requirements, spacesLeft){
+    if (leagueRowsWrap.querySelectorAll('.league-row-editor').length >= MAX_LEAGUES) return;
+    var row = document.createElement('div');
+    row.className = 'league-row-editor';
+    row.innerHTML =
+      '<div class="form-row"><label>Name</label><input type="text" class="league-name" value="' + esc(name || '') + '" placeholder="e.g. Beginners"></div>' +
+      '<div class="form-row"><label>Requirements</label><input type="text" class="league-requirements" value="' + esc(requirements || '') + '" placeholder="e.g. Self-rated 1.0–2.5, or Women only"></div>' +
+      '<div class="form-row"><label>Spaces left</label><input type="number" class="league-spaces" min="0" step="1" value="' + esc(spacesLeft != null ? spacesLeft : '') + '"></div>' +
+      '<button type="button" class="btn btn-outline btn-small">Remove</button>';
+    row.querySelector('.btn').addEventListener('click', function(){ row.remove(); updateLeagueCapUI(); });
+    leagueRowsWrap.appendChild(row);
+    updateLeagueCapUI();
+  }
+  document.getElementById('addLeagueRowBtn').addEventListener('click', function(){ addLeagueRow('', '', ''); });
+
   function resetForm(){
     eventForm.querySelectorAll('input, select').forEach(function(f){ clearFieldError(f); });
     eventFormError.hidden = true;
     scheduleRowsWrap.innerHTML = '';
+    leagueRowsWrap.innerHTML = '';
+    updateLeagueCapUI();
   }
 
   function openAddForm(){
@@ -482,8 +467,8 @@
     fPlayersCapacity.value = 100;
     fPricePlayer.value = 32;
     fPriceSpectator.value = 15;
-    fBegMin.value = 1.0; fBegMax.value = 2.5; fBegSpaces.value = 50;
-    fAdvMin.value = 3.0; fAdvMax.value = 5.0; fAdvSpaces.value = 50;
+    addLeagueRow('Beginners', 'Self-rated 1.0–2.5', 50);
+    addLeagueRow('Advanced', 'Self-rated 3.0–5.0', 50);
     addScheduleRow('', '');
     dashboardView.hidden = true;
     eventFormView.hidden = false;
@@ -509,9 +494,8 @@
     fPricePlayer.value = ev.pricePlayer;
     fPriceSpectator.value = ev.priceSpectator;
     fCheckoutUrl.value = ev.ticketTailorCheckoutUrl;
-    var beg = ev.divisions[0], adv = ev.divisions[1];
-    fBegMin.value = beg.skillMin; fBegMax.value = beg.skillMax; fBegSpaces.value = beg.spacesLeft;
-    fAdvMin.value = adv.skillMin; fAdvMax.value = adv.skillMax; fAdvSpaces.value = adv.spacesLeft;
+    ev.divisions.forEach(function(d){ addLeagueRow(d.name, d.requirements, d.spacesLeft); });
+    if (!ev.divisions.length) addLeagueRow('', '', '');
     ev.schedule.forEach(function(s){ addScheduleRow(s.time, s.label); });
     if (!ev.schedule.length) addScheduleRow('', '');
     dashboardView.hidden = true;
@@ -526,8 +510,7 @@
 
   function validateEventForm(){
     var fields = [fCity, fSlug, fDate, fTime, fVenue, fAddress, fStatus,
-      fPlayersEntered, fPlayersCapacity, fPricePlayer, fPriceSpectator,
-      fBegMin, fBegMax, fBegSpaces, fAdvMin, fAdvMax, fAdvSpaces];
+      fPlayersEntered, fPlayersCapacity, fPricePlayer, fPriceSpectator];
     var valid = true;
     var firstInvalid = null;
     fields.forEach(function(f){
@@ -566,6 +549,36 @@
       eventFormError.hidden = false;
       eventFormError.textContent = 'Every running-order row needs both a time and a description — remove the row instead if you don\'t need it (empty rows are dropped automatically).';
     }
+
+    /* A league row needs a name + spaces left to mean anything — an
+       event genuinely can't have zero leagues, unlike running-order
+       rows, so this also checks at least one full row survives. */
+    var leagueRows = leagueRowsWrap.querySelectorAll('.league-row-editor');
+    var leagueRowIssue = false;
+    var completeLeagueCount = 0;
+    leagueRows.forEach(function(row){
+      var n = row.querySelector('.league-name'), s = row.querySelector('.league-spaces');
+      var nameFilled = !!n.value.trim(), spacesFilled = s.value.trim() !== '';
+      if (nameFilled && spacesFilled){
+        completeLeagueCount++;
+        n.classList.remove('error'); s.classList.remove('error');
+      } else if (nameFilled || spacesFilled){
+        n.classList.add('error'); s.classList.add('error');
+        valid = false;
+        leagueRowIssue = true;
+      } else {
+        n.classList.remove('error'); s.classList.remove('error');
+      }
+    });
+    if (leagueRowIssue){
+      eventFormError.hidden = false;
+      eventFormError.textContent = 'Every league needs both a name and a spaces-left number — remove the row instead if you don\'t need it.';
+    } else if (completeLeagueCount === 0){
+      eventFormError.hidden = false;
+      eventFormError.textContent = 'Add at least one league — an event needs somewhere for people to enter.';
+      valid = false;
+    }
+
     if (firstInvalid) firstInvalid.focus();
     return valid;
   }
@@ -579,6 +592,18 @@
         };
       })
       .filter(function(s){ return s.time && s.label; });
+  }
+
+  function collectLeagues(){
+    return Array.prototype.slice.call(leagueRowsWrap.querySelectorAll('.league-row-editor'))
+      .map(function(row){
+        return {
+          name: row.querySelector('.league-name').value.trim(),
+          requirements: row.querySelector('.league-requirements').value.trim(),
+          spacesLeft: parseInt(row.querySelector('.league-spaces').value, 10)
+        };
+      })
+      .filter(function(l){ return l.name && !isNaN(l.spacesLeft); });
   }
 
   saveEventBtn.addEventListener('click', function(){
@@ -598,12 +623,7 @@
       price_player: parseFloat(fPricePlayer.value),
       price_spectator: parseFloat(fPriceSpectator.value),
       ticket_tailor_checkout_url: fCheckoutUrl.value.trim(),
-      beginners_skill_min: parseFloat(fBegMin.value),
-      beginners_skill_max: parseFloat(fBegMax.value),
-      beginners_spaces_left: parseInt(fBegSpaces.value, 10),
-      advanced_skill_min: parseFloat(fAdvMin.value),
-      advanced_skill_max: parseFloat(fAdvMax.value),
-      advanced_spaces_left: parseInt(fAdvSpaces.value, 10),
+      leagues: collectLeagues(),
       schedule: collectSchedule()
     };
 

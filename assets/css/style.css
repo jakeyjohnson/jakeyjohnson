@@ -618,6 +618,12 @@ input.error, select.error, textarea.error{ border-color: var(--color-status-erro
 .schedule-row-editor .form-row:first-child{ flex: 0 0 120px; }
 .schedule-row-editor .btn{ flex-shrink:0; margin-top: 26px; }
 
+.league-row-editor{ display:flex; gap: var(--space-3); align-items:flex-start; margin-bottom: var(--space-3); }
+.league-row-editor .form-row{ margin-bottom:0; flex:1; }
+.league-row-editor .form-row:nth-child(2){ flex:2; }
+.league-row-editor .form-row:nth-child(3){ flex: 0 0 100px; }
+.league-row-editor .btn{ flex-shrink:0; margin-top: 26px; }
+
 @media (max-width: 640px){
   .admin-row{ flex-direction:column; align-items:flex-start; }
   .admin-row-actions{ width:100%; }
@@ -625,6 +631,9 @@ input.error, select.error, textarea.error{ border-color: var(--color-status-erro
   .schedule-row-editor{ flex-direction:column; }
   .schedule-row-editor .form-row:first-child{ flex-basis:auto; }
   .schedule-row-editor .btn{ margin-top:0; width:100%; }
+  .league-row-editor{ flex-direction:column; }
+  .league-row-editor .form-row:nth-child(3){ flex-basis:auto; }
+  .league-row-editor .btn{ margin-top:0; width:100%; }
 }
 
 /* ---------- format / play: rules table ---------- */

@@ -33,10 +33,11 @@
       pricePlayer: row.price_player,
       priceSpectator: row.price_spectator,
       ticketTailorCheckoutUrl: row.ticket_tailor_checkout_url || '',
-      divisions: [
-        { name: 'Beginners', skillMin: row.beginners_skill_min, skillMax: row.beginners_skill_max, spacesLeft: row.beginners_spaces_left },
-        { name: 'Advanced',  skillMin: row.advanced_skill_min,  skillMax: row.advanced_skill_max,  spacesLeft: row.advanced_spaces_left }
-      ],
+      /* Custom leagues, e.g. [{name, requirements, spacesLeft}, ...] —
+         free-text name/requirements, not tied to a fixed Beginners/
+         Advanced pair, so this passes straight through with no
+         per-field mapping (unlike the snake_case columns above). */
+      divisions: row.leagues || [],
       schedule: row.schedule || []
     };
   }

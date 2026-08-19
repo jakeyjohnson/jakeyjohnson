@@ -74,7 +74,7 @@
       <div class="section-head reveal">
         <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Events</span>
         <h1>All Events</h1>
-        <p class="lede">Every city on the calendar. Filter by status or division to find your entry.</p>
+        <p class="lede">Every city on the calendar. Filter by status to find your entry.</p>
       </div>
 
       <div class="filter-bar reveal" role="group" aria-label="Filter events">
@@ -84,12 +84,6 @@
           <button class="filter-chip" data-filter-status="entries-open">Entries Open</button>
           <button class="filter-chip" data-filter-status="limited">Limited</button>
           <button class="filter-chip" data-filter-status="coming-soon">Coming Soon</button>
-        </div>
-        <div class="filter-group">
-          <span class="filter-label">Division</span>
-          <button class="filter-chip active" data-filter-division="all">All</button>
-          <button class="filter-chip" data-filter-division="Beginners">Beginners</button>
-          <button class="filter-chip" data-filter-division="Advanced">Advanced</button>
         </div>
       </div>
 
@@ -150,13 +144,10 @@
   var grid = document.getElementById('eventGrid');
   var emptyNote = document.getElementById('emptyNote');
   var statusFilter = 'all';
-  var divisionFilter = 'all';
   var allEvents = [];
 
   function matchesFilters(ev){
-    var statusOk = statusFilter === 'all' || ev.status === statusFilter;
-    var divisionOk = divisionFilter === 'all' || ev.divisions.some(function(d){ return d.name === divisionFilter; });
-    return statusOk && divisionOk;
+    return statusFilter === 'all' || ev.status === statusFilter;
   }
 
   function render(){
@@ -171,17 +162,6 @@
     grid.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
   }
 
-  /* Lets a division card elsewhere on the site (play.html, the homepage)
-     link straight into the filtered list — one click from "I'm a
-     beginner" to "here are the events I can enter". */
-  var presetDivision = window.PartyPadelEvents.getQueryParam('division');
-  if (presetDivision === 'Beginners' || presetDivision === 'Advanced'){
-    divisionFilter = presetDivision;
-    document.querySelectorAll('[data-filter-division]').forEach(function(b){
-      b.classList.toggle('active', b.getAttribute('data-filter-division') === presetDivision);
-    });
-  }
-
   window.PartyPadelEvents.loadEvents().then(function(events){
     allEvents = events;
     render();
@@ -194,14 +174,6 @@
       document.querySelectorAll('[data-filter-status]').forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
       statusFilter = btn.getAttribute('data-filter-status');
-      render();
-    });
-  });
-  document.querySelectorAll('[data-filter-division]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('[data-filter-division]').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      divisionFilter = btn.getAttribute('data-filter-division');
       render();
     });
   });
