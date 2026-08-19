@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event Manager | Party Padel</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2">
+<link rel="stylesheet" href="assets/css/style.css?v=2">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ci-cross" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="120" height="120"></a>
+    <nav class="nav-links" id="navLinks">
+      <a href="index.html">View Site</a>
+    </nav>
+    <div class="nav-cta" id="signedInBar" hidden>
+      <span class="admin-user" id="adminUserEmail"></span>
+      <button type="button" class="btn btn-outline btn-small" id="signOutBtn">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="section register-section">
+    <div class="container narrow">
+
+      <!-- Shown if assets/js/supabase-config.js still has placeholder
+           values — see README.md "Back office" section. -->
+      <div id="configMissingView" hidden>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Event Manager</span>
+          <h1>Not Set Up Yet</h1>
+          <p class="lede">This page needs a Supabase project connected before it'll work. Follow the "Back office" section in README.md, then fill in <code>assets/js/supabase-config.js</code> with your project's URL and anon key.</p>
+        </div>
+      </div>
+
+      <div id="loginView" hidden>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Event Manager</span>
+          <h1>Sign In</h1>
+          <p class="lede">Enter scores for Party Padel events. Same login as the admin panel — there's no separate sign-up.</p>
+        </div>
+        <form id="loginForm" novalidate>
+          <div class="form-row">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" required autocomplete="username" aria-describedby="loginEmailError">
+            <span class="field-error" id="loginEmailError" aria-live="polite"></span>
+          </div>
+          <div class="form-row">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" required autocomplete="current-password" aria-describedby="loginPasswordError">
+            <span class="field-error" id="loginPasswordError" aria-live="polite"></span>
+          </div>
+          <div class="form-alert" id="loginError" hidden></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large" id="loginSubmit"><span class="btn-text">Sign In</span></button>
+          </div>
+        </form>
+      </div>
+
+      <div id="scoringView" hidden>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Event Manager</span>
+          <h1>Enter Scores</h1>
+          <p class="lede">Pick an event and league, then update scores as matches finish — saves the moment you tab or click away, no separate save step.</p>
+        </div>
+
+        <div class="form-row">
+          <label for="eventPicker">Event</label>
+          <select id="eventPicker"></select>
+        </div>
+
+        <div id="fixtureLeagueTabs" class="fixture-league-tabs"></div>
+
+        <div id="fixtureStandings"></div>
+        <div id="fixtureRoundsList"></div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="40" height="40">
+      <p>Real padel. Properly social.</p>
+    </div>
+    <div class="footer-col"><h4>Site</h4><a href="index.html">Home</a><a href="events.html">Events</a></div>
+    <div class="footer-col"><h4>Contact</h4><a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 Party Padel — Event Manager</span></div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/supabase-config.js?v=2"></script>
+<script src="assets/js/supabase-client.js?v=2"></script>
+<script src="assets/js/events.js?v=2"></script>
+<script src="assets/js/fixtures.js?v=2"></script>
+<script>
+(function(){
+  var db = window.PartyPadelDB;
+  var esc = window.PartyPadelEvents.escapeHTML;
+
+  var configMissingView = document.getElementById('configMissingView');
+  var loginView = document.getElementById('loginView');
+  var scoringView = document.getElementById('scoringView');
+  var signedInBar = document.getElementById('signedInBar');
+
+  if (!db){
+    configMissingView.hidden = false;
+    return;
+  }
+
+  function setFieldError(field, message){
+    field.classList.add('error');
+    field.setAttribute('aria-invalid', 'true');
+    var errorEl = document.getElementById(field.getAttribute('aria-describedby'));
+    if (errorEl) errorEl.textContent = message;
+  }
+  function clearFieldError(field){
+    field.classList.remove('error');
+    field.removeAttribute('aria-invalid');
+    var errorEl = document.getElementById(field.getAttribute('aria-describedby'));
+    if (errorEl) errorEl.textContent = '';
+  }
+
+  /* ===================== Auth ===================== */
+
+  function showSignedOut(){
+    loginView.hidden = false;
+    scoringView.hidden = true;
+    signedInBar.hidden = true;
+    unsubscribeFixtures();
+  }
+  function showSignedIn(session){
+    loginView.hidden = true;
+    scoringView.hidden = false;
+    signedInBar.hidden = false;
+    document.getElementById('adminUserEmail').textContent = session.user.email;
+    loadEventsForPicker();
+  }
+
+  db.auth.getSession().then(function(res){
+    var session = res.data && res.data.session;
+    if (session) showSignedIn(session); else showSignedOut();
+  });
+  db.auth.onAuthStateChange(function(event, session){
+    if (session) showSignedIn(session); else showSignedOut();
+  });
+
+  var loginForm = document.getElementById('loginForm');
+  var loginEmail = document.getElementById('loginEmail');
+  var loginPassword = document.getElementById('loginPassword');
+  var loginError = document.getElementById('loginError');
+  var loginSubmit = document.getElementById('loginSubmit');
+
+  loginForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    loginError.hidden = true;
+    clearFieldError(loginEmail);
+    clearFieldError(loginPassword);
+    var valid = true;
+    if (!loginEmail.value.trim()){ setFieldError(loginEmail, 'This field is required'); valid = false; }
+    if (!loginPassword.value){ setFieldError(loginPassword, 'This field is required'); valid = false; }
+    if (!valid) return;
+
+    loginSubmit.classList.add('loading'); loginSubmit.disabled = true;
+    db.auth.signInWithPassword({ email: loginEmail.value.trim(), password: loginPassword.value }).then(function(res){
+      loginSubmit.classList.remove('loading'); loginSubmit.disabled = false;
+      if (res.error){
+        loginError.hidden = false;
+        loginError.textContent = res.error.message === 'Invalid login credentials'
+          ? 'Incorrect email or password.'
+          : res.error.message;
+        return;
+      }
+      loginPassword.value = '';
+    });
+  });
+
+  document.getElementById('signOutBtn').addEventListener('click', function(){
+    db.auth.signOut();
+  });
+
+  /* ===================== Event picker ===================== */
+
+  var eventPicker = document.getElementById('eventPicker');
+  var eventsCache = [];
+
+  function loadEventsForPicker(){
+    eventPicker.innerHTML = '<option>Loading…</option>';
+    window.PartyPadelEvents.loadEvents().then(function(events){
+      eventsCache = events;
+      if (!events.length){
+        eventPicker.innerHTML = '<option>No events yet</option>';
+        return;
+      }
+      eventPicker.innerHTML = events.map(function(ev){
+        return '<option value="' + esc(ev.slug) + '">' + esc(ev.city) + ' — ' + esc(ev.dateLabel) + '</option>';
+      }).join('');
+      selectEvent(eventPicker.value);
+    }).catch(function(){
+      eventPicker.innerHTML = '<option>Couldn\'t load events</option>';
+    });
+  }
+  eventPicker.addEventListener('change', function(){ selectEvent(eventPicker.value); });
+
+  /* ===================== Fixtures & live scores (Americano) ===================== */
+
+  var fixtureLeagueTabs = document.getElementById('fixtureLeagueTabs');
+  var fixtureStandingsEl = document.getElementById('fixtureStandings');
+  var fixtureRoundsListEl = document.getElementById('fixtureRoundsList');
+
+  var currentFixturesEvent = null;
+  var currentLeague = null;
+  var playersCache = [];
+  var fixturesCache = [];
+  var fixturesChannel = null;
+
+  function unsubscribeFixtures(){
+    if (fixturesChannel && db && db.removeChannel){ db.removeChannel(fixturesChannel); }
+    fixturesChannel = null;
+  }
+
+  function selectEvent(slug){
+    var ev = eventsCache.filter(function(e){ return e.slug === slug; })[0];
+    if (!ev) return;
+    unsubscribeFixtures();
+    currentFixturesEvent = ev;
+
+    var leagueNames = ev.divisions.map(function(d){ return d.name; }).filter(Boolean);
+    currentLeague = leagueNames[0] || null;
+    renderLeagueTabs(leagueNames);
+    loadLeagueData();
+
+    fixturesChannel = window.PartyPadelFixtures.subscribeFixtures(ev.id, loadLeagueData);
+  }
+
+  function renderLeagueTabs(names){
+    if (!names.length){
+      fixtureLeagueTabs.innerHTML = '<p class="empty-note">This event has no leagues yet.</p>';
+      return;
+    }
+    fixtureLeagueTabs.innerHTML = names.map(function(n){
+      return '<button type="button" class="btn btn-small ' + (n === currentLeague ? 'btn-primary' : 'btn-outline') + '" data-league="' + esc(n) + '">' + esc(n) + '</button>';
+    }).join('');
+    fixtureLeagueTabs.querySelectorAll('[data-league]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        currentLeague = btn.getAttribute('data-league');
+        renderLeagueTabs(names);
+        loadLeagueData();
+      });
+    });
+  }
+
+  function loadLeagueData(){
+    if (!currentLeague){
+      fixtureStandingsEl.innerHTML = ''; fixtureRoundsListEl.innerHTML = '';
+      return;
+    }
+    Promise.all([
+      window.PartyPadelFixtures.loadPlayers(currentFixturesEvent.id, currentLeague),
+      window.PartyPadelFixtures.loadFixtures(currentFixturesEvent.id, currentLeague)
+    ]).then(function(results){
+      playersCache = results[0];
+      fixturesCache = results[1];
+      renderStandingsAndRounds();
+    });
+  }
+
+  function playerNameById(id){
+    var p = playersCache.filter(function(x){ return x.id === id; })[0];
+    return p ? p.name : 'Removed player';
+  }
+
+  function playerStandingsTableHTML(standings){
+    if (!standings.length) return '';
+    return '<div class="player-standings-header"><span>Player</span><span>Played</span><span>Points</span></div>' +
+      standings.map(function(s){
+        return '<div class="player-standings-row"><span>' + esc(s.name) + '</span><span>' + s.played + '</span><span>' + s.points + '</span></div>';
+      }).join('');
+  }
+
+  function fixtureMatchEditorHTML(f){
+    return '<div class="fixture-match-editor" data-fixture-id="' + f.id + '">' +
+      '<span class="fixture-court-label">Court ' + f.court + '</span>' +
+      '<span class="fixture-pair">' + esc(playerNameById(f.playerA1)) + ' &amp; ' + esc(playerNameById(f.playerA2)) + '</span>' +
+      '<div class="form-row fixture-score"><input type="number" class="fx-score-a" min="0" step="1" value="' + (f.scoreA != null ? f.scoreA : '') + '" aria-label="First pair score"></div>' +
+      '<span class="fixture-dash">–</span>' +
+      '<div class="form-row fixture-score"><input type="number" class="fx-score-b" min="0" step="1" value="' + (f.scoreB != null ? f.scoreB : '') + '" aria-label="Second pair score"></div>' +
+      '<span class="fixture-pair">' + esc(playerNameById(f.playerB1)) + ' &amp; ' + esc(playerNameById(f.playerB2)) + '</span>' +
+      '<div class="form-row"><select class="fx-status" aria-label="Match status">' +
+        '<option value="scheduled"' + (f.status === 'scheduled' ? ' selected' : '') + '>Scheduled</option>' +
+        '<option value="live"' + (f.status === 'live' ? ' selected' : '') + '>Live</option>' +
+        '<option value="completed"' + (f.status === 'completed' ? ' selected' : '') + '>Completed</option>' +
+      '</select></div>' +
+      '<span class="fx-saved" aria-live="polite"></span>' +
+    '</div>';
+  }
+
+  function renderStandingsAndRounds(){
+    fixtureStandingsEl.innerHTML = playerStandingsTableHTML(window.PartyPadelFixtures.computeIndividualStandings(playersCache, fixturesCache));
+
+    var rounds = {};
+    fixturesCache.forEach(function(f){ (rounds[f.round] = rounds[f.round] || []).push(f); });
+    var roundNumbers = Object.keys(rounds).map(Number).sort(function(a, b){ return a - b; });
+    if (!roundNumbers.length){
+      fixtureRoundsListEl.innerHTML = '<p class="empty-note">No fixtures yet for this league — ask an admin to add players and generate the schedule.</p>';
+      return;
+    }
+    fixtureRoundsListEl.innerHTML = roundNumbers.map(function(rn){
+      var matches = rounds[rn].slice().sort(function(a, b){ return a.court - b.court; });
+      return '<h3 class="fixture-round-heading">Round ' + rn + '</h3>' + matches.map(fixtureMatchEditorHTML).join('');
+    }).join('');
+    fixtureRoundsListEl.querySelectorAll('[data-fixture-id]').forEach(wireFixtureRow);
+  }
+
+  function wireFixtureRow(row){
+    var id = row.getAttribute('data-fixture-id');
+    var savedFlash = row.querySelector('.fx-saved');
+
+    function save(){
+      var scoreAVal = row.querySelector('.fx-score-a').value;
+      var scoreBVal = row.querySelector('.fx-score-b').value;
+      var payload = {
+        score_a: scoreAVal === '' ? null : parseInt(scoreAVal, 10),
+        score_b: scoreBVal === '' ? null : parseInt(scoreBVal, 10),
+        status: row.querySelector('.fx-status').value
+      };
+      db.from('fixtures').update(payload).eq('id', id).then(function(res){
+        if (res.error){ window.alert('Couldn\'t save: ' + res.error.message); return; }
+        savedFlash.textContent = 'Saved';
+        setTimeout(function(){ savedFlash.textContent = ''; }, 1500);
+        var f = fixturesCache.filter(function(x){ return x.id === id; })[0];
+        if (f){ f.scoreA = payload.score_a; f.scoreB = payload.score_b; f.status = payload.status; }
+        fixtureStandingsEl.innerHTML = playerStandingsTableHTML(window.PartyPadelFixtures.computeIndividualStandings(playersCache, fixturesCache));
+      });
+    }
+    row.querySelectorAll('input, select').forEach(function(field){
+      field.addEventListener('change', save);
+    });
+  }
+
+})();
+</script>
+</body>
+</html>

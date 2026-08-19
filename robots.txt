@@ -2,5 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /admin.html
 Disallow: /admin/
+Disallow: /eventmanager.html
+Disallow: /eventmanager/
 
 Sitemap: https://partypadel.uk/sitemap.xml

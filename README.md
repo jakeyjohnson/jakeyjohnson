@@ -247,6 +247,26 @@ real `admin.html`, so there's still only one copy of the actual panel to
 keep in sync; typing the shorter URL just bounces straight to it. Same
 `noindex` treatment as `admin.html` itself, via `robots.txt`.
 
+### Event Manager (scores-only page)
+
+`eventmanager.html` (also reachable at `partypadel.uk/eventmanager`, same
+redirect trick as `/admin`) is a cut-down version of the back office for
+whoever's running the room on the day: pick an event, pick a league, enter
+scores. No events list, no adding/removing players, no generating
+fixtures — those stay admin-only, on `admin.html`.
+
+It uses the **same login** as `admin.html` — there's still only one
+Supabase Auth account for this site, so anyone signed in to one panel
+could just as easily open the other in a new tab. That's a genuinely
+lighter-weight setup than a second account with its own restricted
+permissions would be, and it's the right call if you trust whoever's
+running the room with the login itself — you're just handing them a
+simpler screen. If a future event manager needs to be kept out of the
+admin panel even with the credentials in hand (a hired contractor, say,
+not someone you'd hand full access to), that needs an actual second
+login with its own database permissions, which is a bigger change — ask
+for that specifically if it comes up.
+
 ## Editing content
 
 - **Colours/type/spacing**: `assets/css/tokens.css` — nothing else should
