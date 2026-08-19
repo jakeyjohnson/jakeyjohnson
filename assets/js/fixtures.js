@@ -129,20 +129,27 @@
     return best;
   }
 
-  /* The scheduler. Every round, whoever has played the fewest games so
-     far gets priority for one of that round's court spots — so across
-     any number of rounds, no player's game count is ever more than 1
-     ahead of any other's, regardless of how unevenly the player count
+  /* The scheduler. Takes a target games-per-player rather than a raw
+     round count — "how many games does everyone get" is what an
+     organiser actually plans around, not an abstract round number that
+     means something different depending on how many courts there are.
+     Works out how many rounds that needs from the court count, then
+     every round gives priority for a court spot to whoever's played
+     the fewest games so far — so across however many rounds that
+     turns out to be, no player's game count is ever more than 1 ahead
+     of any other's, regardless of how unevenly the player count
      divides into courts×4. Ties are broken by a fresh shuffle each
      round, which also keeps who-sits-out from being predictable.
      Returns plain objects ready to insert into "fixtures" (round_number,
      court_number, player_a1/a2/b1/b2) — no ids, no event/league, since
      the caller attaches those. */
-  function generateSchedule(players, courts, rounds){
+  function generateSchedule(players, courts, gamesPerPlayer){
     var playersPerRound = Math.min(players.length, courts * 4);
     playersPerRound -= playersPerRound % 4;
     var courtsUsed = playersPerRound / 4;
     if (courtsUsed < 1) return [];
+
+    var rounds = Math.max(1, Math.ceil((gamesPerPlayer * players.length) / playersPerRound));
 
     var gamesPlayed = {};
     players.forEach(function(p){ gamesPlayed[p.id] = 0; });

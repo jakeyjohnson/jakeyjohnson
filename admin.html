@@ -234,10 +234,10 @@
 
         <div class="admin-fieldset">
           <span class="admin-fieldset-legend">Generate Schedule</span>
-          <p class="form-note">Auto-builds the whole round list from whoever's in the Players list above, giving everyone as close to the same number of games as possible. Rebuilding replaces any fixtures (and scores) already entered for this league.</p>
+          <p class="form-note">Auto-builds the whole round list from whoever's in the Players list above, working out how many rounds that needs and giving everyone as close to that many games as possible (never more than 1 apart). Rebuilding replaces any fixtures (and scores) already entered for this league.</p>
           <div class="schedule-gen-row">
             <div class="form-row"><label for="fxCourts">Courts available</label><input type="number" id="fxCourts" min="1" max="20" value="4"></div>
-            <div class="form-row"><label for="fxRounds">Rounds</label><input type="number" id="fxRounds" min="1" max="30" value="8"></div>
+            <div class="form-row"><label for="fxGamesPerPlayer">Games per player</label><input type="number" id="fxGamesPerPlayer" min="1" max="20" value="4"></div>
             <button type="button" class="btn btn-primary btn-small" id="generateScheduleBtn">Generate Fixtures</button>
           </div>
           <span class="field-error" id="scheduleGenError" aria-live="polite"></span>
@@ -716,7 +716,7 @@
   var bulkAddPlayers = document.getElementById('bulkAddPlayers');
   var placeholderCount = document.getElementById('placeholderCount');
   var fxCourts = document.getElementById('fxCourts');
-  var fxRounds = document.getElementById('fxRounds');
+  var fxGamesPerPlayer = document.getElementById('fxGamesPerPlayer');
   var scheduleGenError = document.getElementById('scheduleGenError');
   var fixtureStandingsEl = document.getElementById('fixtureStandings');
   var fixtureRoundsListEl = document.getElementById('fixtureRoundsList');
@@ -862,12 +862,12 @@
     if (!currentLeague){ scheduleGenError.textContent = 'This event has no leagues yet.'; return; }
     if (playersCache.length < 4){ scheduleGenError.textContent = 'Add at least 4 players first.'; return; }
     var courts = parseInt(fxCourts.value, 10) || 1;
-    var rounds = parseInt(fxRounds.value, 10) || 1;
+    var gamesPerPlayer = parseInt(fxGamesPerPlayer.value, 10) || 1;
     if (!window.confirm('Regenerate the schedule for ' + currentLeague + '? Any fixtures and scores already entered for this league will be replaced.')) return;
 
     db.from('fixtures').delete().eq('event_id', currentFixturesEvent.id).eq('league_name', currentLeague).then(function(delRes){
       if (delRes.error){ scheduleGenError.textContent = delRes.error.message; return; }
-      var schedule = window.PartyPadelFixtures.generateSchedule(playersCache, courts, rounds);
+      var schedule = window.PartyPadelFixtures.generateSchedule(playersCache, courts, gamesPerPlayer);
       if (!schedule.length){ scheduleGenError.textContent = 'Not enough players for even one court — add more players first.'; return; }
       var payload = schedule.map(function(f){
         return Object.assign({ event_id: currentFixturesEvent.id, league_name: currentLeague, status: 'scheduled' }, f);

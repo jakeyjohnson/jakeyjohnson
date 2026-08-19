@@ -198,14 +198,18 @@ that event actually has):
   it saves on its own and updates everywhere they appear, without touching
   the schedule itself.
 
-**2. Generate the schedule**: set **Courts available** and **Rounds**,
-then **Generate Fixtures**. This works out who plays with/against whom,
-round by round, automatically — nobody has to hand-build a fixture list.
-It keeps every player within one game of everyone else's total (so with,
-say, 50 players and 6 courts, some will play 3 rounds and some 4, never a
-bigger gap than that), and spreads partners/opponents around rather than
-repeating the same pairing over and over. Regenerating replaces whatever
-schedule (and scores) that league already had — there's a confirm prompt.
+**2. Generate the schedule**: set **Courts available** and **Games per
+player** — how many matches you want each person to get, not a round
+count — then **Generate Fixtures**. It works out how many rounds that
+actually needs from the court count, then builds who plays with/against
+whom, round by round, automatically — nobody has to hand-build a fixture
+list or do the maths on rounds themselves. It keeps every player within
+one game of everyone else's total (so if the numbers don't divide evenly
+— say 50 players on 6 courts asked for 4 games each — some will get 4 and
+some 5, never a bigger gap than that), and spreads partners/opponents
+around rather than repeating the same pairing over and over. Regenerating
+replaces whatever schedule (and scores) that league already had — there's
+a confirm prompt.
 
 **3. Enter scores as matches happen**: under each Round heading, type a
 score into either side of a match, or change its status
@@ -226,9 +230,9 @@ confirm prompt) — there's no archive/undo, same as deleting an event.
 
 `supabase/schema.sql` also seeds a working example: Manchester's Beginners
 league ships with 50 placeholder players ("Player 1"…"Player 50") and an
-already-generated 6-court, 8-round schedule, so there's something real to
-look at in `admin.html` and `results.html` without setting anything up
-first.
+already-generated schedule (6 courts, 4 games per player — works out to 9
+rounds), so there's something real to look at in `admin.html` and
+`results.html` without setting anything up first.
 
 ## Editing content
 
