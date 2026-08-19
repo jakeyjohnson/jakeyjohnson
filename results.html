@@ -62,13 +62,7 @@
         <p class="lede">Live once the first ball is served. Nothing here is fabricated ahead of time — results populate as events happen.</p>
       </div>
 
-      <div class="standings-preview reveal">
-        <div class="standings-header"><span>Player</span><span>P</span><span>W</span><span>L</span><span>Pts</span></div>
-        <div class="standings-row standings-placeholder"><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span></div>
-        <div class="standings-row standings-placeholder"><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span></div>
-        <div class="standings-row standings-placeholder"><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span></div>
-        <p class="standings-empty">No fixtures played yet.</p>
-      </div>
+      <div id="liveStandings" class="reveal"><p class="loading-note">Loading standings…</p></div>
 
       <div class="section-head reveal" style="margin-top: var(--space-9);">
         <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Fixtures To Come</span>
@@ -97,22 +91,118 @@
 <script src="assets/js/supabase-config.js"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/events.js"></script>
+<script src="assets/js/fixtures.js"></script>
 <script src="assets/js/main.js"></script>
 <script>
 (function(){
-  var list = document.getElementById('fixturesList');
-  window.PartyPadelEvents.loadEvents().then(function(events){
-    var upcoming = events.filter(function(e){ return e.status !== 'sold-out' && e.status !== 'completed'; });
-    if (!upcoming.length){ list.innerHTML = '<p class="empty-note">No upcoming fixtures.</p>'; return; }
-    var esc = window.PartyPadelEvents.escapeHTML;
-    list.innerHTML = upcoming.map(function(ev){
+  var esc = window.PartyPadelEvents.escapeHTML;
+  var standingsEl = document.getElementById('liveStandings');
+  var fixturesListEl = document.getElementById('fixturesList');
+  var eventsCache = [];
+  var fixturesCache = [];
+  var currentTabByEvent = {}; // eventId -> selected league name
+
+  function statusLabel(status){
+    return status === 'live' ? 'Live' : (status === 'completed' ? 'Full Time' : 'Scheduled');
+  }
+
+  function standingsTableHTML(standings){
+    if (!standings.length) return '<p class="standings-empty">No results yet.</p>';
+    return '<div class="standings-header"><span>Team</span><span>P</span><span>W</span><span>L</span><span>Pts</span></div>' +
+      standings.map(function(t){
+        return '<div class="standings-row"><span>' + esc(t.name) + '</span><span>' + t.played + '</span><span>' + t.won + '</span><span>' + t.lost + '</span><span>' + t.points + '</span></div>';
+      }).join('');
+  }
+
+  function matchRowHTML(f){
+    var hasScore = f.scoreA != null && f.scoreB != null;
+    return '<div class="fixture-match-row">' +
+      '<span class="fixture-match-teams">' + esc(f.teamA) + ' <span class="fixture-match-score">' + (hasScore ? (f.scoreA + ' – ' + f.scoreB) : 'v') + '</span> ' + esc(f.teamB) + '</span>' +
+      '<span class="status-pill ' + (f.status === 'live' ? 'status-open' : (f.status === 'completed' ? 'status-closed' : 'status-limited')) + '">' + statusLabel(f.status) + '</span>' +
+    '</div>';
+  }
+
+  function renderEventBlock(ev, eventFixtures){
+    var leagueNames = window.PartyPadelFixtures.leagueNamesIn(eventFixtures);
+    if (!currentTabByEvent[ev.id] || leagueNames.indexOf(currentTabByEvent[ev.id]) === -1){
+      currentTabByEvent[ev.id] = leagueNames[0];
+    }
+    var activeLeague = currentTabByEvent[ev.id];
+
+    var tabsHTML = leagueNames.length > 1
+      ? '<div class="fixture-league-tabs" data-event-id="' + ev.id + '">' +
+          leagueNames.map(function(n){
+            return '<button type="button" class="btn btn-small ' + (n === activeLeague ? 'btn-primary' : 'btn-outline') + '" data-league="' + esc(n) + '">' + esc(n) + '</button>';
+          }).join('') +
+        '</div>'
+      : '';
+
+    var leagueFixtures = eventFixtures.filter(function(f){ return f.leagueName === activeLeague; });
+    var standings = window.PartyPadelFixtures.computeStandings(eventFixtures, activeLeague);
+    var matches = leagueFixtures.map(matchRowHTML).join('');
+
+    return '<div class="event-standings-block reveal" data-event-id="' + ev.id + '">' +
+      '<h3>' + esc(ev.city) + ' <span class="event-standings-date">— ' + esc(ev.dateLabel) + '</span></h3>' +
+      tabsHTML +
+      standingsTableHTML(standings) +
+      (matches ? '<div class="fixture-match-list">' + matches + '</div>' : '') +
+    '</div>';
+  }
+
+  function renderStandings(){
+    var eventIdsWithFixtures = [];
+    fixturesCache.forEach(function(f){ if (eventIdsWithFixtures.indexOf(f.eventId) === -1) eventIdsWithFixtures.push(f.eventId); });
+
+    if (!eventIdsWithFixtures.length){
+      standingsEl.innerHTML = '<p class="standings-empty">No fixtures played yet.</p>';
+      return;
+    }
+    var blocks = eventIdsWithFixtures.map(function(eventId){
+      var ev = eventsCache.filter(function(e){ return e.id === eventId; })[0];
+      if (!ev) return '';
+      var eventFixtures = fixturesCache.filter(function(f){ return f.eventId === eventId; });
+      return renderEventBlock(ev, eventFixtures);
+    }).join('');
+    standingsEl.innerHTML = blocks || '<p class="standings-empty">No fixtures played yet.</p>';
+
+    standingsEl.querySelectorAll('[data-league]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var eventId = btn.closest('[data-event-id]').getAttribute('data-event-id');
+        currentTabByEvent[eventId] = btn.getAttribute('data-league');
+        renderStandings();
+      });
+    });
+  }
+
+  function renderFixturesToCome(){
+    var eventIdsWithFixtures = fixturesCache.map(function(f){ return f.eventId; });
+    var upcoming = eventsCache.filter(function(e){
+      return e.status !== 'sold-out' && e.status !== 'completed' && eventIdsWithFixtures.indexOf(e.id) === -1;
+    });
+    if (!upcoming.length){ fixturesListEl.innerHTML = '<p class="empty-note">No upcoming fixtures.</p>'; return; }
+    fixturesListEl.innerHTML = upcoming.map(function(ev){
       return '<a class="fixture-link-row" href="event.html?slug=' + encodeURIComponent(ev.slug) + '">' +
         '<span><svg class="icon icon-sm"><use href="#ci-calendar"/></svg> ' + esc(ev.dateLabel) + '</span>' +
         '<span>' + esc(ev.city) + ' — ' + esc(ev.venue) + '</span>' +
         '<span class="status-pill ' + window.PartyPadelEvents.statusMeta(ev.status).pillClass + '">' + window.PartyPadelEvents.statusMeta(ev.status).label + '</span>' +
       '</a>';
     }).join('');
-  });
+  }
+
+  function loadAndRenderAll(){
+    Promise.all([
+      window.PartyPadelEvents.loadEvents(),
+      window.PartyPadelFixtures.loadAllFixtures()
+    ]).then(function(results){
+      eventsCache = results[0];
+      fixturesCache = results[1];
+      renderStandings();
+      renderFixturesToCome();
+    });
+  }
+
+  loadAndRenderAll();
+  window.PartyPadelFixtures.subscribeAllFixtures(loadAndRenderAll);
 })();
 </script>
 </body>

@@ -126,9 +126,11 @@ in the price shown on-site.
   entry if you want online spectator sales too.
 - **Partner enquiry form** (`partners.html`) — validates and shows a success
   state client-side; doesn't send anywhere yet.
-- **Results/standings** — `assets/data/results.json` is intentionally empty.
-  The Results page and homepage teaser show an honest "no fixtures played
-  yet" state rather than fabricated scores.
+- **Results/standings** — real, live data from Supabase's `fixtures` table,
+  managed from `admin.html`. See "Fixtures & live scores" under "Back
+  office" below. Until any fixtures are entered for an event, `results.html`
+  shows an honest "no fixtures played yet" state rather than fabricated
+  scores.
 - **Partners** — `assets/data/partners.json` is intentionally empty per the
   brief ("never fabricate sponsor logos or partner claims"). The Partners
   page shows a "coming soon" state instead of placeholder logos.
@@ -176,6 +178,30 @@ requirements (not tied to any fixed skill scale, so "Self-rated 3.0–5.0",
 "Women only" and "Under 18s" are all valid) plus a spaces-left count that
 drives the "Full" vs "X spaces left" status shown on-site. An event needs
 at least one to be enterable at all.
+
+### Fixtures & live scores
+
+Once an event is running, click **Fixtures** on its row in `admin.html` to
+enter matches and scores as they happen. Same login as everything else in
+the back office — there's no separate account for this.
+
+- Pick a league (tabs at the top — only leagues that event actually has),
+  then **+ Add Fixture** with the two team/pair names. New fixtures start
+  as "Scheduled" with no score.
+- Type a score into either team's box, or change the status dropdown, and
+  it saves the moment you tab or click away — no separate save button.
+  A small "Saved" note confirms it.
+- The league table above the fixture list recalculates itself from
+  whatever's been scored so far (3 points a win, 1 a draw), live, as you go.
+- `results.html` shows the exact same table and match list to the public,
+  and updates within a second or two of you saving a score — it's
+  subscribed to Supabase's realtime feed for the `fixtures` table, not a
+  polling refresh. If that feed is ever unreachable (a strict network,
+  the table not yet added to the project's realtime publication —
+  `supabase/schema.sql` handles that automatically) it just falls back to
+  "reload the page to see the latest," rather than breaking.
+- Removing a fixture is permanent (there's a confirm prompt) — there's no
+  archive/undo, same as deleting an event.
 
 ## Editing content
 

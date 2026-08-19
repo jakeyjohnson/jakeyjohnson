@@ -204,6 +204,32 @@
         </form>
       </div>
 
+      <div id="fixturesView" hidden>
+        <div class="admin-header-row section-head">
+          <div>
+            <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> Admin</span>
+            <h1 id="fixturesHeading">Fixtures &amp; Live Scores</h1>
+            <p class="lede">Scores save the moment you tab out of a field — no separate save step — and update on <a href="results.html">results.html</a> straight away.</p>
+          </div>
+        </div>
+
+        <div class="admin-toolbar">
+          <button type="button" class="btn btn-outline btn-small" id="backToEventsBtn">&larr; Back to Events</button>
+        </div>
+
+        <div id="fixtureLeagueTabs" class="fixture-league-tabs"></div>
+
+        <div id="fixtureRowsList"></div>
+
+        <div class="fixture-add-row">
+          <div class="form-row"><input type="text" id="fxNewTeamA" placeholder="Team A name" aria-label="New fixture — Team A name"></div>
+          <span class="fixture-vs">v</span>
+          <div class="form-row"><input type="text" id="fxNewTeamB" placeholder="Team B name" aria-label="New fixture — Team B name"></div>
+          <button type="button" class="btn btn-primary btn-small" id="addFixtureBtn">+ Add Fixture</button>
+        </div>
+        <span class="field-error" id="fixtureAddError" aria-live="polite"></span>
+      </div>
+
     </div>
   </section>
 </main>
@@ -224,6 +250,7 @@
 <script src="assets/js/supabase-config.js"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/events.js"></script>
+<script src="assets/js/fixtures.js"></script>
 <script>
 (function(){
   var db = window.PartyPadelDB;
@@ -233,6 +260,7 @@
   var loginView = document.getElementById('loginView');
   var dashboardView = document.getElementById('dashboardView');
   var eventFormView = document.getElementById('eventFormView');
+  var fixturesView = document.getElementById('fixturesView');
   var signedInBar = document.getElementById('signedInBar');
 
   if (!db){
@@ -259,12 +287,15 @@
     loginView.hidden = false;
     dashboardView.hidden = true;
     eventFormView.hidden = true;
+    fixturesView.hidden = true;
     signedInBar.hidden = true;
+    unsubscribeFixtures();
   }
   function showSignedIn(session){
     loginView.hidden = true;
     dashboardView.hidden = false;
     eventFormView.hidden = true;
+    fixturesView.hidden = true;
     signedInBar.hidden = false;
     document.getElementById('adminUserEmail').textContent = session.user.email;
     loadEventsList();
@@ -332,6 +363,9 @@
       eventsList.querySelectorAll('[data-delete-slug]').forEach(function(btn){
         btn.addEventListener('click', function(){ deleteEvent(btn.getAttribute('data-delete-slug')); });
       });
+      eventsList.querySelectorAll('[data-fixtures-slug]').forEach(function(btn){
+        btn.addEventListener('click', function(){ openFixturesView(btn.getAttribute('data-fixtures-slug')); });
+      });
     }).catch(function(){
       eventsList.innerHTML = '<p class="empty-note">Couldn\'t load events — try refreshing.</p>';
     });
@@ -349,6 +383,7 @@
           '</div>' +
         '</div>' +
         '<div class="admin-row-actions">' +
+          '<button type="button" class="btn btn-outline btn-small" data-fixtures-slug="' + esc(ev.slug) + '">Fixtures</button>' +
           '<button type="button" class="btn btn-outline btn-small" data-edit-slug="' + esc(ev.slug) + '">Edit</button>' +
           '<button type="button" class="btn btn-outline btn-small" data-delete-slug="' + esc(ev.slug) + '">Delete</button>' +
         '</div>' +
@@ -652,6 +687,176 @@
     deleteEvent(editingSlug, function(){
       eventFormView.hidden = true;
       dashboardView.hidden = false;
+    });
+  });
+
+  /* ===================== Fixtures & live scores ===================== */
+
+  var fixturesHeading = document.getElementById('fixturesHeading');
+  var fixtureLeagueTabs = document.getElementById('fixtureLeagueTabs');
+  var fixtureRowsList = document.getElementById('fixtureRowsList');
+  var fixtureAddError = document.getElementById('fixtureAddError');
+  var fxNewTeamA = document.getElementById('fxNewTeamA');
+  var fxNewTeamB = document.getElementById('fxNewTeamB');
+
+  var currentFixturesEvent = null;
+  var currentLeague = null;
+  var fixturesCache = [];
+  var fixturesChannel = null;
+
+  function unsubscribeFixtures(){
+    if (fixturesChannel && db && db.removeChannel){ db.removeChannel(fixturesChannel); }
+    fixturesChannel = null;
+  }
+
+  function openFixturesView(slug){
+    var ev = eventsCache.filter(function(e){ return e.slug === slug; })[0];
+    if (!ev) return;
+    unsubscribeFixtures();
+    currentFixturesEvent = ev;
+    fixturesHeading.textContent = 'Fixtures & Live Scores — ' + ev.city;
+    dashboardView.hidden = true;
+    fixturesView.hidden = false;
+
+    var leagueNames = ev.divisions.map(function(d){ return d.name; }).filter(Boolean);
+    currentLeague = leagueNames[0] || null;
+    renderLeagueTabs(leagueNames);
+    loadAndRenderFixtures();
+
+    fixturesChannel = window.PartyPadelFixtures.subscribeFixtures(ev.id, function(){ loadAndRenderFixtures(); });
+  }
+
+  document.getElementById('backToEventsBtn').addEventListener('click', function(){
+    unsubscribeFixtures();
+    fixturesView.hidden = true;
+    dashboardView.hidden = false;
+  });
+
+  function renderLeagueTabs(names){
+    if (!names.length){
+      fixtureLeagueTabs.innerHTML = '<p class="empty-note">This event has no leagues yet — add one on the Edit screen first.</p>';
+      return;
+    }
+    fixtureLeagueTabs.innerHTML = names.map(function(n){
+      return '<button type="button" class="btn btn-small ' + (n === currentLeague ? 'btn-primary' : 'btn-outline') + '" data-league="' + esc(n) + '">' + esc(n) + '</button>';
+    }).join('');
+    fixtureLeagueTabs.querySelectorAll('[data-league]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        currentLeague = btn.getAttribute('data-league');
+        renderLeagueTabs(names);
+        renderFixtureRows();
+      });
+    });
+  }
+
+  function loadAndRenderFixtures(){
+    fixtureRowsList.innerHTML = '<p class="loading-note">Loading fixtures…</p>';
+    window.PartyPadelFixtures.loadFixtures(currentFixturesEvent.id).then(function(fixtures){
+      fixturesCache = fixtures;
+      renderFixtureRows();
+    });
+  }
+
+  function standingsTableHTML(standings){
+    if (!standings.length) return '';
+    return '<div class="standings-header"><span>Team</span><span>P</span><span>W</span><span>L</span><span>Pts</span></div>' +
+      standings.map(function(t){
+        return '<div class="standings-row"><span>' + esc(t.name) + '</span><span>' + t.played + '</span><span>' + t.won + '</span><span>' + t.lost + '</span><span>' + t.points + '</span></div>';
+      }).join('');
+  }
+
+  function fixtureRowHTML(f){
+    return '<div class="fixture-row-editor" data-fixture-id="' + f.id + '">' +
+      '<div class="form-row"><input type="text" class="fx-team-a" value="' + esc(f.teamA) + '" placeholder="Team A" aria-label="Team A name"></div>' +
+      '<span class="fixture-vs">v</span>' +
+      '<div class="form-row"><input type="text" class="fx-team-b" value="' + esc(f.teamB) + '" placeholder="Team B" aria-label="Team B name"></div>' +
+      '<div class="form-row fixture-score"><input type="number" class="fx-score-a" min="0" step="1" value="' + (f.scoreA != null ? f.scoreA : '') + '" aria-label="Team A score"></div>' +
+      '<span class="fixture-dash">–</span>' +
+      '<div class="form-row fixture-score"><input type="number" class="fx-score-b" min="0" step="1" value="' + (f.scoreB != null ? f.scoreB : '') + '" aria-label="Team B score"></div>' +
+      '<div class="form-row"><select class="fx-status" aria-label="Match status">' +
+        '<option value="scheduled"' + (f.status === 'scheduled' ? ' selected' : '') + '>Scheduled</option>' +
+        '<option value="live"' + (f.status === 'live' ? ' selected' : '') + '>Live</option>' +
+        '<option value="completed"' + (f.status === 'completed' ? ' selected' : '') + '>Completed</option>' +
+      '</select></div>' +
+      '<button type="button" class="btn btn-outline btn-small fx-remove">Remove</button>' +
+      '<span class="fx-saved" aria-live="polite"></span>' +
+    '</div>';
+  }
+
+  function renderFixtureRows(){
+    if (!currentLeague){ fixtureRowsList.innerHTML = ''; return; }
+    var rows = fixturesCache.filter(function(f){ return f.leagueName === currentLeague; });
+    var standings = window.PartyPadelFixtures.computeStandings(fixturesCache, currentLeague);
+    fixtureRowsList.innerHTML = standingsTableHTML(standings) +
+      (rows.length ? rows.map(fixtureRowHTML).join('') : '<p class="empty-note">No fixtures yet in this league — add one below.</p>');
+    fixtureRowsList.querySelectorAll('[data-fixture-id]').forEach(wireFixtureRow);
+  }
+
+  function refreshStandingsOnly(){
+    fixtureRowsList.querySelectorAll('.standings-header, .standings-row').forEach(function(el){ el.remove(); });
+    var standings = window.PartyPadelFixtures.computeStandings(fixturesCache, currentLeague);
+    fixtureRowsList.insertAdjacentHTML('afterbegin', standingsTableHTML(standings));
+  }
+
+  function wireFixtureRow(row){
+    var id = row.getAttribute('data-fixture-id');
+    var savedFlash = row.querySelector('.fx-saved');
+
+    function save(){
+      var scoreAVal = row.querySelector('.fx-score-a').value;
+      var scoreBVal = row.querySelector('.fx-score-b').value;
+      var payload = {
+        team_a: row.querySelector('.fx-team-a').value.trim(),
+        team_b: row.querySelector('.fx-team-b').value.trim(),
+        score_a: scoreAVal === '' ? null : parseInt(scoreAVal, 10),
+        score_b: scoreBVal === '' ? null : parseInt(scoreBVal, 10),
+        status: row.querySelector('.fx-status').value
+      };
+      db.from('fixtures').update(payload).eq('id', id).then(function(res){
+        if (res.error){ window.alert('Couldn\'t save: ' + res.error.message); return; }
+        savedFlash.textContent = 'Saved';
+        setTimeout(function(){ savedFlash.textContent = ''; }, 1500);
+        var f = fixturesCache.filter(function(x){ return x.id === id; })[0];
+        if (f){
+          f.teamA = payload.team_a; f.teamB = payload.team_b;
+          f.scoreA = payload.score_a; f.scoreB = payload.score_b; f.status = payload.status;
+        }
+        refreshStandingsOnly();
+      });
+    }
+    row.querySelectorAll('input, select').forEach(function(field){
+      field.addEventListener('change', save);
+    });
+
+    row.querySelector('.fx-remove').addEventListener('click', function(){
+      if (!window.confirm('Remove this fixture?')) return;
+      db.from('fixtures').delete().eq('id', id).then(function(res){
+        if (res.error){ window.alert('Couldn\'t remove: ' + res.error.message); return; }
+        fixturesCache = fixturesCache.filter(function(x){ return x.id !== id; });
+        renderFixtureRows();
+      });
+    });
+  }
+
+  document.getElementById('addFixtureBtn').addEventListener('click', function(){
+    fixtureAddError.textContent = '';
+    if (!currentLeague){ fixtureAddError.textContent = 'This event has no leagues yet.'; return; }
+    if (!fxNewTeamA.value.trim() || !fxNewTeamB.value.trim()){
+      fixtureAddError.textContent = 'Both team names are required.';
+      return;
+    }
+    var payload = {
+      event_id: currentFixturesEvent.id,
+      league_name: currentLeague,
+      team_a: fxNewTeamA.value.trim(),
+      team_b: fxNewTeamB.value.trim(),
+      status: 'scheduled',
+      sort_order: fixturesCache.length
+    };
+    db.from('fixtures').insert(payload).then(function(res){
+      if (res.error){ fixtureAddError.textContent = res.error.message; return; }
+      fxNewTeamA.value = ''; fxNewTeamB.value = '';
+      loadAndRenderFixtures();
     });
   });
 

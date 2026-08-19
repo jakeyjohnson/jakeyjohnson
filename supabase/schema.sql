@@ -194,3 +194,88 @@ insert into events (
     ]'::jsonb
   )
 on conflict (slug) do nothing;
+
+-- ============================================================
+-- Fixtures & live scores
+--
+-- One row per match. league_name is free text matched against the
+-- name of one of the event's entries in events.leagues — there's no
+-- foreign key for that since leagues live inside a jsonb array, not
+-- their own table, so admin.html is what keeps the two in sync (the
+-- league picker on the fixtures screen is built from the event's own
+-- leagues list). Team names are free text too — this site doesn't
+-- track a roster, just whatever name the admin types when creating
+-- the fixture.
+-- ============================================================
+
+create table if not exists fixtures (
+  id            uuid primary key default gen_random_uuid(),
+  event_id      uuid not null references events(id) on delete cascade,
+  league_name   text not null,
+  team_a        text not null,
+  team_b        text not null,
+  score_a       integer,
+  score_b       integer,
+  status        text not null default 'scheduled'
+                  check (status in ('scheduled','live','completed')),
+  sort_order    integer not null default 0,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create index if not exists fixtures_event_id_idx on fixtures (event_id);
+
+create or replace function set_fixtures_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists fixtures_set_updated_at on fixtures;
+create trigger fixtures_set_updated_at
+  before update on fixtures
+  for each row
+  execute function set_fixtures_updated_at();
+
+alter table fixtures enable row level security;
+
+drop policy if exists "Public can read fixtures" on fixtures;
+create policy "Public can read fixtures"
+  on fixtures for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "Authenticated can insert fixtures" on fixtures;
+create policy "Authenticated can insert fixtures"
+  on fixtures for insert
+  to authenticated
+  with check (true);
+
+drop policy if exists "Authenticated can update fixtures" on fixtures;
+create policy "Authenticated can update fixtures"
+  on fixtures for update
+  to authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "Authenticated can delete fixtures" on fixtures;
+create policy "Authenticated can delete fixtures"
+  on fixtures for delete
+  to authenticated
+  using (true);
+
+-- Turns on Supabase's realtime feed for this table, so results.html can
+-- update the second a score is saved in admin.html instead of waiting
+-- on a page refresh. No-ops if it's already on (re-running this script
+-- on a project that's already been migrated).
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'fixtures'
+  ) then
+    alter publication supabase_realtime add table fixtures;
+  end if;
+end $$;
