@@ -4,25 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Invitational | Party Padel</title>
-<meta name="description" content="Register your interest in The Invitational, an exclusive Party Padel event. Be first to hear when it's on.">
+<meta name="description" content="The Invitational is a private Party Padel event, by invitation only. Request yours below.">
 <link rel="canonical" href="https://partypadel.uk/invitational.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Party Padel">
 <meta property="og:title" content="The Invitational | Party Padel">
-<meta property="og:description" content="Register your interest in The Invitational, an exclusive Party Padel event. Be first to hear when it's on.">
+<meta property="og:description" content="The Invitational is a private Party Padel event, by invitation only. Request yours below.">
 <meta property="og:url" content="https://partypadel.uk/invitational.html">
 <meta property="og:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="The Invitational | Party Padel">
-<meta name="twitter:description" content="Register your interest in The Invitational, an exclusive Party Padel event. Be first to hear when it's on.">
+<meta name="twitter:description" content="The Invitational is a private Party Padel event, by invitation only. Request yours below.">
 <meta name="twitter:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/tokens.css?v=2">
 <link rel="stylesheet" href="assets/css/style.css?v=2">
+<link rel="stylesheet" href="assets/css/invitational.css?v=1">
 </head>
 <body>
 
@@ -79,12 +80,17 @@
 
       <div id="formView">
         <div class="section-head reveal">
-          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> The Invitational</span>
-          <h1>Register Your Interest</h1>
-          <p class="lede">Something exclusive is coming from Party Padel. Register below and we'll email you the details first.</p>
+          <span class="lux-kicker"><span class="eyebrow">By Invitation Only</span></span>
+          <h1 class="lux-heading">The Invitational</h1>
+          <p class="lede">A private Party Padel event, open only to those holding this invitation. Leave your details below and a member of our team will follow up personally.</p>
         </div>
 
-        <form id="invitationalForm" class="reveal" novalidate>
+        <form id="invitationalForm" class="reveal court-frame lux-card" novalidate>
+          <span class="frame-corner corner-tl"></span>
+          <span class="frame-corner corner-tr"></span>
+          <span class="frame-corner corner-bl"></span>
+          <span class="frame-corner corner-br"></span>
+
           <div class="form-grid">
             <div class="form-row">
               <label for="fFirstName">Name</label>
@@ -112,24 +118,24 @@
 
           <div class="form-row consent-row">
             <input type="checkbox" id="fConsent" required aria-describedby="fConsentError">
-            <label for="fConsent">I'm happy for Party Padel to store my details and email me about this and future events. See our <a href="privacy.html">Privacy &amp; Cookies</a> policy.</label>
+            <label for="fConsent">I'm happy for Party Padel to hold my details and contact me about The Invitational and future events. See our <a href="privacy.html">Privacy &amp; Cookies</a> policy.</label>
             <span class="field-error" id="fConsentError" aria-live="polite"></span>
           </div>
 
           <div class="form-alert" id="formError" hidden></div>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary btn-large" id="formSubmit"><span class="btn-text">Register</span></button>
+            <button type="submit" class="btn btn-primary btn-large" id="formSubmit"><span class="btn-text">Request An Invitation</span></button>
           </div>
         </form>
       </div>
 
       <div id="confirmView" hidden>
         <div class="section-head">
-          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-check"/></svg> Registered</span>
+          <span class="lux-kicker"><span class="eyebrow">Request Received</span></span>
         </div>
         <div class="confirm-badge"><svg class="icon icon-lg"><use href="#ci-check"/></svg></div>
-        <h1 class="confirm-heading">You're On The List.</h1>
-        <p class="lede confirm-lede">We'll email you as soon as there's more to share.</p>
+        <h1 class="confirm-heading lux-heading">You're On The List.</h1>
+        <p class="lede confirm-lede">Our team reviews every request personally. If it's a match, you'll hear from us directly.</p>
         <div class="form-actions confirm-actions">
           <a href="index.html" class="btn btn-primary">Back to Home</a>
         </div>

@@ -1,0 +1,74 @@
+/* =========================================================
+   The Invitational — page-scoped luxury treatment.
+
+   Loaded after tokens.css/style.css, so the :root overrides
+   below win only on this one document — every other page keeps
+   the standard Party Padel Acid/Black brand untouched. Reuses
+   the site's own components (the court-line frame device, the
+   eyebrow label, the accent-coloured button/checkbox) rather
+   than inventing a new visual language — just restyled in a
+   champagne gold instead of acid, with a serif display face on
+   the two headline moments so it reads as an invitation rather
+   than a tournament poster.
+   ========================================================= */
+
+:root{
+  --lux-gold:        #C9A24B;
+  --lux-gold-bright: #E4C06E;
+  --lux-gold-deep:   #A9822E;
+
+  --color-accent-primary:        var(--lux-gold);
+  --color-accent-primary-hover:  var(--lux-gold-bright);
+  --color-accent-primary-active: var(--lux-gold-deep);
+  --color-border-focus:          var(--lux-gold);
+  --color-text-link:             var(--lux-gold);
+}
+
+.register-section{ position:relative; overflow:hidden; }
+.register-section::before{
+  content:'';
+  position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width:900px; height:520px; max-width:150vw;
+  background: radial-gradient(ellipse at 50% 0%, rgba(201,162,75,0.16), transparent 68%);
+  pointer-events:none; z-index:0;
+}
+.register-section .container{ position:relative; z-index:1; }
+
+.lux-kicker{
+  display:flex; align-items:center; justify-content:center; gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.lux-kicker::before, .lux-kicker::after{
+  content:''; flex:0 0 40px; height:1px;
+  background: linear-gradient(90deg, transparent, var(--lux-gold));
+}
+.lux-kicker::after{ background: linear-gradient(90deg, var(--lux-gold), transparent); }
+.lux-kicker .eyebrow{ margin:0; }
+
+.register-section .section-head{ max-width:560px; margin-left:auto; margin-right:auto; text-align:center; }
+.register-section .lede{ text-align:center; margin: 0 auto; max-width:46ch; }
+
+.lux-heading{
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: clamp(2.25rem, 5.4vw, 3.5rem);
+}
+
+.lux-card{
+  position:relative;
+  padding: var(--space-7) var(--space-6);
+  margin-top: var(--space-2);
+  border: var(--line-weight-hairline) solid rgba(201,162,75,0.28);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(201,162,75,0.05), rgba(255,255,255,0) 40%);
+}
+.lux-card .frame-corner{ width:28px; height:28px; }
+
+.register-section .confirm-badge{ border-width: var(--line-weight-hairline); }
+
+@media (max-width:640px){
+  .lux-card{ padding: var(--space-6) var(--space-4); }
+}
