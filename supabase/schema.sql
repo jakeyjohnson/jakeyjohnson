@@ -463,3 +463,45 @@ begin
 
   end if;
 end $$;
+
+-- ============================================================
+-- Invitational registrations
+--
+-- The sign-up form at invitational.html (partypadel.uk/invitational)
+-- writes here directly with the public anon key — there's no login
+-- for this form, anyone can register. Row-level security is what
+-- keeps that safe: the public can INSERT a new row but can't read,
+-- change or delete anyone's entry (including their own) — only the
+-- logged-in admin can see the list, via Table Editor or SQL Editor
+-- in the Supabase dashboard (there's no in-app viewer for this yet).
+-- ============================================================
+
+create table if not exists invitational_signups (
+  id          uuid primary key default gen_random_uuid(),
+  first_name  text not null,
+  last_name   text not null,
+  phone       text not null,
+  email       text not null,
+  consent     boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+
+alter table invitational_signups enable row level security;
+
+drop policy if exists "Public can register" on invitational_signups;
+create policy "Public can register"
+  on invitational_signups for insert
+  to anon, authenticated
+  with check (true);
+
+drop policy if exists "Authenticated can view registrations" on invitational_signups;
+create policy "Authenticated can view registrations"
+  on invitational_signups for select
+  to authenticated
+  using (true);
+
+drop policy if exists "Authenticated can delete registrations" on invitational_signups;
+create policy "Authenticated can delete registrations"
+  on invitational_signups for delete
+  to authenticated
+  using (true);

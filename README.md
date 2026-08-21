@@ -20,6 +20,7 @@ still plain HTML/CSS/JS you deploy by uploading files.
 | `results.html` | Standings and fixtures |
 | `partners.html` | Commercial pitch and enquiry form |
 | `about.html` | Brand story and north star |
+| `invitational.html` | Sign-up form for The Invitational. See "The Invitational" below. |
 
 ## Structure
 
@@ -272,6 +273,33 @@ events they're not running) even with the credentials in hand — a hired
 contractor, say, not someone you'd hand full access to — that needs an
 actual second login with its own database permissions, which is a bigger
 change — ask for that specifically if it comes up.
+
+### The Invitational (sign-up form)
+
+`invitational.html` (also reachable at `partypadel.uk/invitational`, same
+redirect trick as `/admin`) is a standalone registration form — Name,
+Surname, Phone, Email, and one consent checkbox — built to be filled in as
+fast as possible. Every field carries the right `autocomplete` attribute
+(`given-name`, `family-name`, `tel`, `email`) so a browser or phone that
+already has the visitor's details filled in can autofill the whole thing
+in one tap.
+
+There's no login for this form — anyone can submit it — so it writes
+straight to a `invitational_signups` table with the public anon key, the
+same way the rest of the site reads events. Row-level security is what
+keeps that safe: the public can only ever INSERT a new row, never read,
+edit or delete one (including their own), so submitting the form can't
+leak anyone else's details back out. To see who's registered, open
+Table Editor for `invitational_signups` in the Supabase dashboard — there's
+no in-app viewer for this yet, since only you (logged in) can read that
+table at all.
+
+The consent checkbox covers both data storage and marketing email consent
+in one tick, per how the form was asked for. Worth knowing: UK guidance
+(the ICO's) generally prefers marketing consent to be its own separate,
+unticked-by-default checkbox rather than bundled with "we'll store your
+details" — this form doesn't do that split. Fine for how it's being used
+now; flag it if this ever needs to hold up to stricter scrutiny.
 
 ## Editing content
 

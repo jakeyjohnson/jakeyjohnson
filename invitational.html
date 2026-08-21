@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Invitational | Party Padel</title>
+<meta name="description" content="Register your interest in The Invitational, an exclusive Party Padel event. Be first to hear when it's on.">
+<link rel="canonical" href="https://partypadel.uk/invitational.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Party Padel">
+<meta property="og:title" content="The Invitational | Party Padel">
+<meta property="og:description" content="Register your interest in The Invitational, an exclusive Party Padel event. Be first to hear when it's on.">
+<meta property="og:url" content="https://partypadel.uk/invitational.html">
+<meta property="og:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Invitational | Party Padel">
+<meta name="twitter:description" content="Register your interest in The Invitational, an exclusive Party Padel event. Be first to hear when it's on.">
+<meta name="twitter:image" content="https://partypadel.uk/assets/img/logo-lockup.webp">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2">
+<link rel="stylesheet" href="assets/css/style.css?v=2">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ci-cross" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></symbol>
+    <symbol id="ci-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12.5l3 3 6-6.5"/></symbol>
+    <symbol id="ci-instagram" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.9" fill="currentColor" stroke="none"/></symbol>
+  </defs>
+</svg>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="120" height="120"></a>
+    <nav class="nav-links" id="navLinks">
+      <a href="events.html">Events</a>
+      <a href="play.html">Play</a>
+      <a href="format.html">Format</a>
+      <a href="results.html">Results</a>
+      <a href="partners.html">Partners</a>
+      <a href="about.html">About</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="events.html" class="btn btn-primary btn-small">Get Tickets</a>
+    </div>
+    <button class="burger" id="burger" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-menu-inner">
+    <a href="events.html">Events</a>
+    <a href="play.html">Play</a>
+    <a href="format.html">Format</a>
+    <a href="results.html">Results</a>
+    <a href="partners.html">Partners</a>
+    <a href="about.html">About</a>
+    <a href="events.html" class="btn btn-primary">Get Tickets</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="section register-section">
+    <div class="container narrow">
+
+      <div id="configMissingView" hidden>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> The Invitational</span>
+          <h1>Not Set Up Yet</h1>
+          <p class="lede">This form needs a Supabase project connected before it'll work. Follow the "Back office" section in README.md, then fill in <code>assets/js/supabase-config.js</code> with your project's URL and anon key.</p>
+        </div>
+      </div>
+
+      <div id="formView">
+        <div class="section-head reveal">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> The Invitational</span>
+          <h1>Register Your Interest</h1>
+          <p class="lede">Something exclusive is coming from Party Padel. Register below and we'll email you the details first.</p>
+        </div>
+
+        <form id="invitationalForm" class="reveal" novalidate>
+          <div class="form-grid">
+            <div class="form-row">
+              <label for="fFirstName">Name</label>
+              <input type="text" id="fFirstName" required autocomplete="given-name" aria-describedby="fFirstNameError">
+              <span class="field-error" id="fFirstNameError" aria-live="polite"></span>
+            </div>
+            <div class="form-row">
+              <label for="fLastName">Surname</label>
+              <input type="text" id="fLastName" required autocomplete="family-name" aria-describedby="fLastNameError">
+              <span class="field-error" id="fLastNameError" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="fPhone">Phone number</label>
+            <input type="tel" id="fPhone" required autocomplete="tel" inputmode="tel" aria-describedby="fPhoneError">
+            <span class="field-error" id="fPhoneError" aria-live="polite"></span>
+          </div>
+
+          <div class="form-row">
+            <label for="fEmail">Email</label>
+            <input type="email" id="fEmail" required autocomplete="email" aria-describedby="fEmailError">
+            <span class="field-error" id="fEmailError" aria-live="polite"></span>
+          </div>
+
+          <div class="form-row consent-row">
+            <input type="checkbox" id="fConsent" required aria-describedby="fConsentError">
+            <label for="fConsent">I'm happy for Party Padel to store my details and email me about this and future events. See our <a href="privacy.html">Privacy &amp; Cookies</a> policy.</label>
+            <span class="field-error" id="fConsentError" aria-live="polite"></span>
+          </div>
+
+          <div class="form-alert" id="formError" hidden></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large" id="formSubmit"><span class="btn-text">Register</span></button>
+          </div>
+        </form>
+      </div>
+
+      <div id="confirmView" hidden>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-check"/></svg> Registered</span>
+        </div>
+        <div class="confirm-badge"><svg class="icon icon-lg"><use href="#ci-check"/></svg></div>
+        <h1 class="confirm-heading">You're On The List.</h1>
+        <p class="lede confirm-lede">We'll email you as soon as there's more to share.</p>
+        <div class="form-actions confirm-actions">
+          <a href="index.html" class="btn btn-primary">Back to Home</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="40" height="40">
+      <p>Real padel. Properly social.</p>
+      <div class="socials"><a href="https://instagram.com/partypadel.uk" aria-label="Instagram"><svg class="icon icon-sm"><use href="#ci-instagram"/></svg></a></div>
+    </div>
+    <div class="footer-col"><h4>Tournament</h4><a href="events.html">Events</a><a href="play.html">Play</a><a href="format.html">Format</a><a href="results.html">Results</a></div>
+    <div class="footer-col"><h4>Business</h4><a href="partners.html">Partners</a><a href="about.html">About</a></div>
+    <div class="footer-col"><h4>Contact</h4><a href="mailto:hello@partypadel.uk">hello@partypadel.uk</a><a href="privacy.html">Privacy &amp; Cookies</a><span class="footer-note">United Kingdom</span></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 Party Padel. All rights reserved.</span></div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/supabase-config.js?v=2"></script>
+<script src="assets/js/supabase-client.js?v=2"></script>
+<script src="assets/js/main.js?v=2"></script>
+<script>
+(function(){
+  var db = window.PartyPadelDB;
+
+  var configMissingView = document.getElementById('configMissingView');
+  var formView = document.getElementById('formView');
+  var confirmView = document.getElementById('confirmView');
+
+  if (!db){
+    configMissingView.hidden = false;
+    formView.hidden = true;
+    return;
+  }
+
+  function setFieldError(field, message){
+    field.classList.add('error');
+    field.setAttribute('aria-invalid', 'true');
+    var errorEl = document.getElementById(field.getAttribute('aria-describedby'));
+    if (errorEl) errorEl.textContent = message;
+  }
+  function clearFieldError(field){
+    field.classList.remove('error');
+    field.removeAttribute('aria-invalid');
+    var errorEl = document.getElementById(field.getAttribute('aria-describedby'));
+    if (errorEl) errorEl.textContent = '';
+  }
+
+  var form = document.getElementById('invitationalForm');
+  var formError = document.getElementById('formError');
+  var formSubmit = document.getElementById('formSubmit');
+  var fFirstName = document.getElementById('fFirstName');
+  var fLastName = document.getElementById('fLastName');
+  var fPhone = document.getElementById('fPhone');
+  var fEmail = document.getElementById('fEmail');
+  var fConsent = document.getElementById('fConsent');
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    formError.hidden = true;
+    [fFirstName, fLastName, fPhone, fEmail, fConsent].forEach(clearFieldError);
+
+    var valid = true;
+    var firstInvalid = null;
+    [fFirstName, fLastName, fPhone].forEach(function(field){
+      if (!field.value.trim()){
+        setFieldError(field, 'This field is required');
+        valid = false;
+        if (!firstInvalid) firstInvalid = field;
+      }
+    });
+    if (!fEmail.value.trim()){
+      setFieldError(fEmail, 'This field is required');
+      valid = false;
+      if (!firstInvalid) firstInvalid = fEmail;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fEmail.value.trim())){
+      setFieldError(fEmail, 'Enter a valid email address');
+      valid = false;
+      if (!firstInvalid) firstInvalid = fEmail;
+    }
+    if (!fConsent.checked){
+      setFieldError(fConsent, 'You need to agree to this to register');
+      valid = false;
+      if (!firstInvalid) firstInvalid = fConsent;
+    }
+    if (!valid){ if (firstInvalid) firstInvalid.focus(); return; }
+
+    formSubmit.classList.add('loading'); formSubmit.disabled = true;
+    db.from('invitational_signups').insert({
+      first_name: fFirstName.value.trim(),
+      last_name: fLastName.value.trim(),
+      phone: fPhone.value.trim(),
+      email: fEmail.value.trim(),
+      consent: fConsent.checked
+    }).then(function(res){
+      formSubmit.classList.remove('loading'); formSubmit.disabled = false;
+      if (res.error){
+        formError.hidden = false;
+        formError.textContent = "Couldn't register right now — " + res.error.message;
+        return;
+      }
+      formView.hidden = true;
+      confirmView.hidden = false;
+    });
+  });
+})();
+</script>
+</body>
+</html>
