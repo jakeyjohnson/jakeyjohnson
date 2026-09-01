@@ -1,0 +1,10 @@
+project_id = "found"
+
+[functions.create-mux-upload]
+verify_jwt = true
+
+[functions.mux-webhook]
+verify_jwt = false
+
+[functions.revenuecat-webhook]
+verify_jwt = false

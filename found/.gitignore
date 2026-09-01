@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+ios/
+android/
+*.log
+.env
+.env.local
+*.p8
+*.p12
+*.mobileprovision
+.DS_Store
