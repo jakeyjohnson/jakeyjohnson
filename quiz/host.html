@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live Quiz — Host</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .host-shell{ max-width: var(--max-width-page); margin: 0 auto; padding: var(--space-6) var(--space-5) var(--space-9); }
+  .host-topbar{ display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-7); }
+  .host-topbar .brand{ font-family: var(--font-family-display); font-size: var(--font-size-lg); }
+  .quiz-list{ display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); margin-top: var(--space-5); }
+  .quiz-card{ display: flex; flex-direction: column; gap: var(--space-3); }
+  .quiz-card-actions{ display: flex; gap: var(--space-2); flex-wrap: wrap; }
+  .new-quiz-row{ display: flex; gap: var(--space-3); align-items: flex-end; flex-wrap: wrap; }
+  .new-quiz-row .form-row{ flex: 1; min-width: 220px; margin-bottom: 0; }
+  .resume-banner{ display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+  .question-list{ display: flex; flex-direction: column; gap: var(--space-3); margin: var(--space-5) 0; }
+  .question-row{ display: flex; align-items: center; gap: var(--space-4); }
+  .question-row .q-index{ font-family: var(--font-family-display); font-weight: 700; color: var(--color-text-tertiary); width: 1.5rem; }
+  .question-row .q-body{ flex: 1; min-width: 0; }
+  .question-row .q-prompt{ font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .question-row .q-meta{ font-size: var(--font-size-xs); color: var(--color-text-tertiary); }
+  .question-row .q-actions{ display: flex; gap: var(--space-1); }
+  .media-type-row{ display: flex; gap: var(--space-4); margin-bottom: var(--space-3); }
+  .media-type-option{ display: flex; align-items: center; gap: var(--space-1); font-size: var(--font-size-sm); font-weight: 400; color: var(--color-text-primary); }
+  #qMediaPreview{ margin-bottom: var(--space-3); }
+  #qMediaPreview img{ max-width: 12rem; max-height: 8rem; border-radius: var(--radius-md); display: block; }
+  #qMediaPreview audio{ max-width: 100%; }
+  #qMediaPreview .media-remove-row{ margin-top: var(--space-2); }
+  .question-row .q-media-badge{ font-size: var(--font-size-xs); color: var(--color-accent-secondary); }
+  .option-editor-row{ display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
+  .option-editor-row input[type="text"]{ flex: 1; }
+  .option-editor-row .option-swatch{ width: 1.5rem; height: 1.5rem; border-radius: var(--radius-sm); flex: none; }
+  .option-swatch[data-option="0"]{ background: var(--color-answer-a); }
+  .option-swatch[data-option="1"]{ background: var(--color-answer-b); }
+  .option-swatch[data-option="2"]{ background: var(--color-answer-c); }
+  .option-swatch[data-option="3"]{ background: var(--color-answer-d); }
+  .inline-fields{ display: flex; gap: var(--space-4); flex-wrap: wrap; }
+  .inline-fields .form-row{ flex: 1; min-width: 140px; }
+  .session-layout{ display: grid; grid-template-columns: 340px 1fr; gap: var(--space-6); align-items: start; }
+  @media (max-width: 900px){ .session-layout{ grid-template-columns: 1fr; } }
+  .join-panel{ text-align: center; }
+  .session-link-row{ display: flex; gap: var(--space-2); margin-top: var(--space-3); }
+  .session-link-row input{ flex: 1; font-size: var(--font-size-xs); }
+  .player-roster{ list-style: none; margin: var(--space-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); max-height: 20rem; overflow-y: auto; }
+  .player-roster li{ display: flex; justify-content: space-between; padding: var(--space-2) var(--space-3); background: var(--color-bg-deep); border-radius: var(--radius-sm); font-size: var(--font-size-sm); }
+  .control-bar{ display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-5); }
+  .distribution-bar{ display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
+  .distribution-bar .bar-track{ flex: 1; height: 1.5rem; background: var(--color-bg-deep); border-radius: var(--radius-sm); overflow: hidden; }
+  .distribution-bar .bar-fill{ height: 100%; transition: width var(--duration-slow) var(--easing-out); }
+  .distribution-bar .bar-count{ width: 2.5rem; text-align: right; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div id="configMissingView" hidden>
+  <div class="host-shell">
+    <div class="card">
+      <h1>Supabase isn&rsquo;t configured yet</h1>
+      <p>Fill in <code>quiz/assets/js/supabase-config.js</code> with your quiz project&rsquo;s URL and anon key, then run <code>quiz/supabase/schema.sql</code> in that project&rsquo;s SQL Editor. See <code>quiz/README.md</code> for the full setup walkthrough.</p>
+    </div>
+  </div>
+</div>
+
+<div id="loginView" hidden>
+  <div class="host-shell" style="max-width:24rem;">
+    <h1>Live Quiz</h1>
+    <p>Sign in to host a quiz.</p>
+    <div id="loginError" class="form-alert form-alert-error" hidden></div>
+    <form id="loginForm">
+      <div class="form-row">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" autocomplete="username" required>
+      </div>
+      <div class="form-row">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="loginSubmit">Sign in</button>
+    </form>
+  </div>
+</div>
+
+<div id="dashboardView" hidden>
+  <div class="host-shell">
+    <div class="host-topbar">
+      <span class="brand">Live Quiz — Host</span>
+      <button class="btn btn-ghost" id="signOutBtn">Sign out</button>
+    </div>
+
+    <div id="resumeBanner" class="card resume-banner" hidden>
+      <div>
+        <strong id="resumeQuizTitle"></strong>
+        <div class="q-meta" id="resumeSessionStatus"></div>
+      </div>
+      <button class="btn btn-primary" id="resumeSessionBtn">Resume hosting</button>
+    </div>
+
+    <div class="card">
+      <h2>New quiz</h2>
+      <div class="new-quiz-row">
+        <div class="form-row">
+          <label for="newQuizTitle">Title</label>
+          <input type="text" id="newQuizTitle" placeholder="Friday Night Trivia">
+        </div>
+        <button class="btn btn-primary" id="createQuizBtn">+ Create quiz</button>
+      </div>
+    </div>
+
+    <div id="quizListEmpty" class="empty-state" hidden>No quizzes yet — create one above.</div>
+    <div class="quiz-list" id="quizList"></div>
+  </div>
+</div>
+
+<div id="quizEditView" hidden>
+  <div class="host-shell">
+    <button class="btn btn-ghost" id="backToDashboardBtn">&larr; All quizzes</button>
+    <div class="panel-heading">
+      <h1 id="quizEditTitle" style="margin:0;"></h1>
+      <div style="display:flex; gap: var(--space-2);">
+        <button class="btn btn-outline btn-small" id="renameQuizBtn">Rename</button>
+        <button class="btn btn-primary" id="hostQuizBtn">Host this quiz</button>
+      </div>
+    </div>
+
+    <div id="questionListEmpty" class="empty-state" hidden>No questions yet — add the first one below.</div>
+    <div class="question-list" id="questionList"></div>
+
+    <button class="btn btn-outline" id="addQuestionBtn">+ Add question</button>
+
+    <div class="card" id="questionForm" style="margin-top: var(--space-5);" hidden>
+      <h2 id="questionFormHeading">Add question</h2>
+      <div id="questionFormError" class="form-alert form-alert-error" hidden></div>
+      <div class="form-row">
+        <label for="qPrompt">Question</label>
+        <textarea id="qPrompt" rows="2" placeholder="What year was Party Padel founded?"></textarea>
+      </div>
+      <div class="form-row">
+        <label>Media (optional)</label>
+        <div class="media-type-row">
+          <label class="media-type-option"><input type="radio" name="qMediaType" value="none" checked> None</label>
+          <label class="media-type-option"><input type="radio" name="qMediaType" value="image"> Image</label>
+          <label class="media-type-option"><input type="radio" name="qMediaType" value="audio"> Audio</label>
+        </div>
+        <input type="file" id="qMediaFile" hidden>
+        <div id="qMediaPreview"></div>
+        <div class="btn-row" id="qMediaButtons" style="display:flex; gap: var(--space-2);" hidden>
+          <button type="button" class="btn btn-outline btn-small" id="qMediaChooseBtn">Choose file&hellip;</button>
+          <button type="button" class="btn btn-ghost btn-small" id="qMediaRemoveBtn" hidden>Remove</button>
+        </div>
+        <p id="qMediaError" class="field-error" hidden></p>
+      </div>
+      <label>Answer options (tap the correct one)</label>
+      <div id="optionEditorRows"></div>
+      <button class="btn btn-ghost btn-small" id="addOptionBtn" type="button">+ Add option</button>
+      <div class="inline-fields" style="margin-top: var(--space-4);">
+        <div class="form-row">
+          <label for="qTimeLimit">Time limit (seconds)</label>
+          <input type="number" id="qTimeLimit" min="5" max="120" value="20">
+        </div>
+        <div class="form-row">
+          <label for="qPoints">Points</label>
+          <input type="number" id="qPoints" min="100" max="5000" step="100" value="1000">
+        </div>
+      </div>
+      <div style="display:flex; gap: var(--space-3);">
+        <button class="btn btn-primary" id="saveQuestionBtn">Save question</button>
+        <button class="btn btn-ghost" id="cancelQuestionBtn" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="sessionView" hidden>
+  <div class="host-shell">
+    <div class="panel-heading">
+      <div>
+        <h1 id="sessionQuizTitle" style="margin:0;"></h1>
+        <span class="pill" id="sessionStatusPill"></span>
+      </div>
+      <button class="btn btn-ghost" id="endSessionBtn">End &amp; back to dashboard</button>
+    </div>
+
+    <div class="session-layout">
+      <div>
+        <div class="card join-panel">
+          <p style="margin-bottom: var(--space-2);">Join code</p>
+          <div class="join-code" id="sessionJoinCode"></div>
+          <div id="sessionQrHolder" class="qr-frame" style="margin-top: var(--space-4);"></div>
+          <div class="session-link-row">
+            <input type="text" id="sessionJoinLink" readonly>
+            <button class="btn btn-outline btn-small" id="copyJoinLinkBtn">Copy</button>
+          </div>
+        </div>
+        <div class="card" style="margin-top: var(--space-4);">
+          <div class="panel-heading" style="margin-bottom: var(--space-3);">
+            <h3 style="margin:0;">Players</h3>
+            <span id="playerCount">0</span>
+          </div>
+          <ul class="player-roster" id="playerRoster"></ul>
+          <p class="q-meta" style="margin-top: var(--space-3);">
+            Add this as an OBS Browser Source: <code id="displayUrlHint"></code>
+          </p>
+        </div>
+      </div>
+
+      <div class="card" id="sessionMain">
+        <div id="sessionLobbyState">
+          <p>Waiting in the lobby. Share the join code or QR above, then start when ready.</p>
+        </div>
+        <div id="sessionQuestionState" hidden>
+          <div class="panel-heading">
+            <h2 id="liveQuestionPrompt" style="margin:0;"></h2>
+            <div id="liveCountdown"></div>
+          </div>
+          <p id="liveAnsweredCount" class="q-meta"></p>
+        </div>
+        <div id="sessionRevealState" hidden>
+          <h2 id="revealQuestionPrompt"></h2>
+          <div id="revealDistribution"></div>
+        </div>
+        <div id="sessionLeaderboardState" hidden>
+          <h2>Leaderboard</h2>
+          <ol class="leaderboard-list" id="hostLeaderboardList"></ol>
+        </div>
+        <div id="sessionEndedState" hidden>
+          <h2>Quiz complete</h2>
+          <p>Final standings are up on the display screen.</p>
+        </div>
+
+        <div class="control-bar">
+          <button class="btn btn-primary btn-large" id="startQuizBtn" hidden>Start quiz</button>
+          <button class="btn btn-primary btn-large" id="revealBtn" hidden>Reveal answer</button>
+          <button class="btn btn-outline" id="showLeaderboardBtn" hidden>Show leaderboard</button>
+          <button class="btn btn-primary btn-large" id="nextQuestionBtn" hidden>Next question</button>
+          <button class="btn btn-outline" id="backToDashboardFromEndedBtn" hidden>Back to dashboard</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
+<script src="assets/js/supabase-config.js"></script>
+<script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/quiz-common.js?v=1"></script>
+<script src="assets/js/quiz-realtime.js?v=1"></script>
+<script>
+(function(){
+  'use strict';
+
+  var db = window.QuizDB;
+  var esc = window.QuizCommon.escapeHTML;
+  var ACTIVE_SESSION_KEY = 'quizHostActiveSession';
+
+  var views = ['configMissingView','loginView','dashboardView','quizEditView','sessionView'];
+  function showView(name){
+    views.forEach(function(v){ document.getElementById(v).hidden = (v !== name); });
+  }
+
+  if (!db){
+    showView('configMissingView');
+    return;
+  }
+
+  // ---------- state ----------
+  var currentQuiz = null;          // {id, title}
+  var currentQuestions = [];       // array of question rows, ordered
+  var editingQuestionId = null;    // null = adding new
+  var originalMedia = { type: 'none', url: null }; // media already saved on the question being edited
+  var pendingMediaFile = null;     // a newly-picked File not yet uploaded
+  var currentSession = null;       // session row
+  var sessionQuestions = [];       // questions for the quiz being hosted
+  var sessionChannel = null;
+  var playersChannel = null;
+  var currentPlayers = [];
+
+  // ---------- auth ----------
+  db.auth.getSession().then(function(res){
+    var session = res.data && res.data.session;
+    if (session) showSignedIn(); else showSignedOut();
+  });
+  db.auth.onAuthStateChange(function(event, session){
+    if (session) showSignedIn(); else showSignedOut();
+  });
+
+  function showSignedOut(){
+    showView('loginView');
+  }
+  function showSignedIn(){
+    showView('dashboardView');
+    checkForActiveSession();
+    loadQuizzes();
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var errEl = document.getElementById('loginError');
+    errEl.hidden = true;
+    var email = document.getElementById('loginEmail').value.trim();
+    var password = document.getElementById('loginPassword').value;
+    var btn = document.getElementById('loginSubmit');
+    btn.disabled = true;
+    db.auth.signInWithPassword({ email: email, password: password }).then(function(res){
+      btn.disabled = false;
+      if (res.error){
+        errEl.textContent = res.error.message === 'Invalid login credentials'
+          ? 'Incorrect email or password.' : res.error.message;
+        errEl.hidden = false;
+      }
+    });
+  });
+
+  document.getElementById('signOutBtn').addEventListener('click', function(){
+    teardownSessionSubscriptions();
+    db.auth.signOut();
+  });
+
+  // ---------- dashboard: quiz list ----------
+
+  function loadQuizzes(){
+    db.from('quizzes')
+      .select('id, title, created_at, quiz_questions(count)')
+      .order('created_at', { ascending: false })
+      .then(function(res){
+        if (res.error){ console.error('Live Quiz: failed to load quizzes', res.error.message); return; }
+        renderQuizList(res.data || []);
+      });
+  }
+
+  function renderQuizList(quizzes){
+    var list = document.getElementById('quizList');
+    document.getElementById('quizListEmpty').hidden = quizzes.length !== 0;
+    list.innerHTML = quizzes.map(function(q){
+      var count = (q.quiz_questions && q.quiz_questions[0] && q.quiz_questions[0].count) || 0;
+      return '<div class="card quiz-card">' +
+        '<h3 style="margin:0;">' + esc(q.title) + '</h3>' +
+        '<span class="q-meta">' + count + ' question' + (count === 1 ? '' : 's') + '</span>' +
+        '<div class="quiz-card-actions">' +
+          '<button class="btn btn-primary btn-small" data-edit-quiz="' + q.id + '">Edit</button>' +
+          '<button class="btn btn-danger btn-small" data-delete-quiz="' + q.id + '">Delete</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    Array.prototype.forEach.call(list.querySelectorAll('[data-edit-quiz]'), function(btn){
+      btn.addEventListener('click', function(){ openQuizEdit(btn.getAttribute('data-edit-quiz')); });
+    });
+    Array.prototype.forEach.call(list.querySelectorAll('[data-delete-quiz]'), function(btn){
+      btn.addEventListener('click', function(){
+        if (!confirm('Delete this quiz and all its questions? This can\'t be undone.')) return;
+        db.from('quizzes').delete().eq('id', btn.getAttribute('data-delete-quiz')).then(function(res){
+          if (res.error){ alert(res.error.message); return; }
+          loadQuizzes();
+        });
+      });
+    });
+  }
+
+  document.getElementById('createQuizBtn').addEventListener('click', function(){
+    var input = document.getElementById('newQuizTitle');
+    var title = input.value.trim();
+    if (!title) return;
+    db.from('quizzes').insert({ title: title }).select().single().then(function(res){
+      if (res.error){ alert(res.error.message); return; }
+      input.value = '';
+      loadQuizzes();
+      openQuizEdit(res.data.id);
+    });
+  });
+
+  function checkForActiveSession(){
+    db.from('quiz_sessions')
+      .select('id, status, quiz_id, quizzes(title)')
+      .neq('status', 'ended')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .then(function(res){
+        var banner = document.getElementById('resumeBanner');
+        if (res.error || !res.data || !res.data.length){ banner.hidden = true; return; }
+        var s = res.data[0];
+        document.getElementById('resumeQuizTitle').textContent = (s.quizzes && s.quizzes.title) || 'Untitled quiz';
+        document.getElementById('resumeSessionStatus').textContent = 'In progress — status: ' + s.status;
+        banner.hidden = false;
+        document.getElementById('resumeSessionBtn').onclick = function(){ enterSession(s.id); };
+      });
+  }
+
+  // ---------- quiz edit: questions ----------
+
+  function openQuizEdit(quizId){
+    db.from('quizzes').select('id, title').eq('id', quizId).single().then(function(res){
+      if (res.error){ alert(res.error.message); return; }
+      currentQuiz = res.data;
+      document.getElementById('quizEditTitle').textContent = currentQuiz.title;
+      showView('quizEditView');
+      loadQuestions();
+    });
+  }
+
+  document.getElementById('backToDashboardBtn').addEventListener('click', function(){
+    showView('dashboardView');
+    loadQuizzes();
+    checkForActiveSession();
+  });
+
+  document.getElementById('renameQuizBtn').addEventListener('click', function(){
+    var next = prompt('Rename quiz', currentQuiz.title);
+    if (next === null) return;
+    next = next.trim();
+    if (!next) return;
+    db.from('quizzes').update({ title: next, updated_at: new Date().toISOString() }).eq('id', currentQuiz.id).then(function(res){
+      if (res.error){ alert(res.error.message); return; }
+      currentQuiz.title = next;
+      document.getElementById('quizEditTitle').textContent = next;
+    });
+  });
+
+  function loadQuestions(){
+    db.from('quiz_questions').select('*').eq('quiz_id', currentQuiz.id).order('order_index').then(function(res){
+      if (res.error){ console.error('Live Quiz: failed to load questions', res.error.message); return; }
+      currentQuestions = res.data || [];
+      renderQuestionList();
+    });
+  }
+
+  var ANSWER_LABELS = ['A', 'B', 'C', 'D'];
+
+  function renderQuestionList(){
+    var list = document.getElementById('questionList');
+    document.getElementById('questionListEmpty').hidden = currentQuestions.length !== 0;
+    list.innerHTML = currentQuestions.map(function(q, i){
+      var correctLabel = ANSWER_LABELS[q.correct_index] || '?';
+      return '<div class="card question-row">' +
+        '<span class="q-index">' + (i + 1) + '</span>' +
+        '<div class="q-body">' +
+          '<div class="q-prompt">' + esc(q.prompt) + (q.media_type !== 'none' ? ' <span class="q-media-badge">' + (q.media_type === 'audio' ? '&#128266; audio' : '&#128247; image') + '</span>' : '') + '</div>' +
+          '<div class="q-meta">' + q.options.length + ' options &middot; correct: ' + correctLabel +
+            ' &middot; ' + q.time_limit_seconds + 's &middot; ' + q.points + ' pts</div>' +
+        '</div>' +
+        '<div class="q-actions">' +
+          '<button class="btn btn-ghost btn-small" data-move="up" data-id="' + q.id + '" ' + (i === 0 ? 'disabled' : '') + '>&uarr;</button>' +
+          '<button class="btn btn-ghost btn-small" data-move="down" data-id="' + q.id + '" ' + (i === currentQuestions.length - 1 ? 'disabled' : '') + '>&darr;</button>' +
+          '<button class="btn btn-outline btn-small" data-edit-question="' + q.id + '">Edit</button>' +
+          '<button class="btn btn-danger btn-small" data-delete-question="' + q.id + '">Delete</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(list.querySelectorAll('[data-edit-question]'), function(btn){
+      btn.addEventListener('click', function(){ openQuestionForm(btn.getAttribute('data-edit-question')); });
+    });
+    Array.prototype.forEach.call(list.querySelectorAll('[data-delete-question]'), function(btn){
+      btn.addEventListener('click', function(){
+        if (!confirm('Delete this question?')) return;
+        db.from('quiz_questions').delete().eq('id', btn.getAttribute('data-delete-question')).then(function(res){
+          if (res.error){ alert(res.error.message); return; }
+          loadQuestions();
+        });
+      });
+    });
+    Array.prototype.forEach.call(list.querySelectorAll('[data-move]'), function(btn){
+      btn.addEventListener('click', function(){ moveQuestion(btn.getAttribute('data-id'), btn.getAttribute('data-move')); });
+    });
+  }
+
+  function moveQuestion(id, direction){
+    var idx = currentQuestions.findIndex(function(q){ return q.id === id; });
+    var swapWith = direction === 'up' ? idx - 1 : idx + 1;
+    if (idx < 0 || swapWith < 0 || swapWith >= currentQuestions.length) return;
+    var a = currentQuestions[idx], b = currentQuestions[swapWith];
+    Promise.all([
+      db.from('quiz_questions').update({ order_index: b.order_index }).eq('id', a.id),
+      db.from('quiz_questions').update({ order_index: a.order_index }).eq('id', b.id)
+    ]).then(function(){ loadQuestions(); });
+  }
+
+  // ---------- question form ----------
+
+  document.getElementById('addQuestionBtn').addEventListener('click', function(){ openQuestionForm(null); });
+  document.getElementById('cancelQuestionBtn').addEventListener('click', closeQuestionForm);
+
+  function closeQuestionForm(){
+    document.getElementById('questionForm').hidden = true;
+  }
+
+  function openQuestionForm(questionId){
+    editingQuestionId = questionId;
+    var form = document.getElementById('questionForm');
+    var errEl = document.getElementById('questionFormError');
+    errEl.hidden = true;
+    var q = questionId ? currentQuestions.find(function(x){ return x.id === questionId; }) : null;
+    document.getElementById('questionFormHeading').textContent = q ? 'Edit question' : 'Add question';
+    document.getElementById('qPrompt').value = q ? q.prompt : '';
+    document.getElementById('qTimeLimit').value = q ? q.time_limit_seconds : 20;
+    document.getElementById('qPoints').value = q ? q.points : 1000;
+    renderOptionEditor(q ? q.options : ['', ''], q ? q.correct_index : 0);
+
+    originalMedia = { type: q ? q.media_type : 'none', url: q ? q.media_url : null };
+    pendingMediaFile = null;
+    document.getElementById('qMediaFile').value = '';
+    document.getElementById('qMediaError').hidden = true;
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="qMediaType"]'), function(r){
+      r.checked = (r.value === originalMedia.type);
+    });
+    renderMediaState();
+
+    form.hidden = false;
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function currentSelectedMediaType(){
+    var r = document.querySelector('input[name="qMediaType"]:checked');
+    return r ? r.value : 'none';
+  }
+
+  function renderMediaState(){
+    var type = currentSelectedMediaType();
+    document.getElementById('qMediaButtons').hidden = (type === 'none');
+    document.getElementById('qMediaFile').accept = (type === 'audio') ? 'audio/*' : 'image/*';
+    var preview = document.getElementById('qMediaPreview');
+    var removeBtn = document.getElementById('qMediaRemoveBtn');
+    var url = null;
+    if (pendingMediaFile){
+      url = URL.createObjectURL(pendingMediaFile);
+    } else if (type !== 'none' && type === originalMedia.type && originalMedia.url){
+      url = originalMedia.url;
+    }
+    removeBtn.hidden = !url;
+    preview.innerHTML = !url ? '' : (type === 'audio'
+      ? '<audio controls src="' + esc(url) + '"></audio>'
+      : '<img src="' + esc(url) + '" alt="">');
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="qMediaType"]'), function(radio){
+    radio.addEventListener('change', function(){
+      pendingMediaFile = null;
+      document.getElementById('qMediaFile').value = '';
+      renderMediaState();
+    });
+  });
+
+  document.getElementById('qMediaChooseBtn').addEventListener('click', function(){
+    document.getElementById('qMediaFile').click();
+  });
+
+  document.getElementById('qMediaFile').addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var type = currentSelectedMediaType();
+    var maxBytes = type === 'audio' ? 15 * 1024 * 1024 : 8 * 1024 * 1024;
+    var errEl = document.getElementById('qMediaError');
+    if (file.size > maxBytes){
+      errEl.textContent = 'That file is too big — max ' + (maxBytes / (1024 * 1024)) + 'MB.';
+      errEl.hidden = false;
+      e.target.value = '';
+      return;
+    }
+    errEl.hidden = true;
+    pendingMediaFile = file;
+    renderMediaState();
+  });
+
+  document.getElementById('qMediaRemoveBtn').addEventListener('click', function(){
+    pendingMediaFile = null;
+    document.getElementById('qMediaFile').value = '';
+    document.querySelector('input[name="qMediaType"][value="none"]').checked = true;
+    renderMediaState();
+  });
+
+  function renderOptionEditor(options, correctIndex){
+    var container = document.getElementById('optionEditorRows');
+    container.innerHTML = options.map(function(opt, i){
+      return '<div class="option-editor-row" data-row="' + i + '">' +
+        '<input type="radio" name="correctOption" value="' + i + '" ' + (i === correctIndex ? 'checked' : '') + '>' +
+        '<span class="option-swatch" data-option="' + i + '"></span>' +
+        '<input type="text" data-option-input="' + i + '" value="' + esc(opt) + '" placeholder="Option ' + ANSWER_LABELS[i] + '">' +
+        (options.length > 2 ? '<button type="button" class="btn btn-ghost btn-small" data-remove-option="' + i + '">&times;</button>' : '') +
+      '</div>';
+    }).join('');
+    Array.prototype.forEach.call(container.querySelectorAll('[data-remove-option]'), function(btn){
+      btn.addEventListener('click', function(){
+        var rows = readOptionRows();
+        rows.splice(parseInt(btn.getAttribute('data-remove-option'), 10), 1);
+        renderOptionEditor(rows, 0);
+      });
+    });
+    document.getElementById('addOptionBtn').disabled = options.length >= 4;
+  }
+
+  document.getElementById('addOptionBtn').addEventListener('click', function(){
+    var rows = readOptionRows();
+    if (rows.length >= 4) return;
+    rows.push('');
+    var checked = document.querySelector('input[name="correctOption"]:checked');
+    renderOptionEditor(rows, checked ? parseInt(checked.value, 10) : 0);
+  });
+
+  function readOptionRows(){
+    return Array.prototype.map.call(document.querySelectorAll('[data-option-input]'), function(input){ return input.value; });
+  }
+
+  document.getElementById('saveQuestionBtn').addEventListener('click', function(){
+    var errEl = document.getElementById('questionFormError');
+    var prompt = document.getElementById('qPrompt').value.trim();
+    var options = readOptionRows().map(function(o){ return o.trim(); });
+    var checked = document.querySelector('input[name="correctOption"]:checked');
+    var correctIndex = checked ? parseInt(checked.value, 10) : -1;
+    var timeLimit = parseInt(document.getElementById('qTimeLimit').value, 10);
+    var points = parseInt(document.getElementById('qPoints').value, 10);
+
+    if (!prompt){ errEl.textContent = 'Enter a question.'; errEl.hidden = false; return; }
+    if (options.length < 2 || options.some(function(o){ return !o; })){
+      errEl.textContent = 'Fill in every option.'; errEl.hidden = false; return;
+    }
+    if (correctIndex < 0 || correctIndex >= options.length){
+      errEl.textContent = 'Choose which option is correct.'; errEl.hidden = false; return;
+    }
+    var mediaType = currentSelectedMediaType();
+    if (mediaType !== 'none' && !pendingMediaFile && !(mediaType === originalMedia.type && originalMedia.url)){
+      errEl.textContent = 'Choose a file for the ' + mediaType + ', or set media back to None.';
+      errEl.hidden = false;
+      return;
+    }
+
+    var saveBtn = document.getElementById('saveQuestionBtn');
+
+    function finishSave(mediaUrl){
+      var payload = {
+        quiz_id: currentQuiz.id,
+        prompt: prompt,
+        options: options,
+        correct_index: correctIndex,
+        time_limit_seconds: timeLimit || 20,
+        points: points || 1000,
+        media_type: mediaType,
+        media_url: mediaType === 'none' ? null : mediaUrl
+      };
+
+      var op = editingQuestionId
+        ? db.from('quiz_questions').update(payload).eq('id', editingQuestionId)
+        : db.from('quiz_questions').insert(Object.assign({ order_index: currentQuestions.length }, payload));
+
+      op.then(function(res){
+        saveBtn.disabled = false;
+        if (res.error){ errEl.textContent = res.error.message; errEl.hidden = false; return; }
+        closeQuestionForm();
+        loadQuestions();
+      });
+    }
+
+    if (mediaType === 'none'){
+      finishSave(null);
+    } else if (pendingMediaFile){
+      saveBtn.disabled = true;
+      var ext = (pendingMediaFile.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '') || (mediaType === 'audio' ? 'mp3' : 'jpg');
+      var path = currentQuiz.id + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      db.storage.from('quiz-media').upload(path, pendingMediaFile, { upsert: true, contentType: pendingMediaFile.type || undefined }).then(function(uploadRes){
+        if (uploadRes.error){
+          saveBtn.disabled = false;
+          errEl.textContent = 'Upload failed: ' + uploadRes.error.message;
+          errEl.hidden = false;
+          return;
+        }
+        var pub = db.storage.from('quiz-media').getPublicUrl(path);
+        finishSave(pub.data.publicUrl);
+      });
+    } else {
+      finishSave(originalMedia.url);
+    }
+  });
+
+  // ---------- hosting a session ----------
+
+  document.getElementById('hostQuizBtn').addEventListener('click', function(){
+    if (!currentQuestions.length){ alert('Add at least one question before hosting.'); return; }
+    startNewSession();
+  });
+
+  function startNewSession(attempt){
+    attempt = attempt || 0;
+    var code = window.QuizCommon.generateJoinCode();
+    db.from('quiz_sessions').insert({ quiz_id: currentQuiz.id, join_code: code, status: 'lobby' })
+      .select().single().then(function(res){
+        if (res.error){
+          if (res.error.code === '23505' && attempt < 5){ startNewSession(attempt + 1); return; }
+          alert(res.error.message);
+          return;
+        }
+        enterSession(res.data.id);
+      });
+  }
+
+  function enterSession(sessionId){
+    localStorage.setItem(ACTIVE_SESSION_KEY, sessionId);
+    db.from('quiz_sessions').select('*, quizzes(title)').eq('id', sessionId).single().then(function(res){
+      if (res.error || !res.data){
+        localStorage.removeItem(ACTIVE_SESSION_KEY);
+        showView('dashboardView');
+        return;
+      }
+      currentSession = res.data;
+      db.from('quiz_questions').select('*').eq('quiz_id', currentSession.quiz_id).order('order_index').then(function(qres){
+        sessionQuestions = qres.data || [];
+        showView('sessionView');
+        document.getElementById('sessionQuizTitle').textContent = (currentSession.quizzes && currentSession.quizzes.title) || 'Live Quiz';
+        renderSessionJoinPanel();
+        renderSessionState();
+        subscribeToSession();
+        loadPlayers();
+      });
+    });
+  }
+
+  function renderSessionJoinPanel(){
+    document.getElementById('sessionJoinCode').textContent = currentSession.join_code;
+    var joinUrl = new URL('../j/?code=' + currentSession.join_code, location.href).href;
+    var linkInput = document.getElementById('sessionJoinLink');
+    linkInput.value = joinUrl;
+    var displayUrl = location.origin + location.pathname.replace(/host\.html$/, 'display.html') + '?session=' + currentSession.id;
+    document.getElementById('displayUrlHint').textContent = displayUrl;
+    var qrHolder = document.getElementById('sessionQrHolder');
+    qrHolder.innerHTML = '<canvas id="sessionQrCanvas"></canvas>';
+    if (window.QRCode){
+      QRCode.toCanvas(document.getElementById('sessionQrCanvas'), joinUrl, { width: 220, margin: 1 });
+    }
+  }
+
+  document.getElementById('copyJoinLinkBtn').addEventListener('click', function(){
+    var input = document.getElementById('sessionJoinLink');
+    input.select();
+    navigator.clipboard && navigator.clipboard.writeText(input.value);
+  });
+
+  document.getElementById('endSessionBtn').addEventListener('click', function(){
+    if (currentSession.status !== 'ended' && !confirm('Leave hosting? The session keeps running — you can resume from the dashboard.')) return;
+    teardownSessionSubscriptions();
+    localStorage.removeItem(ACTIVE_SESSION_KEY);
+    showView('dashboardView');
+    loadQuizzes();
+    checkForActiveSession();
+  });
+
+  document.getElementById('backToDashboardFromEndedBtn').addEventListener('click', function(){
+    teardownSessionSubscriptions();
+    localStorage.removeItem(ACTIVE_SESSION_KEY);
+    showView('dashboardView');
+    loadQuizzes();
+    checkForActiveSession();
+  });
+
+  function subscribeToSession(){
+    teardownSessionSubscriptions(true);
+    sessionChannel = window.QuizRealtime.subscribeSession(currentSession.id, function(payload){
+      currentSession = Object.assign({}, currentSession, payload.new);
+      renderSessionState();
+    });
+    playersChannel = window.QuizRealtime.subscribePlayers(currentSession.id, function(){ loadPlayers(); });
+  }
+
+  function teardownSessionSubscriptions(keepSession){
+    window.QuizRealtime.unsubscribe(sessionChannel);
+    window.QuizRealtime.unsubscribe(playersChannel);
+    sessionChannel = null; playersChannel = null;
+    if (!keepSession) currentSession = null;
+  }
+
+  function loadPlayers(){
+    if (!currentSession) return;
+    db.from('quiz_players').select('*').eq('session_id', currentSession.id).order('score', { ascending: false }).then(function(res){
+      currentPlayers = res.data || [];
+      renderPlayerRoster();
+      if (currentSession.status === 'leaderboard' || currentSession.status === 'ended'){ renderHostLeaderboard(); }
+    });
+  }
+
+  function renderPlayerRoster(){
+    document.getElementById('playerCount').textContent = currentPlayers.length;
+    document.getElementById('playerRoster').innerHTML = currentPlayers.map(function(p){
+      return '<li><span>' + esc(p.nickname) + '</span><span>' + p.score + '</span></li>';
+    }).join('');
+  }
+
+  var countdownRing = null;
+  var countdownTimer = null;
+
+  function renderSessionState(){
+    var pill = document.getElementById('sessionStatusPill');
+    var pillClasses = { lobby: 'pill-lobby', question: 'pill-live', reveal: 'pill-live', leaderboard: 'pill-live', ended: 'pill-ended' };
+    pill.className = 'pill ' + (pillClasses[currentSession.status] || 'pill-lobby');
+    pill.textContent = currentSession.status;
+
+    ['sessionLobbyState','sessionQuestionState','sessionRevealState','sessionLeaderboardState','sessionEndedState'].forEach(function(id){
+      document.getElementById(id).hidden = true;
+    });
+    ['startQuizBtn','revealBtn','showLeaderboardBtn','nextQuestionBtn','backToDashboardFromEndedBtn'].forEach(function(id){
+      document.getElementById(id).hidden = true;
+    });
+
+    if (countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; }
+
+    var isLast = currentSession.current_question_index >= sessionQuestions.length - 1;
+
+    if (currentSession.status === 'lobby'){
+      document.getElementById('sessionLobbyState').hidden = false;
+      document.getElementById('startQuizBtn').hidden = false;
+    } else if (currentSession.status === 'question'){
+      document.getElementById('sessionQuestionState').hidden = false;
+      document.getElementById('revealBtn').hidden = false;
+      var cq = currentSession.current_question_public;
+      document.getElementById('liveQuestionPrompt').textContent = cq.prompt;
+      var holder = document.getElementById('liveCountdown');
+      holder.innerHTML = '';
+      countdownRing = window.QuizCommon.createCountdownRing(holder, cq.time_limit_seconds);
+      var startedAt = new Date(cq.started_at).getTime();
+      var totalMs = cq.time_limit_seconds * 1000;
+      var tick = function(){
+        var remaining = 1 - (Date.now() - startedAt) / totalMs;
+        countdownRing.update(remaining);
+      };
+      tick();
+      countdownTimer = setInterval(tick, 250);
+      refreshAnsweredCount();
+    } else if (currentSession.status === 'reveal'){
+      document.getElementById('sessionRevealState').hidden = false;
+      document.getElementById('showLeaderboardBtn').hidden = false;
+      document.getElementById('nextQuestionBtn').hidden = false;
+      document.getElementById('nextQuestionBtn').textContent = isLast ? 'Finish quiz' : 'Next question';
+      renderRevealDistribution();
+    } else if (currentSession.status === 'leaderboard'){
+      document.getElementById('sessionLeaderboardState').hidden = false;
+      document.getElementById('nextQuestionBtn').hidden = false;
+      document.getElementById('nextQuestionBtn').textContent = isLast ? 'Finish quiz' : 'Next question';
+      renderHostLeaderboard();
+    } else if (currentSession.status === 'ended'){
+      document.getElementById('sessionEndedState').hidden = false;
+      document.getElementById('backToDashboardFromEndedBtn').hidden = false;
+      localStorage.removeItem(ACTIVE_SESSION_KEY);
+    }
+  }
+
+  function refreshAnsweredCount(){
+    if (!currentSession.current_question_public) return;
+    db.from('quiz_answers').select('id', { count: 'exact', head: true })
+      .eq('session_id', currentSession.id)
+      .eq('question_id', currentSession.current_question_public.question_id)
+      .then(function(res){
+        var el = document.getElementById('liveAnsweredCount');
+        if (el && currentSession.status === 'question'){
+          el.textContent = (res.count || 0) + ' of ' + currentPlayers.length + ' answered';
+        }
+      });
+  }
+
+  function renderRevealDistribution(){
+    var cq = currentSession.current_question_public;
+    document.getElementById('revealQuestionPrompt').textContent = cq.prompt;
+    var counts = cq.counts || {};
+    var total = Object.keys(counts).reduce(function(sum, k){ return sum + counts[k]; }, 0) || 1;
+    var colors = ['var(--color-answer-a)', 'var(--color-answer-b)', 'var(--color-answer-c)', 'var(--color-answer-d)'];
+    document.getElementById('revealDistribution').innerHTML = cq.options.map(function(opt, i){
+      var n = counts[String(i)] || 0;
+      var pct = Math.round((n / total) * 100);
+      var isCorrect = i === cq.correct_index;
+      return '<div class="distribution-bar">' +
+        '<span style="width: 6rem; font-weight:' + (isCorrect ? '700' : '400') + ';">' + esc(opt) + (isCorrect ? ' ✓' : '') + '</span>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%; background:' + colors[i] + ';"></div></div>' +
+        '<span class="bar-count">' + n + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderHostLeaderboard(){
+    document.getElementById('hostLeaderboardList').innerHTML = currentPlayers.map(function(p, i){
+      return '<li class="leaderboard-row"><span class="leaderboard-rank">' + (i + 1) + '</span>' +
+        '<span class="leaderboard-name">' + esc(p.nickname) + '</span>' +
+        '<span class="leaderboard-score">' + p.score + '</span></li>';
+    }).join('');
+  }
+
+  document.getElementById('startQuizBtn').addEventListener('click', function(){ advanceToQuestion(0); });
+  document.getElementById('nextQuestionBtn').addEventListener('click', function(){
+    var next = currentSession.current_question_index + 1;
+    if (next >= sessionQuestions.length){
+      db.from('quiz_sessions').update({ status: 'ended', updated_at: new Date().toISOString() }).eq('id', currentSession.id).then(function(){});
+    } else {
+      advanceToQuestion(next);
+    }
+  });
+  document.getElementById('showLeaderboardBtn').addEventListener('click', function(){
+    db.from('quiz_sessions').update({ status: 'leaderboard', updated_at: new Date().toISOString() }).eq('id', currentSession.id).then(function(){});
+  });
+
+  function advanceToQuestion(index){
+    var q = sessionQuestions[index];
+    var publicQuestion = {
+      question_id: q.id,
+      prompt: q.prompt,
+      options: q.options,
+      time_limit_seconds: q.time_limit_seconds,
+      points: q.points,
+      media_type: q.media_type,
+      media_url: q.media_url,
+      started_at: new Date().toISOString(),
+      correct_index: null,
+      counts: null
+    };
+    db.from('quiz_sessions').update({
+      status: 'question',
+      current_question_index: index,
+      current_question_public: publicQuestion,
+      updated_at: new Date().toISOString()
+    }).eq('id', currentSession.id).then(function(res){
+      if (res.error) alert(res.error.message);
+    });
+  }
+
+  document.getElementById('revealBtn').addEventListener('click', function(){
+    var cq = currentSession.current_question_public;
+    db.from('quiz_answers').select('selected_index').eq('session_id', currentSession.id).eq('question_id', cq.question_id).then(function(res){
+      var counts = {};
+      (res.data || []).forEach(function(row){
+        counts[row.selected_index] = (counts[row.selected_index] || 0) + 1;
+      });
+      var q = sessionQuestions[currentSession.current_question_index];
+      var updated = Object.assign({}, cq, { correct_index: q.correct_index, counts: counts });
+      db.from('quiz_sessions').update({ status: 'reveal', current_question_public: updated, updated_at: new Date().toISOString() })
+        .eq('id', currentSession.id).then(function(r){ if (r.error) alert(r.error.message); });
+    });
+  });
+
+  // ---------- boot: resume an in-flight session across refreshes ----------
+  var pendingResume = localStorage.getItem(ACTIVE_SESSION_KEY);
+  if (pendingResume){
+    db.auth.getSession().then(function(res){
+      if (res.data && res.data.session) enterSession(pendingResume);
+    });
+  }
+
+})();
+</script>
+</body>
+</html>

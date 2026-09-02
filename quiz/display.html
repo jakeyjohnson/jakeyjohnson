@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live Quiz — Display</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  html, body{ height: 100%; overflow: hidden; }
+  body{ display: flex; flex-direction: column; }
+  .stage{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-6);
+    padding: var(--space-8);
+    text-align: center;
+  }
+  .stage h1{ font-size: var(--font-size-hero); margin: 0; }
+  .eyebrow{ font-family: var(--font-family-display); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); color: var(--color-accent-secondary); font-size: var(--font-size-md); }
+
+  /* lobby */
+  #lobbyStage .lobby-grid{ display: flex; align-items: center; gap: var(--space-9); }
+  #lobbyStage .qr-frame{ padding: var(--space-6); }
+  #lobbyStage .qr-frame canvas{ width: 320px; height: 320px; }
+  .join-ticker{ display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; max-width: 40rem; }
+  .join-chip{ padding: var(--space-2) var(--space-4); background: var(--color-bg-panel); border-radius: var(--radius-full); font-weight: 600; }
+
+  /* question */
+  #questionStage{ width: 100%; max-width: 1200px; }
+  #questionStage .q-prompt{ font-size: var(--font-size-3xl); margin-bottom: var(--space-6); }
+  .q-media{ margin-bottom: var(--space-5); }
+  .q-media img{ max-height: 24vh; max-width: 100%; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+  .q-media audio{ width: 22rem; max-width: 100%; }
+  .q-media:empty{ display: none; }
+  #questionStage .countdown{ width: 8rem; height: 8rem; margin: 0 auto var(--space-6); }
+  #questionStage .countdown-value{ font-size: var(--font-size-2xl); }
+  #questionStage .answer-grid{ max-width: 1100px; margin: 0 auto; }
+  #questionStage .answer-tile{ font-size: var(--font-size-xl); padding: var(--space-6); pointer-events: none; }
+  #answeredCount{ margin-top: var(--space-5); font-size: var(--font-size-md); color: var(--color-text-secondary); }
+
+  /* reveal */
+  #revealStage{ width: 100%; max-width: 1100px; }
+  #revealStage .q-prompt{ font-size: var(--font-size-2xl); margin-bottom: var(--space-6); }
+  .distribution-bar{ margin-bottom: var(--space-4); }
+  .distribution-bar span{ font-size: var(--font-size-md); }
+  .distribution-bar .bar-track{ height: 2.5rem; }
+  .distribution-bar .bar-count{ width: 4rem; font-size: var(--font-size-lg); }
+
+  /* leaderboard */
+  #leaderboardStage{ width: 100%; max-width: 900px; }
+  #leaderboardStage .leaderboard-row{ font-size: var(--font-size-lg); padding: var(--space-4) var(--space-5); }
+  #leaderboardStage .leaderboard-rank{ font-size: var(--font-size-xl); }
+
+  /* ended */
+  #endedStage .podium{ margin-top: var(--space-6); }
+  #endedStage .podium-name{ font-weight: 700; font-size: var(--font-size-lg); }
+  #endedStage .podium-score{ color: var(--color-accent-gold); font-family: var(--font-family-display); font-size: var(--font-size-xl); }
+</style>
+</head>
+<body>
+
+<div id="loadingStage" class="stage">
+  <div class="spinner"></div>
+</div>
+
+<div id="errorStage" class="stage" hidden>
+  <h1 style="font-size: var(--font-size-2xl);">Can&rsquo;t find that session</h1>
+  <p>Open this page with <code>?session=&lt;id&gt;</code>, copied from the host panel when a session starts.</p>
+</div>
+
+<div id="lobbyStage" class="stage" hidden>
+  <div class="lobby-grid">
+    <div class="qr-frame" id="lobbyQrHolder"></div>
+    <div>
+      <div class="eyebrow">Scan to join</div>
+      <div class="join-code" id="lobbyJoinCode" style="font-size: var(--font-size-4xl);"></div>
+    </div>
+  </div>
+  <div class="join-ticker" id="lobbyJoinTicker"></div>
+</div>
+
+<div id="questionStage" class="stage" hidden>
+  <div class="countdown" id="questionCountdown"></div>
+  <div id="questionMedia" class="q-media"></div>
+  <div class="q-prompt" id="questionPrompt"></div>
+  <div class="answer-grid" id="questionOptions"></div>
+  <div id="answeredCount"></div>
+</div>
+
+<div id="revealStage" class="stage" hidden>
+  <div class="eyebrow">Answer</div>
+  <div id="revealMedia" class="q-media"></div>
+  <div class="q-prompt" id="revealPrompt"></div>
+  <div id="revealBars"></div>
+</div>
+
+<div id="leaderboardStage" class="stage" hidden>
+  <h1>Leaderboard</h1>
+  <ol class="leaderboard-list" id="leaderboardList"></ol>
+</div>
+
+<div id="endedStage" class="stage" hidden>
+  <h1>Final results</h1>
+  <div class="podium" id="endedPodium"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
+<script src="assets/js/supabase-config.js"></script>
+<script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/quiz-common.js?v=1"></script>
+<script src="assets/js/quiz-realtime.js?v=1"></script>
+<script>
+(function(){
+  'use strict';
+
+  var db = window.QuizDB;
+  var esc = window.QuizCommon.escapeHTML;
+
+  var params = new URLSearchParams(location.search);
+  var sessionId = params.get('session');
+
+  var stages = ['loadingStage','errorStage','lobbyStage','questionStage','revealStage','leaderboardStage','endedStage'];
+  function showStage(name){
+    stages.forEach(function(s){ document.getElementById(s).hidden = (s !== name); });
+  }
+
+  if (!db || !sessionId){
+    showStage('errorStage');
+    return;
+  }
+
+  var session = null;
+  var players = [];
+  var countdownRing = null;
+  var countdownTimer = null;
+
+  function loadSession(){
+    db.from('quiz_sessions').select('*').eq('id', sessionId).single().then(function(res){
+      if (res.error || !res.data){ showStage('errorStage'); return; }
+      session = res.data;
+      render();
+      window.QuizRealtime.subscribeSession(sessionId, function(payload){
+        session = Object.assign({}, session, payload.new);
+        render();
+      });
+      window.QuizRealtime.subscribePlayers(sessionId, loadPlayers);
+    });
+  }
+
+  function loadPlayers(){
+    db.from('quiz_players').select('*').eq('session_id', sessionId).order('score', { ascending: false }).then(function(res){
+      players = res.data || [];
+      render();
+    });
+  }
+
+  var ANSWER_COLORS = ['var(--color-answer-a)', 'var(--color-answer-b)', 'var(--color-answer-c)', 'var(--color-answer-d)'];
+
+  function render(){
+    if (!session) return;
+    if (countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; }
+
+    if (session.status === 'lobby') renderLobby();
+    else if (session.status === 'question') renderQuestion();
+    else if (session.status === 'reveal') renderReveal();
+    else if (session.status === 'leaderboard') renderLeaderboard();
+    else if (session.status === 'ended') renderEnded();
+  }
+
+  function renderLobby(){
+    showStage('lobbyStage');
+    document.getElementById('lobbyJoinCode').textContent = session.join_code;
+    var joinUrl = new URL('../j/?code=' + session.join_code, location.href).href;
+    var holder = document.getElementById('lobbyQrHolder');
+    if (!holder.querySelector('canvas')){
+      holder.innerHTML = '<canvas id="lobbyQrCanvas"></canvas>';
+      if (window.QRCode) QRCode.toCanvas(document.getElementById('lobbyQrCanvas'), joinUrl, { width: 320, margin: 1 });
+    }
+    document.getElementById('lobbyJoinTicker').innerHTML = players.map(function(p){
+      return '<span class="join-chip">' + esc(p.nickname) + '</span>';
+    }).join('');
+  }
+
+  function renderQuestion(){
+    showStage('questionStage');
+    var cq = session.current_question_public;
+    if (!cq) return;
+    document.getElementById('questionMedia').innerHTML = window.QuizCommon.renderQuestionMedia(cq.media_type, cq.media_url);
+    document.getElementById('questionPrompt').textContent = cq.prompt;
+    document.getElementById('questionOptions').innerHTML = cq.options.map(function(opt, i){
+      return '<div class="answer-tile" data-option="' + i + '">' +
+        '<span class="answer-shape">' + window.QuizCommon.answerShape(i) + '</span>' +
+        '<span>' + esc(opt) + '</span></div>';
+    }).join('');
+
+    var holder = document.getElementById('questionCountdown');
+    holder.innerHTML = '';
+    countdownRing = window.QuizCommon.createCountdownRing(holder, cq.time_limit_seconds);
+    var startedAt = new Date(cq.started_at).getTime();
+    var totalMs = cq.time_limit_seconds * 1000;
+    var tick = function(){ countdownRing.update(1 - (Date.now() - startedAt) / totalMs); };
+    tick();
+    countdownTimer = setInterval(tick, 250);
+
+    refreshAnsweredCount(cq.question_id);
+  }
+
+  function refreshAnsweredCount(questionId){
+    db.from('quiz_answers').select('id', { count: 'exact', head: true })
+      .eq('session_id', sessionId).eq('question_id', questionId).then(function(res){
+        var el = document.getElementById('answeredCount');
+        if (el && session.status === 'question'){
+          el.textContent = (res.count || 0) + ' of ' + players.length + ' answered';
+        }
+      });
+  }
+
+  function renderReveal(){
+    showStage('revealStage');
+    var cq = session.current_question_public;
+    if (!cq) return;
+    document.getElementById('revealMedia').innerHTML = window.QuizCommon.renderQuestionMedia(cq.media_type, cq.media_url);
+    document.getElementById('revealPrompt').textContent = cq.prompt;
+    var counts = cq.counts || {};
+    var total = Object.keys(counts).reduce(function(sum, k){ return sum + counts[k]; }, 0) || 1;
+    document.getElementById('revealBars').innerHTML = cq.options.map(function(opt, i){
+      var n = counts[String(i)] || 0;
+      var pct = Math.round((n / total) * 100);
+      var isCorrect = i === cq.correct_index;
+      return '<div class="distribution-bar">' +
+        '<div style="display:flex; align-items:center; gap: var(--space-3);">' +
+          '<span class="answer-shape" style="color:' + ANSWER_COLORS[i] + '; width:1.5rem;">' + window.QuizCommon.answerShape(i) + '</span>' +
+          '<span style="flex:1; text-align:left; font-weight:' + (isCorrect ? '800' : '400') + ';">' + esc(opt) + (isCorrect ? ' — correct' : '') + '</span>' +
+          '<span class="bar-count">' + n + '</span>' +
+        '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%; background:' + ANSWER_COLORS[i] + ';"></div></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderLeaderboard(){
+    showStage('leaderboardStage');
+    document.getElementById('leaderboardList').innerHTML = players.map(function(p, i){
+      return '<li class="leaderboard-row"><span class="leaderboard-rank">' + (i + 1) + '</span>' +
+        '<span class="leaderboard-name">' + esc(p.nickname) + '</span>' +
+        '<span class="leaderboard-score">' + p.score + '</span></li>';
+    }).join('');
+  }
+
+  function renderEnded(){
+    showStage('endedStage');
+    var top3 = players.slice(0, 3);
+    var order = [1, 0, 2];
+    var medals = ['🥈', '🥇', '🥉'];
+    document.getElementById('endedPodium').innerHTML = order.map(function(idx, slot){
+      var p = top3[idx];
+      if (!p) return '';
+      return '<div class="podium-step podium-step-' + (idx + 1) + '">' +
+        '<span class="podium-medal">' + medals[slot] + '</span>' +
+        '<span class="podium-name">' + esc(p.nickname) + '</span>' +
+        '<span class="podium-score">' + p.score + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  loadSession();
+  loadPlayers();
+
+})();
+</script>
+</body>
+</html>

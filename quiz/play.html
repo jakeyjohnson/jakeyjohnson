@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Live Quiz — Join</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  html, body{ min-height: 100%; }
+  .stage{ min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: var(--space-6) var(--space-4); }
+  .stage-inner{ width: 100%; max-width: 26rem; margin: 0 auto; }
+  .center-text{ text-align: center; }
+  #joinStage .join-code-hint{ text-align:center; margin-bottom: var(--space-5); }
+  #questionStage .q-head{ display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-5); }
+  #questionStage .q-prompt{ font-size: var(--font-size-lg); margin: var(--space-4) 0; }
+  .q-media{ margin: var(--space-3) 0; text-align: center; }
+  .q-media img{ max-width: 100%; max-height: 40vh; border-radius: var(--radius-lg); }
+  .q-media audio{ width: 100%; }
+  .q-media:empty{ display: none; }
+  .locked-banner{ text-align: center; padding: var(--space-6); }
+  .result-banner{ text-align: center; padding: var(--space-6) var(--space-4); border-radius: var(--radius-lg); margin-bottom: var(--space-5); }
+  .result-banner.correct{ background: rgba(47,214,117,0.16); }
+  .result-banner.wrong{ background: rgba(255,77,94,0.16); }
+  .result-banner .result-points{ font-family: var(--font-family-display); font-size: var(--font-size-3xl); font-weight: 800; }
+  .your-rank{ text-align: center; margin-top: var(--space-5); }
+  .your-rank .rank-value{ font-family: var(--font-family-display); font-size: var(--font-size-2xl); }
+</style>
+</head>
+<body>
+
+<div id="loadingStage" class="stage center-text"><div class="spinner" style="margin: 0 auto;"></div></div>
+
+<div id="errorStage" class="stage" hidden>
+  <div class="stage-inner center-text">
+    <h1>That code didn&rsquo;t work</h1>
+    <p id="errorMessage">Double check the join code and try again.</p>
+    <button class="btn btn-outline" onclick="location.href=location.pathname">Try again</button>
+  </div>
+</div>
+
+<div id="joinStage" class="stage" hidden>
+  <div class="stage-inner">
+    <h1 class="center-text">Live Quiz</h1>
+    <p class="join-code-hint">Joining <strong id="joinQuizTitle"></strong></p>
+    <div id="joinError" class="form-alert form-alert-error" hidden></div>
+    <form id="joinForm">
+      <div class="form-row" id="joinCodeRow">
+        <label for="joinCodeInput">Join code</label>
+        <input type="text" id="joinCodeInput" autocomplete="off" autocapitalize="characters" maxlength="6">
+      </div>
+      <div class="form-row">
+        <label for="joinNickname">Your name</label>
+        <input type="text" id="joinNickname" autocomplete="off" maxlength="24" placeholder="e.g. Sam">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-large" id="joinSubmit">Join</button>
+    </form>
+  </div>
+</div>
+
+<div id="lobbyStage" class="stage center-text" hidden>
+  <div class="stage-inner">
+    <h1>You&rsquo;re in!</h1>
+    <p>Waiting for the host to start&hellip; keep this tab open.</p>
+    <div class="spinner" style="margin: 0 auto;"></div>
+  </div>
+</div>
+
+<div id="questionStage" class="stage" hidden>
+  <div class="stage-inner">
+    <div class="q-head">
+      <div id="questionCountdown"></div>
+      <span class="pill pill-live" id="questionPointsPill"></span>
+    </div>
+    <div id="questionMedia" class="q-media"></div>
+    <div class="q-prompt" id="questionPrompt"></div>
+    <div class="answer-grid" id="questionOptions"></div>
+  </div>
+</div>
+
+<div id="lockedStage" class="stage center-text" hidden>
+  <div class="stage-inner locked-banner">
+    <h1>Locked in!</h1>
+    <p>Hold tight for the reveal.</p>
+  </div>
+</div>
+
+<div id="revealStage" class="stage" hidden>
+  <div class="stage-inner">
+    <div id="resultBanner" class="result-banner">
+      <div class="result-points" id="resultPoints"></div>
+      <div id="resultLabel"></div>
+    </div>
+    <div id="revealMedia" class="q-media"></div>
+    <p class="center-text">Correct answer: <strong id="revealCorrectAnswer"></strong></p>
+    <div class="your-rank">
+      <div class="rank-value" id="yourScore"></div>
+      <div>total points</div>
+    </div>
+  </div>
+</div>
+
+<div id="leaderboardStage" class="stage" hidden>
+  <div class="stage-inner">
+    <h1 class="center-text">Leaderboard</h1>
+    <ol class="leaderboard-list" id="playerLeaderboardList"></ol>
+  </div>
+</div>
+
+<div id="endedStage" class="stage center-text" hidden>
+  <div class="stage-inner">
+    <h1 id="endedHeadline">Quiz complete!</h1>
+    <div class="your-rank">
+      <div class="rank-value" id="endedRank"></div>
+      <div id="endedScore"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/supabase-config.js"></script>
+<script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/quiz-common.js?v=1"></script>
+<script src="assets/js/quiz-realtime.js?v=1"></script>
+<script>
+(function(){
+  'use strict';
+
+  var db = window.QuizDB;
+  var esc = window.QuizCommon.escapeHTML;
+  var ordinal = window.QuizCommon.ordinal;
+
+  var params = new URLSearchParams(location.search);
+  var codeParam = (params.get('code') || '').toUpperCase();
+
+  var stages = ['loadingStage','errorStage','joinStage','lobbyStage','questionStage','lockedStage','revealStage','leaderboardStage','endedStage'];
+  function showStage(name){
+    stages.forEach(function(s){ document.getElementById(s).hidden = (s !== name); });
+  }
+
+  if (!db){
+    document.getElementById('errorMessage').textContent = 'This app isn\'t set up yet — ask the host to finish configuring it.';
+    showStage('errorStage');
+    return;
+  }
+
+  var session = null;
+  var player = null;
+  var hasAnswered = false;
+  var lastResult = null;
+  var countdownRing = null;
+  var countdownTimer = null;
+
+  function storageKey(sessionId){ return 'quizPlayer:' + sessionId; }
+
+  function loadSessionByCode(code){
+    db.from('quiz_sessions').select('*').eq('join_code', code).single().then(function(res){
+      if (res.error || !res.data){
+        document.getElementById('errorMessage').textContent = 'No live quiz found for that code.';
+        showStage('errorStage');
+        return;
+      }
+      session = res.data;
+      resumeOrJoin();
+    });
+  }
+
+  function resumeOrJoin(){
+    var stored = null;
+    try{ stored = JSON.parse(localStorage.getItem(storageKey(session.id)) || 'null'); } catch(e){}
+    if (stored && stored.playerId){
+      db.from('quiz_players').select('*').eq('id', stored.playerId).eq('session_id', session.id).single().then(function(res){
+        if (res.data){
+          player = res.data;
+          startWatching();
+        } else {
+          localStorage.removeItem(storageKey(session.id));
+          showJoinForm();
+        }
+      });
+    } else {
+      showJoinForm();
+    }
+  }
+
+  function showJoinForm(){
+    db.from('quizzes').select('title').eq('id', session.quiz_id).single().then(function(res){
+      document.getElementById('joinQuizTitle').textContent = (res.data && res.data.title) || 'this quiz';
+    });
+    document.getElementById('joinCodeInput').value = session.join_code;
+    document.getElementById('joinCodeRow').hidden = !!codeParam;
+    showStage('joinStage');
+  }
+
+  document.getElementById('joinForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var errEl = document.getElementById('joinError');
+    errEl.hidden = true;
+    var code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+    var nickname = document.getElementById('joinNickname').value.trim();
+    if (!code){ errEl.textContent = 'Enter the join code.'; errEl.hidden = false; return; }
+    if (!nickname){ errEl.textContent = 'Enter a name.'; errEl.hidden = false; return; }
+
+    var btn = document.getElementById('joinSubmit');
+    btn.disabled = true;
+
+    var resolveSession = (session && session.join_code === code)
+      ? Promise.resolve({ data: session })
+      : db.from('quiz_sessions').select('*').eq('join_code', code).single();
+
+    resolveSession.then(function(res){
+      if (res.error || !res.data){
+        btn.disabled = false;
+        errEl.textContent = 'No live quiz found for that code.';
+        errEl.hidden = false;
+        return;
+      }
+      session = res.data;
+      if (session.status !== 'lobby'){
+        btn.disabled = false;
+        errEl.textContent = 'This quiz has already started — ask the host for the next one.';
+        errEl.hidden = false;
+        return;
+      }
+      db.from('quiz_players').insert({ session_id: session.id, nickname: nickname }).select().single().then(function(res2){
+        btn.disabled = false;
+        if (res2.error){
+          errEl.textContent = res2.error.code === '23505' ? 'That name is taken — try another.' : res2.error.message;
+          errEl.hidden = false;
+          return;
+        }
+        player = res2.data;
+        localStorage.setItem(storageKey(session.id), JSON.stringify({ playerId: player.id, nickname: player.nickname }));
+        startWatching();
+      });
+    });
+  });
+
+  function startWatching(){
+    render();
+    window.QuizRealtime.subscribeSession(session.id, function(payload){
+      var previousQuestionId = session.current_question_public && session.current_question_public.question_id;
+      session = Object.assign({}, session, payload.new);
+      var newQuestionId = session.current_question_public && session.current_question_public.question_id;
+      if (newQuestionId !== previousQuestionId) hasAnswered = false;
+      render();
+    });
+  }
+
+  function render(){
+    if (session.status === 'lobby') { showStage('lobbyStage'); return; }
+    if (session.status === 'question'){
+      if (hasAnswered) showStage('lockedStage'); else renderQuestion();
+      return;
+    }
+    if (session.status === 'reveal'){ renderReveal(); return; }
+    if (session.status === 'leaderboard'){ renderLeaderboard(); return; }
+    if (session.status === 'ended'){ renderEnded(); return; }
+  }
+
+  function renderQuestion(){
+    showStage('questionStage');
+    var cq = session.current_question_public;
+    if (!cq) return;
+    document.getElementById('questionMedia').innerHTML = window.QuizCommon.renderQuestionMedia(cq.media_type, cq.media_url);
+    document.getElementById('questionPrompt').textContent = cq.prompt;
+    document.getElementById('questionPointsPill').textContent = cq.points + ' pts';
+    document.getElementById('questionOptions').innerHTML = cq.options.map(function(opt, i){
+      return '<button type="button" class="answer-tile" data-option="' + i + '">' +
+        '<span class="answer-shape">' + window.QuizCommon.answerShape(i) + '</span>' +
+        '<span>' + esc(opt) + '</span></button>';
+    }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('#questionOptions [data-option]'), function(btn){
+      btn.addEventListener('click', function(){ submitAnswer(parseInt(btn.getAttribute('data-option'), 10)); });
+    });
+
+    if (countdownTimer){ clearInterval(countdownTimer); }
+    var holder = document.getElementById('questionCountdown');
+    holder.innerHTML = '';
+    countdownRing = window.QuizCommon.createCountdownRing(holder, cq.time_limit_seconds);
+    var startedAt = new Date(cq.started_at).getTime();
+    var totalMs = cq.time_limit_seconds * 1000;
+    var tick = function(){ countdownRing.update(1 - (Date.now() - startedAt) / totalMs); };
+    tick();
+    countdownTimer = setInterval(tick, 250);
+  }
+
+  function submitAnswer(index){
+    if (hasAnswered) return;
+    hasAnswered = true;
+    showStage('lockedStage');
+    if (countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; }
+    db.rpc('submit_quiz_answer', {
+      p_session_id: session.id,
+      p_player_id: player.id,
+      p_selected_index: index
+    }).then(function(res){
+      if (res.error){ console.error('Live Quiz: submit failed', res.error.message); return; }
+      lastResult = res.data;
+      if (session.status === 'reveal') renderReveal();
+    });
+  }
+
+  function renderReveal(){
+    showStage('revealStage');
+    var cq = session.current_question_public;
+    if (!cq) return;
+    var banner = document.getElementById('resultBanner');
+    var pointsEl = document.getElementById('resultPoints');
+    var labelEl = document.getElementById('resultLabel');
+    if (lastResult){
+      banner.className = 'result-banner ' + (lastResult.is_correct ? 'correct' : 'wrong');
+      pointsEl.textContent = lastResult.is_correct ? ('+' + lastResult.points_awarded) : '0';
+      labelEl.textContent = lastResult.is_correct ? 'Correct!' : 'Not quite';
+    } else {
+      banner.className = 'result-banner';
+      pointsEl.textContent = '—';
+      labelEl.textContent = hasAnswered ? 'Result unavailable' : 'No answer submitted';
+    }
+    document.getElementById('revealMedia').innerHTML = window.QuizCommon.renderQuestionMedia(cq.media_type, cq.media_url);
+    document.getElementById('revealCorrectAnswer').textContent = cq.options[cq.correct_index];
+    refreshOwnScore();
+  }
+
+  function refreshOwnScore(){
+    db.from('quiz_players').select('score').eq('id', player.id).single().then(function(res){
+      if (res.data) document.getElementById('yourScore').textContent = res.data.score;
+    });
+  }
+
+  function renderLeaderboard(){
+    showStage('leaderboardStage');
+    db.from('quiz_players').select('*').eq('session_id', session.id).order('score', { ascending: false }).then(function(res){
+      var rows = res.data || [];
+      document.getElementById('playerLeaderboardList').innerHTML = rows.map(function(p, i){
+        return '<li class="leaderboard-row' + (p.id === player.id ? ' is-me' : '') + '">' +
+          '<span class="leaderboard-rank">' + (i + 1) + '</span>' +
+          '<span class="leaderboard-name">' + esc(p.nickname) + (p.id === player.id ? ' (you)' : '') + '</span>' +
+          '<span class="leaderboard-score">' + p.score + '</span></li>';
+      }).join('');
+    });
+  }
+
+  function renderEnded(){
+    showStage('endedStage');
+    db.from('quiz_players').select('*').eq('session_id', session.id).order('score', { ascending: false }).then(function(res){
+      var rows = res.data || [];
+      var myIndex = rows.findIndex(function(p){ return p.id === player.id; });
+      document.getElementById('endedRank').textContent = myIndex >= 0 ? ordinal(myIndex + 1) : '—';
+      document.getElementById('endedScore').textContent = myIndex >= 0 ? (rows[myIndex].score + ' points') : '';
+    });
+  }
+
+  if (codeParam){
+    loadSessionByCode(codeParam);
+  } else {
+    document.getElementById('joinCodeRow').hidden = false;
+    document.getElementById('joinQuizTitle').textContent = 'a quiz';
+    showStage('joinStage');
+  }
+
+})();
+</script>
+</body>
+</html>
