@@ -67,10 +67,24 @@
     };
   }
 
+  // Renders a question's optional image/audio as HTML — used by
+  // display.html and play.html above the prompt. Returns '' for
+  // mediaType 'none' (or missing data), so callers can drop it
+  // straight into an otherwise-empty container.
+  function renderQuestionMedia(mediaType, mediaUrl){
+    if (!mediaType || mediaType === 'none' || !mediaUrl) return '';
+    var src = escapeHTML(mediaUrl);
+    if (mediaType === 'audio'){
+      return '<audio controls preload="auto" src="' + src + '">Your browser can\'t play this audio clip.</audio>';
+    }
+    return '<img src="' + src + '" alt="">';
+  }
+
   window.QuizCommon = {
     escapeHTML: escapeHTML,
     generateJoinCode: generateJoinCode,
     answerShape: answerShape,
+    renderQuestionMedia: renderQuestionMedia,
     ordinal: ordinal,
     createCountdownRing: createCountdownRing
   };

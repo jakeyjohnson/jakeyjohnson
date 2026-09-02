@@ -36,6 +36,10 @@
   /* question */
   #questionStage{ width: 100%; max-width: 1200px; }
   #questionStage .q-prompt{ font-size: var(--font-size-3xl); margin-bottom: var(--space-6); }
+  .q-media{ margin-bottom: var(--space-5); }
+  .q-media img{ max-height: 24vh; max-width: 100%; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+  .q-media audio{ width: 22rem; max-width: 100%; }
+  .q-media:empty{ display: none; }
   #questionStage .countdown{ width: 8rem; height: 8rem; margin: 0 auto var(--space-6); }
   #questionStage .countdown-value{ font-size: var(--font-size-2xl); }
   #questionStage .answer-grid{ max-width: 1100px; margin: 0 auto; }
@@ -85,6 +89,7 @@
 
 <div id="questionStage" class="stage" hidden>
   <div class="countdown" id="questionCountdown"></div>
+  <div id="questionMedia" class="q-media"></div>
   <div class="q-prompt" id="questionPrompt"></div>
   <div class="answer-grid" id="questionOptions"></div>
   <div id="answeredCount"></div>
@@ -92,6 +97,7 @@
 
 <div id="revealStage" class="stage" hidden>
   <div class="eyebrow">Answer</div>
+  <div id="revealMedia" class="q-media"></div>
   <div class="q-prompt" id="revealPrompt"></div>
   <div id="revealBars"></div>
 </div>
@@ -188,6 +194,7 @@
     showStage('questionStage');
     var cq = session.current_question_public;
     if (!cq) return;
+    document.getElementById('questionMedia').innerHTML = window.QuizCommon.renderQuestionMedia(cq.media_type, cq.media_url);
     document.getElementById('questionPrompt').textContent = cq.prompt;
     document.getElementById('questionOptions').innerHTML = cq.options.map(function(opt, i){
       return '<div class="answer-tile" data-option="' + i + '">' +
@@ -221,6 +228,7 @@
     showStage('revealStage');
     var cq = session.current_question_public;
     if (!cq) return;
+    document.getElementById('revealMedia').innerHTML = window.QuizCommon.renderQuestionMedia(cq.media_type, cq.media_url);
     document.getElementById('revealPrompt').textContent = cq.prompt;
     var counts = cq.counts || {};
     var total = Object.keys(counts).reduce(function(sum, k){ return sum + counts[k]; }, 0) || 1;

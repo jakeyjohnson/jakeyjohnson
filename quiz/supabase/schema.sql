@@ -34,6 +34,12 @@ create table if not exists quiz_questions (
   correct_index      integer not null,
   time_limit_seconds integer not null default 20,
   points             integer not null default 1000,
+  -- Optional media shown above the question — an image to identify,
+  -- a sound clip to guess, etc. media_url points into the public
+  -- quiz-media storage bucket (see "Storage" below); 'none' means no
+  -- media_url is expected.
+  media_type         text not null default 'none' check (media_type in ('none','image','audio')),
+  media_url          text,
   created_at         timestamptz not null default now(),
   constraint quiz_questions_options_len check (
     jsonb_typeof(options) = 'array'
@@ -41,8 +47,27 @@ create table if not exists quiz_questions (
   ),
   constraint quiz_questions_correct_index_range check (
     correct_index >= 0 and correct_index < 4
+  ),
+  constraint quiz_questions_media_url_required check (
+    media_type = 'none' or media_url is not null
   )
 );
+
+-- Migration for a project that ran an earlier version of this script
+-- before media support existed — no-ops on a fresh project (the
+-- columns already exist from the create table above) and on a
+-- project that's already been migrated.
+alter table quiz_questions add column if not exists media_type text not null default 'none';
+alter table quiz_questions add column if not exists media_url text;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'quiz_questions_media_type_check'
+  ) then
+    alter table quiz_questions add constraint quiz_questions_media_type_check
+      check (media_type in ('none','image','audio'));
+  end if;
+end $$;
 
 create table if not exists quiz_sessions (
   id                       uuid primary key default gen_random_uuid(),
@@ -152,6 +177,34 @@ create policy "quiz_players host delete" on quiz_players for delete to authentic
 -- read raw answers for review.
 drop policy if exists "quiz_answers host read" on quiz_answers;
 create policy "quiz_answers host read" on quiz_answers for select to authenticated using (true);
+
+-- ---------------------------------------------------------------
+-- Storage: a public bucket for question images/audio clips. The
+-- host uploads into it from host.html; players/display just load
+-- the public URL saved on quiz_questions.media_url — no signed URLs
+-- or auth needed to view, same "anon key is public, RLS is the real
+-- gate" model as everything else in this file.
+-- ---------------------------------------------------------------
+
+insert into storage.buckets (id, name, public)
+values ('quiz-media', 'quiz-media', true)
+on conflict (id) do nothing;
+
+drop policy if exists "quiz-media public read" on storage.objects;
+create policy "quiz-media public read" on storage.objects for select
+  using (bucket_id = 'quiz-media');
+
+drop policy if exists "quiz-media host write" on storage.objects;
+create policy "quiz-media host write" on storage.objects for insert to authenticated
+  with check (bucket_id = 'quiz-media');
+
+drop policy if exists "quiz-media host update" on storage.objects;
+create policy "quiz-media host update" on storage.objects for update to authenticated
+  using (bucket_id = 'quiz-media') with check (bucket_id = 'quiz-media');
+
+drop policy if exists "quiz-media host delete" on storage.objects;
+create policy "quiz-media host delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'quiz-media');
 
 -- ---------------------------------------------------------------
 -- Realtime: publish row changes on the tables players/display watch

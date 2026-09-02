@@ -18,6 +18,10 @@
   #joinStage .join-code-hint{ text-align:center; margin-bottom: var(--space-5); }
   #questionStage .q-head{ display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-5); }
   #questionStage .q-prompt{ font-size: var(--font-size-lg); margin: var(--space-4) 0; }
+  .q-media{ margin: var(--space-3) 0; text-align: center; }
+  .q-media img{ max-width: 100%; max-height: 40vh; border-radius: var(--radius-lg); }
+  .q-media audio{ width: 100%; }
+  .q-media:empty{ display: none; }
   .locked-banner{ text-align: center; padding: var(--space-6); }
   .result-banner{ text-align: center; padding: var(--space-6) var(--space-4); border-radius: var(--radius-lg); margin-bottom: var(--space-5); }
   .result-banner.correct{ background: rgba(47,214,117,0.16); }
@@ -72,6 +76,7 @@
       <div id="questionCountdown"></div>
       <span class="pill pill-live" id="questionPointsPill"></span>
     </div>
+    <div id="questionMedia" class="q-media"></div>
     <div class="q-prompt" id="questionPrompt"></div>
     <div class="answer-grid" id="questionOptions"></div>
   </div>
@@ -90,6 +95,7 @@
       <div class="result-points" id="resultPoints"></div>
       <div id="resultLabel"></div>
     </div>
+    <div id="revealMedia" class="q-media"></div>
     <p class="center-text">Correct answer: <strong id="revealCorrectAnswer"></strong></p>
     <div class="your-rank">
       <div class="rank-value" id="yourScore"></div>
@@ -260,6 +266,7 @@
     showStage('questionStage');
     var cq = session.current_question_public;
     if (!cq) return;
+    document.getElementById('questionMedia').innerHTML = window.QuizCommon.renderQuestionMedia(cq.media_type, cq.media_url);
     document.getElementById('questionPrompt').textContent = cq.prompt;
     document.getElementById('questionPointsPill').textContent = cq.points + ' pts';
     document.getElementById('questionOptions').innerHTML = cq.options.map(function(opt, i){
@@ -314,6 +321,7 @@
       pointsEl.textContent = '—';
       labelEl.textContent = hasAnswered ? 'Result unavailable' : 'No answer submitted';
     }
+    document.getElementById('revealMedia').innerHTML = window.QuizCommon.renderQuestionMedia(cq.media_type, cq.media_url);
     document.getElementById('revealCorrectAnswer').textContent = cq.options[cq.correct_index];
     refreshOwnScore();
   }

@@ -27,6 +27,13 @@
   .question-row .q-prompt{ font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .question-row .q-meta{ font-size: var(--font-size-xs); color: var(--color-text-tertiary); }
   .question-row .q-actions{ display: flex; gap: var(--space-1); }
+  .media-type-row{ display: flex; gap: var(--space-4); margin-bottom: var(--space-3); }
+  .media-type-option{ display: flex; align-items: center; gap: var(--space-1); font-size: var(--font-size-sm); font-weight: 400; color: var(--color-text-primary); }
+  #qMediaPreview{ margin-bottom: var(--space-3); }
+  #qMediaPreview img{ max-width: 12rem; max-height: 8rem; border-radius: var(--radius-md); display: block; }
+  #qMediaPreview audio{ max-width: 100%; }
+  #qMediaPreview .media-remove-row{ margin-top: var(--space-2); }
+  .question-row .q-media-badge{ font-size: var(--font-size-xs); color: var(--color-accent-secondary); }
   .option-editor-row{ display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
   .option-editor-row input[type="text"]{ flex: 1; }
   .option-editor-row .option-swatch{ width: 1.5rem; height: 1.5rem; border-radius: var(--radius-sm); flex: none; }
@@ -133,6 +140,21 @@
       <div class="form-row">
         <label for="qPrompt">Question</label>
         <textarea id="qPrompt" rows="2" placeholder="What year was Party Padel founded?"></textarea>
+      </div>
+      <div class="form-row">
+        <label>Media (optional)</label>
+        <div class="media-type-row">
+          <label class="media-type-option"><input type="radio" name="qMediaType" value="none" checked> None</label>
+          <label class="media-type-option"><input type="radio" name="qMediaType" value="image"> Image</label>
+          <label class="media-type-option"><input type="radio" name="qMediaType" value="audio"> Audio</label>
+        </div>
+        <input type="file" id="qMediaFile" hidden>
+        <div id="qMediaPreview"></div>
+        <div class="btn-row" id="qMediaButtons" style="display:flex; gap: var(--space-2);" hidden>
+          <button type="button" class="btn btn-outline btn-small" id="qMediaChooseBtn">Choose file&hellip;</button>
+          <button type="button" class="btn btn-ghost btn-small" id="qMediaRemoveBtn" hidden>Remove</button>
+        </div>
+        <p id="qMediaError" class="field-error" hidden></p>
       </div>
       <label>Answer options (tap the correct one)</label>
       <div id="optionEditorRows"></div>
@@ -252,6 +274,8 @@
   var currentQuiz = null;          // {id, title}
   var currentQuestions = [];       // array of question rows, ordered
   var editingQuestionId = null;    // null = adding new
+  var originalMedia = { type: 'none', url: null }; // media already saved on the question being edited
+  var pendingMediaFile = null;     // a newly-picked File not yet uploaded
   var currentSession = null;       // session row
   var sessionQuestions = [];       // questions for the quiz being hosted
   var sessionChannel = null;
@@ -416,7 +440,7 @@
       return '<div class="card question-row">' +
         '<span class="q-index">' + (i + 1) + '</span>' +
         '<div class="q-body">' +
-          '<div class="q-prompt">' + esc(q.prompt) + '</div>' +
+          '<div class="q-prompt">' + esc(q.prompt) + (q.media_type !== 'none' ? ' <span class="q-media-badge">' + (q.media_type === 'audio' ? '&#128266; audio' : '&#128247; image') + '</span>' : '') + '</div>' +
           '<div class="q-meta">' + q.options.length + ' options &middot; correct: ' + correctLabel +
             ' &middot; ' + q.time_limit_seconds + 's &middot; ' + q.points + ' pts</div>' +
         '</div>' +
@@ -477,9 +501,78 @@
     document.getElementById('qTimeLimit').value = q ? q.time_limit_seconds : 20;
     document.getElementById('qPoints').value = q ? q.points : 1000;
     renderOptionEditor(q ? q.options : ['', ''], q ? q.correct_index : 0);
+
+    originalMedia = { type: q ? q.media_type : 'none', url: q ? q.media_url : null };
+    pendingMediaFile = null;
+    document.getElementById('qMediaFile').value = '';
+    document.getElementById('qMediaError').hidden = true;
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="qMediaType"]'), function(r){
+      r.checked = (r.value === originalMedia.type);
+    });
+    renderMediaState();
+
     form.hidden = false;
     form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
+
+  function currentSelectedMediaType(){
+    var r = document.querySelector('input[name="qMediaType"]:checked');
+    return r ? r.value : 'none';
+  }
+
+  function renderMediaState(){
+    var type = currentSelectedMediaType();
+    document.getElementById('qMediaButtons').hidden = (type === 'none');
+    document.getElementById('qMediaFile').accept = (type === 'audio') ? 'audio/*' : 'image/*';
+    var preview = document.getElementById('qMediaPreview');
+    var removeBtn = document.getElementById('qMediaRemoveBtn');
+    var url = null;
+    if (pendingMediaFile){
+      url = URL.createObjectURL(pendingMediaFile);
+    } else if (type !== 'none' && type === originalMedia.type && originalMedia.url){
+      url = originalMedia.url;
+    }
+    removeBtn.hidden = !url;
+    preview.innerHTML = !url ? '' : (type === 'audio'
+      ? '<audio controls src="' + esc(url) + '"></audio>'
+      : '<img src="' + esc(url) + '" alt="">');
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="qMediaType"]'), function(radio){
+    radio.addEventListener('change', function(){
+      pendingMediaFile = null;
+      document.getElementById('qMediaFile').value = '';
+      renderMediaState();
+    });
+  });
+
+  document.getElementById('qMediaChooseBtn').addEventListener('click', function(){
+    document.getElementById('qMediaFile').click();
+  });
+
+  document.getElementById('qMediaFile').addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var type = currentSelectedMediaType();
+    var maxBytes = type === 'audio' ? 15 * 1024 * 1024 : 8 * 1024 * 1024;
+    var errEl = document.getElementById('qMediaError');
+    if (file.size > maxBytes){
+      errEl.textContent = 'That file is too big — max ' + (maxBytes / (1024 * 1024)) + 'MB.';
+      errEl.hidden = false;
+      e.target.value = '';
+      return;
+    }
+    errEl.hidden = true;
+    pendingMediaFile = file;
+    renderMediaState();
+  });
+
+  document.getElementById('qMediaRemoveBtn').addEventListener('click', function(){
+    pendingMediaFile = null;
+    document.getElementById('qMediaFile').value = '';
+    document.querySelector('input[name="qMediaType"][value="none"]').checked = true;
+    renderMediaState();
+  });
 
   function renderOptionEditor(options, correctIndex){
     var container = document.getElementById('optionEditorRows');
@@ -529,25 +622,58 @@
     if (correctIndex < 0 || correctIndex >= options.length){
       errEl.textContent = 'Choose which option is correct.'; errEl.hidden = false; return;
     }
+    var mediaType = currentSelectedMediaType();
+    if (mediaType !== 'none' && !pendingMediaFile && !(mediaType === originalMedia.type && originalMedia.url)){
+      errEl.textContent = 'Choose a file for the ' + mediaType + ', or set media back to None.';
+      errEl.hidden = false;
+      return;
+    }
 
-    var payload = {
-      quiz_id: currentQuiz.id,
-      prompt: prompt,
-      options: options,
-      correct_index: correctIndex,
-      time_limit_seconds: timeLimit || 20,
-      points: points || 1000
-    };
+    var saveBtn = document.getElementById('saveQuestionBtn');
 
-    var op = editingQuestionId
-      ? db.from('quiz_questions').update(payload).eq('id', editingQuestionId)
-      : db.from('quiz_questions').insert(Object.assign({ order_index: currentQuestions.length }, payload));
+    function finishSave(mediaUrl){
+      var payload = {
+        quiz_id: currentQuiz.id,
+        prompt: prompt,
+        options: options,
+        correct_index: correctIndex,
+        time_limit_seconds: timeLimit || 20,
+        points: points || 1000,
+        media_type: mediaType,
+        media_url: mediaType === 'none' ? null : mediaUrl
+      };
 
-    op.then(function(res){
-      if (res.error){ errEl.textContent = res.error.message; errEl.hidden = false; return; }
-      closeQuestionForm();
-      loadQuestions();
-    });
+      var op = editingQuestionId
+        ? db.from('quiz_questions').update(payload).eq('id', editingQuestionId)
+        : db.from('quiz_questions').insert(Object.assign({ order_index: currentQuestions.length }, payload));
+
+      op.then(function(res){
+        saveBtn.disabled = false;
+        if (res.error){ errEl.textContent = res.error.message; errEl.hidden = false; return; }
+        closeQuestionForm();
+        loadQuestions();
+      });
+    }
+
+    if (mediaType === 'none'){
+      finishSave(null);
+    } else if (pendingMediaFile){
+      saveBtn.disabled = true;
+      var ext = (pendingMediaFile.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '') || (mediaType === 'audio' ? 'mp3' : 'jpg');
+      var path = currentQuiz.id + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      db.storage.from('quiz-media').upload(path, pendingMediaFile, { upsert: true, contentType: pendingMediaFile.type || undefined }).then(function(uploadRes){
+        if (uploadRes.error){
+          saveBtn.disabled = false;
+          errEl.textContent = 'Upload failed: ' + uploadRes.error.message;
+          errEl.hidden = false;
+          return;
+        }
+        var pub = db.storage.from('quiz-media').getPublicUrl(path);
+        finishSave(pub.data.publicUrl);
+      });
+    } else {
+      finishSave(originalMedia.url);
+    }
   });
 
   // ---------- hosting a session ----------
@@ -779,6 +905,8 @@
       options: q.options,
       time_limit_seconds: q.time_limit_seconds,
       points: q.points,
+      media_type: q.media_type,
+      media_url: q.media_url,
       started_at: new Date().toISOString(),
       correct_index: null,
       counts: null

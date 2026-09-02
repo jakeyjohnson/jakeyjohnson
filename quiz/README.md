@@ -29,7 +29,8 @@ mixes with padel data.
    it. This creates the `quizzes`/`quiz_questions`/`quiz_sessions`/
    `quiz_players`/`quiz_answers` tables, the row-level security
    policies that keep correct answers hidden from players until
-   reveal, and the `submit_quiz_answer` scoring function.
+   reveal, the `submit_quiz_answer` scoring function, and a public
+   `quiz-media` Storage bucket for question images/audio clips.
 3. **Create your host login**: Authentication > Users > Add user —
    email + password, whatever you want to sign in with at
    `quiz/host.html`. There's no sign-up form anywhere in the app;
@@ -99,6 +100,22 @@ the real answer key from a table the player's browser can never query
 directly — so this can't be cheated by inspecting network requests or
 page source before answering, only the trusted host client ever
 handles the real answer key before reveal time.
+
+### Question media (images & audio)
+
+Any question can carry one image or one audio clip — "guess the
+photo," "name that sound," that sort of thing. In `host.html`'s
+question form, pick Image or Audio under "Media," then choose a file;
+it uploads straight to the `quiz-media` Storage bucket created by
+`schema.sql` and shows up above the prompt on `display.html` and
+`play.html` once that question goes live. Limits: 8MB for images,
+15MB for audio, one file per question. Audio never autoplays (mobile
+browsers routinely block that) — players and the display screen both
+get a normal `<audio>` player with controls, so press play is a
+manual, one-tap thing. Removing a question's media (switching back to
+"None") stops it being shown but doesn't delete the uploaded file from
+Storage — safe to ignore, or clean up periodically from Supabase
+Dashboard > Storage > quiz-media if it matters to you.
 
 ## Editing content
 
