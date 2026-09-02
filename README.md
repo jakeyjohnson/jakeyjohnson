@@ -6,6 +6,11 @@ no build step, no framework — the only backend is Supabase, used purely as a
 database + login for the admin panel (`admin.html`); everything else is
 still plain HTML/CSS/JS you deploy by uploading files.
 
+This repo also hosts a second, unrelated app in **`quiz/`** — a live,
+QR-join quiz with an OBS-ready display screen and its own Supabase
+project. See `quiz/README.md` for that app; nothing below this point
+is about it.
+
 ## What's here
 
 | Page | Purpose |

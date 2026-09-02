@@ -1,0 +1,141 @@
+/* =========================================================
+   Live Quiz — Design Tokens
+   Own visual identity, deliberately distinct from the Party Padel
+   site this repo also hosts (different product, different brand).
+   Same architecture as ../../assets/css/tokens.css though: every
+   component references these variables, no hardcoded values.
+
+   Direction: a live "quiz show" screen — energetic, high-contrast,
+   built to read well on a phone in someone's hand AND on a projector/
+   stream capture (the display.html "big screen"). Dark ground so the
+   four answer colours and the countdown stay the loudest things on
+   screen, big rounded shapes (the opposite of Party Padel's square
+   brutalist system) for fast target recognition on a phone.
+   ========================================================= */
+
+:root{
+
+  /* ---------- Raw brand colours ---------- */
+  --raw-ink:        #0B0620;  /* base background */
+  --raw-ink-deep:   #060412;  /* darkest — page edges, overlays */
+  --raw-panel:      #1B1230;  /* card/panel surface */
+  --raw-panel-high: #251A42;  /* raised surface (active states) */
+  --raw-white:      #FFFFFF;
+  --raw-mist:       #C7BEE0;  /* secondary text on ink */
+
+  --raw-magenta:  #FF3D81;  /* primary accent / CTA */
+  --raw-cyan:     #22E6C5;  /* secondary accent / links / focus */
+  --raw-gold:     #FFC93C;  /* points, timer warning */
+
+  /* Answer-tile colours — shape-coded like a classic quiz show so
+     colour isn't the only cue (accessibility): triangle/diamond/
+     circle/square icons pair with these in component CSS. */
+  --raw-answer-a: #FF5A5F;  /* triangle — coral red */
+  --raw-answer-b: #4C6FFF;  /* diamond — electric blue */
+  --raw-answer-c: #FFC93C;  /* circle — gold */
+  --raw-answer-d: #2FD675;  /* square — green */
+
+  --raw-correct: #2FD675;
+  --raw-wrong:   #FF4D5E;
+
+  /* ---------- Semantic colour tokens ---------- */
+  --color-bg-primary:    var(--raw-ink);
+  --color-bg-deep:       var(--raw-ink-deep);
+  --color-bg-panel:      var(--raw-panel);
+  --color-bg-panel-high: var(--raw-panel-high);
+
+  --color-text-primary:   var(--raw-white);
+  --color-text-secondary: var(--raw-mist);
+  --color-text-tertiary:  rgba(255,255,255,0.56);
+  --color-text-inverse:   var(--raw-ink-deep);
+
+  --color-border-primary:   rgba(255,255,255,0.14);
+  --color-border-secondary: rgba(255,255,255,0.08);
+  --color-border-focus:     var(--raw-cyan);
+
+  --color-accent-primary:        var(--raw-magenta);
+  --color-accent-primary-hover:  #E8236B;
+  --color-accent-secondary:      var(--raw-cyan);
+  --color-accent-gold:           var(--raw-gold);
+
+  --color-answer-a: var(--raw-answer-a);
+  --color-answer-b: var(--raw-answer-b);
+  --color-answer-c: var(--raw-answer-c);
+  --color-answer-d: var(--raw-answer-d);
+
+  --color-status-correct: var(--raw-correct);
+  --color-status-wrong:   var(--raw-wrong);
+
+  /* ---------- Spacing (4px base) ---------- */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-10: 8rem;
+
+  /* ---------- Typography ----------
+     Baloo 2: rounded, heavy, high-energy — headlines, the countdown
+     number, the join code, answer-tile text. Manrope: clean geometric
+     sans for body/UI copy — legible small on a phone. */
+  --font-family-display: 'Baloo 2', 'Arial Rounded MT Bold', sans-serif;
+  --font-family-body:    'Manrope', system-ui, sans-serif;
+
+  --font-size-xs:   0.75rem;
+  --font-size-sm:   0.875rem;
+  --font-size-base: 1rem;
+  --font-size-md:   1.125rem;
+  --font-size-lg:   1.5rem;
+  --font-size-xl:   2rem;
+  --font-size-2xl:  2.75rem;
+  --font-size-3xl:  4rem;
+  --font-size-4xl:  6rem;
+  --font-size-hero: clamp(2.5rem, 7vw, 6.5rem);
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+  --font-weight-black:    800;
+
+  --line-height-tight:  1.05;
+  --line-height-normal: 1.5;
+
+  --letter-spacing-wide: 0.08em;
+
+  /* ---------- Layout ---------- */
+  --max-width-content: 68ch;
+  --max-width-wide:    1100px;
+  --max-width-page:    1400px;
+
+  /* Big, friendly, rounded — deliberately opposite of Party Padel's
+     square-cornered system, since this is a distinct product. */
+  --radius-sm:   8px;
+  --radius-md:   14px;
+  --radius-lg:   22px;
+  --radius-full: 999px;
+
+  --shadow-sm: 0 2px 10px rgba(0,0,0,0.35);
+  --shadow-md: 0 10px 30px rgba(0,0,0,0.45);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.55);
+  --shadow-glow-magenta: 0 0 40px rgba(255,61,129,0.35);
+  --shadow-glow-cyan:    0 0 40px rgba(34,230,197,0.3);
+
+  --duration-fast:   150ms;
+  --duration-normal: 250ms;
+  --duration-slow:   450ms;
+
+  --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-out:     cubic-bezier(0, 0, 0.2, 1);
+  --easing-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --breakpoint-sm:  375px;
+  --breakpoint-md:  768px;
+  --breakpoint-lg:  1024px;
+  --breakpoint-xl:  1280px;
+}
