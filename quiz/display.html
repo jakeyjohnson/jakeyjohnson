@@ -173,7 +173,7 @@
   function renderLobby(){
     showStage('lobbyStage');
     document.getElementById('lobbyJoinCode').textContent = session.join_code;
-    var joinUrl = location.origin + '/j/?code=' + session.join_code;
+    var joinUrl = new URL('../j/?code=' + session.join_code, location.href).href;
     var holder = document.getElementById('lobbyQrHolder');
     if (!holder.querySelector('canvas')){
       holder.innerHTML = '<canvas id="lobbyQrCanvas"></canvas>';
