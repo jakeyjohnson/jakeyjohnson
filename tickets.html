@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tickets — The Great British Cheese Festival</title>
+<meta name="description" content="Buy tickets to The Great British Cheese Festival, 12-14 June 2026. Day tickets from £12, one-click secure checkout.">
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="nav">
+    <a href="index.html" class="nav-logo"><span class="wheel">🧀</span> Great British Cheese Festival</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="tickets.html" aria-current="page">Tickets</a></li>
+      <li><a href="vendors.html">Stallholders</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <a href="#buy" class="btn btn-primary nav-cta">Buy Tickets</a>
+    <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="mobile-panel">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+  <div class="mobile-panel" id="mobile-panel">
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="tickets.html">Tickets</a></li>
+      <li><a href="vendors.html">Stallholders</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <a href="#buy" class="btn btn-primary btn-block">Buy Tickets</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="page-hero">
+    <div class="container">
+      <h1>Buy tickets</h1>
+      <p>Pick a day, click buy — you're taken straight to secure checkout. Tickets arrive by email, nothing to print.</p>
+    </div>
+  </section>
+
+  <section id="buy">
+    <div class="container">
+
+      <div class="section-head" data-reveal>
+        <span class="eyebrow">Step 1</span>
+        <h2>Choose your day</h2>
+      </div>
+      <div class="grid grid-3" style="margin-bottom: var(--space-2xl);">
+        <div class="ticket-card" data-reveal>
+          <span class="ticket-status on-sale">On sale</span>
+          <h3>Friday 12 June</h3>
+          <div class="price">£12<span>/adult</span></div>
+          <ul>
+            <li>10am–6pm</li>
+            <li>Quietest day — best for families</li>
+            <li>Under 12s go free</li>
+          </ul>
+          <!-- Replace # with your Ticket Tailor / Eventbrite checkout URL for this date -->
+          <a href="#" class="btn btn-primary btn-block" data-buy="friday">Buy Friday tickets</a>
+        </div>
+        <div class="ticket-card is-featured" data-reveal>
+          <span class="ticket-badge">Most popular</span>
+          <span class="ticket-status limited">Selling fast</span>
+          <h3>Saturday 13 June</h3>
+          <div class="price">£15<span>/adult</span></div>
+          <ul>
+            <li>10am–7pm</li>
+            <li>British Cheese Awards live judging</li>
+            <li>Under 12s go free</li>
+          </ul>
+          <a href="#" class="btn btn-primary btn-block" data-buy="saturday">Buy Saturday tickets</a>
+        </div>
+        <div class="ticket-card" data-reveal>
+          <span class="ticket-status on-sale">On sale</span>
+          <h3>Sunday 14 June</h3>
+          <div class="price">£12<span>/adult</span></div>
+          <ul>
+            <li>10am–5pm</li>
+            <li>Award winners' tasting hall</li>
+            <li>Under 12s go free</li>
+          </ul>
+          <a href="#" class="btn btn-primary btn-block" data-buy="sunday">Buy Sunday tickets</a>
+        </div>
+      </div>
+
+      <div class="section-head" data-reveal>
+        <span class="eyebrow">Or go all in</span>
+        <h2>The Weekend Pass</h2>
+      </div>
+      <div class="grid grid-2" style="max-width: 780px; margin: 0 auto var(--space-2xl);">
+        <div class="ticket-card is-featured" data-reveal>
+          <span class="ticket-badge">Best value</span>
+          <h3>Weekend Pass</h3>
+          <div class="price">£28<span>/adult</span></div>
+          <ul>
+            <li>Come and go across all 3 days</li>
+            <li>Fast-track entry lane</li>
+            <li>Free festival tote bag</li>
+          </ul>
+          <a href="#" class="btn btn-primary btn-block" data-buy="weekend">Buy Weekend Pass</a>
+        </div>
+        <div class="ticket-card" data-reveal>
+          <h3>Tasting Hall VIP</h3>
+          <div class="price">£45<span>/adult</span></div>
+          <ul>
+            <li>Everything in the Weekend Pass</li>
+            <li>1hr guided cheese &amp; cider pairing</li>
+            <li>VIP lounge with seating</li>
+          </ul>
+          <a href="#" class="btn btn-secondary btn-block" data-buy="vip">Buy VIP tickets</a>
+        </div>
+      </div>
+
+      <div class="card text-center" style="max-width:600px;margin:0 auto;" data-reveal>
+        <h3>Group of 10+?</h3>
+        <p>Get in touch for group rates and coach parking.</p>
+        <a href="contact.html" class="btn btn-ghost">Contact us about groups</a>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section-tight" style="background: var(--colour-cream-dark);">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <span class="eyebrow">Checkout FAQs</span>
+        <h2>Before you buy</h2>
+      </div>
+      <div style="max-width:720px;margin:0 auto;">
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="true" aria-controls="faq-1">How do I receive my tickets?<span class="plus">+</span></button>
+          <div class="accordion-panel is-open" id="faq-1"><p>Straight to your inbox as an e-ticket seconds after payment — just show it on your phone at the gate.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false" aria-controls="faq-2">Can I change my date after booking?<span class="plus">+</span></button>
+          <div class="accordion-panel" id="faq-2"><p>Yes, subject to availability — reply to your confirmation email and we'll move it for you.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false" aria-controls="faq-3">Is parking included?<span class="plus">+</span></button>
+          <div class="accordion-panel" id="faq-3"><p>On-site parking is free for all ticket holders — just follow signs from the A37 on the day.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h4>Great British Cheese Festival</h4>
+        <p style="max-width:320px;">Bath &amp; West Showground, Shepton Mallet BA4 6QN · 12–14 June 2026</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <a href="tickets.html">Tickets</a>
+        <a href="vendors.html">Stallholders</a>
+        <a href="about.html">About</a>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <a href="contact.html">Contact us</a>
+        <a href="privacy.html">Privacy policy</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 The Great British Cheese Festival</span>
+      <span>Made with 🧀 in the West Country</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>

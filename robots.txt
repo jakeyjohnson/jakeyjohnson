@@ -1,8 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /admin.html
-Disallow: /admin/
-Disallow: /eventmanager.html
-Disallow: /eventmanager/
 
-Sitemap: https://partypadel.uk/sitemap.xml
+Sitemap: https://greatbritishcheesefestival.co.uk/sitemap.xml

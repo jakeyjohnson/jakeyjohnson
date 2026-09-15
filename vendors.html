@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stallholders — The Great British Cheese Festival</title>
+<meta name="description" content="Apply for a stall at The Great British Cheese Festival and reach 15,000+ visitors over one weekend.">
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="nav">
+    <a href="index.html" class="nav-logo"><span class="wheel">🧀</span> Great British Cheese Festival</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="tickets.html">Tickets</a></li>
+      <li><a href="vendors.html" aria-current="page">Stallholders</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <a href="tickets.html" class="btn btn-primary nav-cta">Buy Tickets</a>
+    <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="mobile-panel">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+  <div class="mobile-panel" id="mobile-panel">
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="tickets.html">Tickets</a></li>
+      <li><a href="vendors.html">Stallholders</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <a href="tickets.html" class="btn btn-primary btn-block">Buy Tickets</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="page-hero">
+    <div class="container">
+      <h1>Trade at the festival</h1>
+      <p>120+ pitches across cheese, cider, craft beer and artisan food. Apply below — we get back to every applicant within 5 working days.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="grid grid-3" style="margin-bottom: var(--space-2xl);">
+        <div class="card text-center" data-reveal>
+          <div class="icon">👀</div>
+          <h3>15,000+ visitors</h3>
+          <p>Across the weekend, all there specifically to buy and taste cheese and drink.</p>
+        </div>
+        <div class="card text-center" data-reveal>
+          <div class="icon">🏕️</div>
+          <h3>Pitch from £180</h3>
+          <p>3x3m gazebo pitch, power available, includes 2 trader wristbands.</p>
+        </div>
+        <div class="card text-center" data-reveal>
+          <div class="icon">📦</div>
+          <h3>Full weekend access</h3>
+          <p>Load-in Thursday evening, on-site parking for your van right by your pitch.</p>
+        </div>
+      </div>
+
+      <div class="section-head" data-reveal>
+        <span class="eyebrow">This year's stallholders</span>
+        <h2>Meet a few of the makers already confirmed</h2>
+      </div>
+      <div class="grid grid-3" style="margin-bottom: var(--space-2xl);">
+        <div class="card vendor-card" data-reveal>
+          <span class="tag">Cheddar</span>
+          <h3>Mendip Hills Dairy</h3>
+          <p>Award-winning clothbound cheddar, aged 18 months in a Somerset cave.</p>
+        </div>
+        <div class="card vendor-card" data-reveal>
+          <span class="tag">Goat's cheese</span>
+          <h3>Willow Farm Creamery</h3>
+          <p>Small-batch soft goat's cheese from a 40-strong herd in Devon.</p>
+        </div>
+        <div class="card vendor-card" data-reveal>
+          <span class="tag">Cider</span>
+          <h3>Orchard &amp; Oak</h3>
+          <p>Single-varietal ciders pressed from a 200-year-old West Country orchard.</p>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-columns: 1fr 1fr; gap: var(--space-xl); align-items: start;" id="apply">
+        <div data-reveal>
+          <h2>Apply for a pitch</h2>
+          <p>Tell us a bit about what you make and we'll follow up with pitch options and pricing. Priority given to independent producers — no resellers.</p>
+          <ul style="color: var(--colour-ink-soft); padding-left: 1.1rem;">
+            <li>Public liability insurance required (min £5m)</li>
+            <li>Food hygiene certification for any tastings/samples</li>
+            <li>Applications close 1 May 2026</li>
+          </ul>
+        </div>
+        <form class="card" data-reveal id="vendor-form" novalidate>
+          <div class="form-field">
+            <label for="v-business">Business name</label>
+            <input type="text" id="v-business" name="business" required>
+          </div>
+          <div class="form-field">
+            <label for="v-contact">Contact name</label>
+            <input type="text" id="v-contact" name="contact" autocomplete="name" required>
+          </div>
+          <div class="form-field">
+            <label for="v-email">Email</label>
+            <input type="email" id="v-email" name="email" autocomplete="email" required>
+          </div>
+          <div class="form-field">
+            <label for="v-phone">Phone</label>
+            <input type="tel" id="v-phone" name="phone" autocomplete="tel" required>
+          </div>
+          <div class="form-field">
+            <label for="v-category">What do you sell?</label>
+            <select id="v-category" name="category" required>
+              <option value="">Choose one…</option>
+              <option>Cheese</option>
+              <option>Cider / beer</option>
+              <option>Other artisan food &amp; drink</option>
+              <option>Non-food trade stand</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="v-details">Tell us about your business</label>
+            <textarea id="v-details" name="details" rows="4" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Submit application</button>
+          <p id="vendor-success" class="form-success" style="display:none; margin-top: var(--space-sm);">Thanks — your application's in. We'll be in touch within 5 working days.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h4>Great British Cheese Festival</h4>
+        <p style="max-width:320px;">Bath &amp; West Showground, Shepton Mallet BA4 6QN · 12–14 June 2026</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <a href="tickets.html">Tickets</a>
+        <a href="vendors.html">Stallholders</a>
+        <a href="about.html">About</a>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <a href="contact.html">Contact us</a>
+        <a href="privacy.html">Privacy policy</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 The Great British Cheese Festival</span>
+      <span>Made with 🧀 in the West Country</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+<script>
+document.getElementById('vendor-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  document.getElementById('vendor-success').style.display = 'block';
+  this.reset();
+});
+</script>
+</body>
+</html>
