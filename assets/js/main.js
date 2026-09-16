@@ -26,6 +26,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Countdown to gates opening, Sat 16 May 2026, 10:00
+  const cd = document.getElementById('countdown');
+  if (cd) {
+    const target = new Date('2026-05-16T10:00:00+01:00').getTime();
+    const fields = {};
+    cd.querySelectorAll('[data-cd]').forEach((el) => { fields[el.dataset.cd] = el; });
+    const pad = (n) => String(n).padStart(2, '0');
+    let timer = null;
+    const tick = () => {
+      const diff = target - Date.now();
+      if (diff <= 0) {
+        cd.hidden = true;
+        if (timer) clearInterval(timer);
+        return;
+      }
+      const s = Math.floor(diff / 1000);
+      fields.days.textContent = Math.floor(s / 86400);
+      fields.hours.textContent = pad(Math.floor(s / 3600) % 24);
+      fields.mins.textContent = pad(Math.floor(s / 60) % 60);
+      fields.secs.textContent = pad(s % 60);
+    };
+    tick();
+    if (!cd.hidden) timer = setInterval(tick, 1000);
+  }
+
   // FAQ accordion
   document.querySelectorAll('.accordion-trigger').forEach((btn) => {
     btn.addEventListener('click', () => {

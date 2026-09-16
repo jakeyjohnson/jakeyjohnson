@@ -1,36 +1,44 @@
 /* The Great British Cheese Festival — design tokens.
    Every colour/type/spacing/radius value used anywhere on the site lives here. */
 :root {
-  /* Colour — cream + navy from thegreatbritishcheesefestival.co.uk,
-     one gold accent used editorially (never decoratively) */
+  /* Colour — brand cream + navy from the logo, with village-fete accents
+     (the bunting palette) doing the heavy lifting */
   --colour-cream: #FDF1E0;
-  --colour-paper: #F8E9D0;
+  --colour-paper: #FBE6C8;
   --colour-navy: #1E3A8A;
-  --colour-navy-deep: #14265E;
-  --colour-gold: #B9812C;
-  --colour-gold-bright: #D89A3B;
-  --colour-ink: #23324A;
-  --colour-ink-soft: #55627A;
+  --colour-navy-deep: #16296B;
+  --colour-ink: #2C2113;
+  --colour-ink-soft: #6B5B47;
   --colour-white: #FFFDF8;
-  --colour-line: rgba(30, 58, 138, 0.22);
-  --colour-line-soft: rgba(30, 58, 138, 0.12);
-  --colour-success: #3F7A4E;
-  --colour-error: #A8402C;
 
-  /* Type — Fraunces at editorial weight/optical-size extremes for display,
-     DM Sans for body/UI. Loaded via Google Fonts in style.css. */
-  --font-display: "Fraunces", "Georgia Pro", Georgia, serif;
-  --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "DM Mono", "SFMono-Regular", Consolas, monospace;
+  /* Fete accents */
+  --colour-tomato: #D9482F;
+  --colour-sunshine: #F2B705;
+  --colour-sunshine-deep: #DA9F00;
+  --colour-pink: #E0568C;
+  --colour-sage: #6E9B62;
+  --colour-sky: #4FA3C4;
 
-  --size-xs: 0.78rem;
-  --size-sm: 0.92rem;
-  --size-base: 1rem;
-  --size-md: 1.15rem;
-  --size-lg: 1.5rem;
-  --size-xl: 2.1rem;
-  --size-2xl: 3.2rem;
-  --size-3xl: clamp(2.8rem, 7vw, 5.6rem);
+  --colour-line: rgba(44, 33, 19, 0.16);
+  --colour-line-soft: rgba(44, 33, 19, 0.08);
+  --colour-success: #4A8A56;
+  --colour-error: #C0392B;
+
+  /* Type — Anton for festival-poster headlines (big, condensed, shouty),
+     Oswald for labels, Abril for the odd fat-serif flourish, Nunito for body */
+  --font-display: "Anton", "Arial Narrow", sans-serif;
+  --font-fat: "Abril Fatface", Georgia, serif;
+  --font-condensed: "Oswald", "Arial Narrow", sans-serif;
+  --font-body: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --size-xs: 0.8rem;
+  --size-sm: 0.95rem;
+  --size-base: 1.05rem;
+  --size-md: 1.2rem;
+  --size-lg: 1.6rem;
+  --size-xl: 2.2rem;
+  --size-2xl: 3rem;
+  --size-3xl: clamp(2.9rem, 7vw, 5.4rem);
 
   /* Spacing */
   --space-2xs: 0.25rem;
@@ -39,18 +47,18 @@
   --space-md: 1.6rem;
   --space-lg: 2.75rem;
   --space-xl: 4.5rem;
-  --space-2xl: 7rem;
+  --space-2xl: 6.5rem;
 
-  /* Shape — editorial: square-cornered, rules over shadows */
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 4px;
-  --radius-pill: 2px;
+  /* Shape — rounded and friendly, not boxed off */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
 
-  /* Effects */
-  --shadow-sm: 0 1px 0 var(--colour-line);
-  --shadow-md: 0 18px 40px rgba(20, 38, 94, 0.14);
-  --shadow-lift: 0 24px 50px rgba(20, 38, 94, 0.2);
+  /* Effects — hard fairground-sign shadows, never soft corporate blur */
+  --shadow-hard: 4px 4px 0 var(--colour-navy);
+  --shadow-hard-sm: 3px 3px 0 var(--colour-navy);
+  --shadow-soft: 0 10px 28px rgba(44, 33, 19, 0.16);
 
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease: cubic-bezier(0.34, 1.3, 0.64, 1);
 }
