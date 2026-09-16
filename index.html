@@ -10,6 +10,16 @@
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="chalk" x="-6%" y="-6%" width="112%" height="112%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" seed="7" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="rough" x="-4%" y="-4%" width="108%" height="108%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="11" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
 <a class="skip-link" href="#main">Skip to content</a>
 
 <header class="site-header">
@@ -177,15 +187,29 @@
   <section class="section-tight kraft">
     <div class="container" style="max-width: 860px;">
       <div class="chalkboard" data-reveal>
-        <div class="chalk-head">Running order — both days</div>
+        <svg class="chalk-doodle tr" viewBox="0 0 120 90" fill="none" aria-hidden="true">
+          <path d="M14 70 L60 14 L106 70 Z" stroke="#FFD98E" stroke-width="3.5" stroke-linejoin="round"/>
+          <circle cx="52" cy="52" r="7" stroke="#FFD98E" stroke-width="3"/>
+          <circle cx="76" cy="58" r="5" stroke="#FFD98E" stroke-width="3"/>
+          <circle cx="62" cy="36" r="4" stroke="#FFD98E" stroke-width="3"/>
+        </svg>
+        <svg class="chalk-doodle bl" viewBox="0 0 150 60" fill="none" aria-hidden="true">
+          <path d="M6 40 C36 8, 74 8, 110 34" stroke="#A8D8EA" stroke-width="3.5" stroke-linecap="round"/>
+          <path d="M96 20 L114 36 L92 44" stroke="#A8D8EA" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="chalk-head">Running order</div>
+        <div class="chalk-sub">~ both days ~</div>
+        <svg class="chalk-rule" viewBox="0 0 600 14" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M6 8 C120 2, 240 12, 360 6 S540 2, 594 9" stroke="#FFFDF8" stroke-width="2.5" fill="none" stroke-linecap="round" filter="url(#chalk)"/>
+        </svg>
         <div class="chalk-row"><span class="t">10:00</span><span class="w">Farmers market opens<small>Gates, coffee, and first pick of the stalls</small></span></div>
         <div class="chalk-row"><span class="t">11:30</span><span class="w">Cheesemaking demo<small>Live in the demo tent, hourly after this</small></span></div>
         <div class="chalk-row"><span class="t">13:30</span><span class="w">Market closes, main arena opens<small>Half an hour to find a good spot</small></span></div>
         <div class="chalk-row"><span class="t">14:00</span><span class="w">Main event begins<small>Funfair and bands Saturday · orchestra Sunday</small></span></div>
         <div class="chalk-row"><span class="t">17:00</span><span class="w">Cheese &amp; cider pairing<small>Ticketed sessions in the VIP tent</small></span></div>
         <div class="chalk-row"><span class="t">21:30</span><span class="w">Last orders, lights down<small>Saturday goes late; Sunday ends on the spectacle</small></span></div>
+        <p class="chalk-hand" style="text-align:center; font-size:1.3rem; color:#F7B7D2; margin:var(--space-md) 0 0; transform:rotate(-0.8deg);">Times may shift a bit on the day &mdash; it&rsquo;s a fete, not a train timetable!</p>
       </div>
-      <p class="scrawl" style="margin-top: var(--space-md);">Times may shift a bit on the day &mdash; it&rsquo;s a fete, not a train timetable</p>
     </div>
   </section>
 

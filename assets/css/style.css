@@ -2,6 +2,35 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+
+/* ——— TEXTURE ————————————————————————————————————————————
+   Everything here is printed, painted or chalked on something: paper fibre,
+   slate grain, wood. These turbulence-generated noise fields sit under the
+   design so nothing reads as flat vector fill. */
+:root {
+  --tex-paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23f)' opacity='0.42'/%3E%3C/svg%3E");
+  --tex-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.5'/%3E%3C/svg%3E");
+  --tex-slate: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23s)' opacity='0.5'/%3E%3C/svg%3E");
+  --tex-wood: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014 0.42' numOctaves='5' seed='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='200' filter='url(%23w)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+/* Film grain over the entire page — the single biggest anti-flatness move */
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  background-image: var(--tex-grain); background-size: 160px 160px;
+  opacity: 0.16; mix-blend-mode: multiply;
+}
+
+/* Rough, hand-cut edges instead of perfect rounded rectangles.
+   The filter is applied to a backdrop pseudo-element so text stays crisp. */
+.rough-edge { position: relative; border: none !important; background: transparent !important; box-shadow: none !important; }
+.rough-edge > * { position: relative; z-index: 1; }
+.rough-edge::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background: var(--rough-fill, var(--colour-white));
+  border: 2.5px solid var(--colour-navy); border-radius: var(--radius-md);
+  filter: url(#rough); box-shadow: var(--shadow-hard-sm);
+}
 body {
   margin: 0;
   font-family: var(--font-body);
@@ -11,9 +40,11 @@ body {
   -webkit-font-smoothing: antialiased;
   /* faint gingham wash — tablecloth, not grid paper */
   background-image:
+    var(--tex-paper),
     linear-gradient(rgba(217,72,47,0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(217,72,47,0.035) 1px, transparent 1px);
-  background-size: 34px 34px, 34px 34px;
+  background-size: 220px 220px, 34px 34px, 34px 34px;
+  background-blend-mode: multiply, normal, normal;
 }
 img { max-width: 100%; display: block; }
 [hidden] { display: none !important; }
@@ -281,30 +312,77 @@ section { padding: var(--space-2xl) 0; position: relative; }
 }
 .taped-sun::before { background: repeating-linear-gradient(45deg, rgba(242,183,5,0.6) 0 7px, rgba(242,183,5,0.38) 7px 14px); }
 
-/* ——— CHALKBOARD PROGRAMME ——— */
+/* ——— CHALKBOARD PROGRAMME ————————————————————————————————
+   Everything on the board is hand-written in Caveat and pushed through an
+   SVG turbulence filter (#chalk, inlined in the page) so the strokes break
+   up at the edges the way real chalk does. Chalk comes in a box of colours,
+   so the board uses the whole box rather than one. */
 .chalkboard {
+  position: relative;
   background: var(--colour-slate);
   background-image:
-    radial-gradient(ellipse at 22% 28%, rgba(255,255,255,0.045) 0%, transparent 55%),
-    radial-gradient(ellipse at 78% 72%, rgba(255,255,255,0.035) 0%, transparent 50%);
-  border: 10px solid #6B4B2A; border-radius: var(--radius-md);
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.14), var(--shadow-soft);
+    radial-gradient(ellipse at 22% 28%, rgba(255,255,255,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse at 78% 72%, rgba(255,255,255,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.06) 0%, transparent 60%);
+  border: 12px solid #6B4B2A;
+  border-image: linear-gradient(160deg, #8A6435, #5A3E20 45%, #7A5529) 1;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12), inset 0 0 70px rgba(0,0,0,0.45), var(--shadow-soft);
   padding: var(--space-lg) var(--space-md);
   color: #F4F1E6;
 }
-.chalkboard h2, .chalkboard h3 { color: #F4F1E6; }
+/* smeared chalk dust across the slate */
+.chalkboard::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.55;
+  background-image:
+    var(--tex-slate),
+    radial-gradient(ellipse 60% 18% at 30% 22%, rgba(255,255,255,0.06), transparent 70%),
+    radial-gradient(ellipse 45% 12% at 72% 55%, rgba(255,255,255,0.05), transparent 70%),
+    radial-gradient(ellipse 70% 14% at 50% 88%, rgba(255,255,255,0.045), transparent 70%);
+  background-size: 300px 300px, auto, auto, auto;
+  mix-blend-mode: overlay;
+}
+.chalkboard > * { position: relative; }
+
+/* every mark on the board is hand-drawn */
+.chalk-hand { font-family: var(--font-hand); font-weight: 700; filter: url(#chalk); }
+
 .chalkboard .chalk-head {
-  font-family: var(--font-hand); font-size: 2.1rem; color: var(--colour-sunshine);
-  text-align: center; margin-bottom: var(--space-md); transform: rotate(-1deg);
+  font-family: var(--font-hand); font-weight: 700; font-size: 2.6rem; color: #FFFDF8;
+  text-align: center; margin-bottom: 0.2rem; transform: rotate(-1.2deg); filter: url(#chalk);
 }
+.chalkboard .chalk-sub {
+  font-family: var(--font-hand); font-size: 1.35rem; text-align: center; color: var(--colour-sunshine);
+  margin-bottom: var(--space-md); transform: rotate(0.6deg); filter: url(#chalk);
+}
+.chalk-rule { display: block; width: 100%; height: 14px; margin: 0 auto var(--space-md); opacity: 0.85; }
+
 .chalk-row {
-  display: grid; grid-template-columns: 5.5rem 1fr; gap: var(--space-md); align-items: baseline;
-  padding: 0.55rem 0; border-bottom: 1px dashed rgba(244,241,230,0.25);
+  display: grid; grid-template-columns: 6.5rem 1fr; gap: var(--space-md); align-items: baseline;
+  padding: 0.5rem 0; font-family: var(--font-hand); filter: url(#chalk);
 }
-.chalk-row:last-child { border-bottom: none; }
-.chalk-row .t { font-family: var(--font-condensed); font-weight: 600; letter-spacing: 0.06em; color: var(--colour-sunshine); }
-.chalk-row .w { font-weight: 600; }
-.chalk-row .w small { display: block; font-weight: 400; font-size: 0.85rem; color: rgba(244,241,230,0.7); }
+/* hand-ruled dividing line, not a CSS border */
+.chalk-row + .chalk-row { border-top: 2px solid rgba(244,241,230,0.18); border-radius: 40%; }
+.chalk-row .t { font-size: 1.55rem; font-weight: 700; line-height: 1; }
+.chalk-row .w { font-size: 1.5rem; font-weight: 700; line-height: 1.15; }
+.chalk-row .w small {
+  display: block; font-family: var(--font-body); font-weight: 400; font-size: 0.82rem;
+  color: rgba(244,241,230,0.68); margin-top: 0.15rem;
+}
+/* a box of chalk, not a single stick */
+.chalk-row:nth-child(6n+1) .t { color: #FFFDF8; } .chalk-row:nth-child(6n+1) .w { color: #FFF3C4; }
+.chalk-row:nth-child(6n+2) .t { color: #F7B7D2; } .chalk-row:nth-child(6n+2) .w { color: #FFFDF8; }
+.chalk-row:nth-child(6n+3) .t { color: #A8D8EA; } .chalk-row:nth-child(6n+3) .w { color: #D9F2C4; }
+.chalk-row:nth-child(6n+4) .t { color: #FFD98E; } .chalk-row:nth-child(6n+4) .w { color: #FFFDF8; }
+.chalk-row:nth-child(6n+5) .t { color: #C7B8F0; } .chalk-row:nth-child(6n+5) .w { color: #FFE3B0; }
+.chalk-row:nth-child(6n+6) .t { color: #9FE0C4; } .chalk-row:nth-child(6n+6) .w { color: #FFFDF8; }
+/* slight wobble per line — nobody writes perfectly straight */
+.chalk-row:nth-child(odd) { transform: rotate(-0.35deg); }
+.chalk-row:nth-child(even) { transform: rotate(0.3deg); }
+
+.chalk-doodle { position: absolute; opacity: 0.9; filter: url(#chalk); pointer-events: none; }
+.chalk-doodle.tr { top: 10px; right: 18px; width: 92px; }
+.chalk-doodle.bl { bottom: 8px; left: 18px; width: 118px; }
 
 /* ——— THE CHEESE COUNTER ————————————————————————————————
    Wooden counter with slate price tags propped against the cheese,
@@ -312,9 +390,11 @@ section { padding: var(--space-2xl) 0; position: relative; }
 .counter {
   background-color: #6B4B2A;
   background-image:
-    repeating-linear-gradient(90deg, rgba(0,0,0,0.10) 0 2px, transparent 2px 9px),
-    repeating-linear-gradient(0deg, rgba(255,255,255,0.045) 0 1px, transparent 1px 6px),
-    linear-gradient(180deg, rgba(255,255,255,0.09), rgba(0,0,0,0.22));
+    var(--tex-wood),
+    repeating-linear-gradient(88deg, rgba(0,0,0,0.09) 0 2px, transparent 2px 11px),
+    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.26));
+  background-size: 400px 200px, auto, auto;
+  background-blend-mode: multiply, overlay, normal;
   border-top: 4px solid var(--colour-navy); border-bottom: 4px solid var(--colour-navy);
   padding: var(--space-xl) 0;
 }
@@ -325,7 +405,9 @@ section { padding: var(--space-2xl) 0; position: relative; }
 
 /* A slate price tag */
 .tag-slate {
-  position: relative; background: var(--colour-slate); color: #F4F1E6;
+  position: relative; color: #F4F1E6;
+  background-color: var(--colour-slate);
+  background-image: var(--tex-slate); background-size: 300px 300px; background-blend-mode: overlay;
   border-radius: 6px; padding: 0.9rem 1.2rem 1rem; min-width: 168px; text-align: center;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.16), 3px 4px 0 rgba(0,0,0,0.35);
   transform: rotate(var(--tilt, -2deg));
@@ -350,10 +432,12 @@ section { padding: var(--space-2xl) 0; position: relative; }
 .kraft {
   background-color: #E8D5B0;
   background-image:
+    var(--tex-paper),
     radial-gradient(circle at 20% 30%, rgba(255,255,255,0.5) 0 2px, transparent 3px),
     radial-gradient(circle at 70% 60%, rgba(160,130,90,0.16) 0 3px, transparent 4px),
     radial-gradient(circle at 45% 85%, rgba(255,255,255,0.35) 0 2px, transparent 3px);
-  background-size: 70px 70px, 110px 110px, 90px 90px;
+  background-size: 220px 220px, 70px 70px, 110px 110px, 90px 90px;
+  background-blend-mode: multiply, normal, normal, normal;
 }
 
 /* ——— ATTRACTION TILES ——— */
@@ -403,8 +487,8 @@ section { padding: var(--space-2xl) 0; position: relative; }
 .hero-facts { display: flex; gap: var(--space-md); flex-wrap: wrap; }
 .hero-fact {
   flex: 1 1 150px; background: var(--colour-white); border: 2.5px solid var(--colour-navy);
-  border-radius: var(--radius-lg); padding: var(--space-sm) var(--space-md); text-align: center;
-  box-shadow: var(--shadow-hard-sm);
+  border-radius: 22px 26px 20px 28px / 26px 20px 28px 22px;
+  padding: var(--space-sm) var(--space-md); text-align: center; box-shadow: var(--shadow-hard-sm);
 }
 .hero-fact:nth-child(even) { transform: rotate(1.2deg); }
 .hero-fact:nth-child(odd) { transform: rotate(-1.2deg); }
@@ -426,12 +510,18 @@ section { padding: var(--space-2xl) 0; position: relative; }
 .feature-list { display: grid; gap: var(--space-md); }
 @media (min-width: 760px) { .feature-list { grid-template-columns: 1fr 1fr; } }
 .feature-row {
-  display: grid; grid-template-columns: auto 1fr; gap: var(--space-md); align-items: start;
-  background: var(--colour-white); border: 2.5px solid var(--colour-navy); border-radius: var(--radius-lg);
-  padding: var(--space-md); box-shadow: var(--shadow-hard-sm);
+  position: relative; display: grid; grid-template-columns: auto 1fr; gap: var(--space-md);
+  align-items: start; padding: var(--space-md);
+}
+.feature-row > * { position: relative; z-index: 1; }
+.feature-row::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; background: var(--colour-white);
+  border: 2.5px solid var(--colour-navy); border-radius: var(--radius-lg);
+  filter: url(#rough); box-shadow: var(--shadow-hard-sm);
 }
 .feature-row .num {
-  display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%;
+  display: grid; place-items: center; width: 54px; height: 54px;
+  border-radius: 48% 52% 51% 49% / 50% 49% 51% 50%;
   background: var(--colour-sunshine); border: 2.5px solid var(--colour-navy);
   font-family: var(--font-condensed); font-weight: 600; font-size: 0.9rem; color: var(--colour-navy);
   text-transform: uppercase; letter-spacing: 0.04em;
@@ -450,18 +540,28 @@ section { padding: var(--space-2xl) 0; position: relative; }
 @media (max-width: 620px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
 
 /* ——— CARDS ——— */
+/* Cards sit on a roughened backdrop so the edge looks cut, not rendered.
+   The filter is on ::before only — the text above it stays sharp. */
 .card {
-  background: var(--colour-white); padding: var(--space-md);
-  border: 2.5px solid var(--colour-navy); border-radius: var(--radius-lg); box-shadow: var(--shadow-hard-sm);
+  position: relative; padding: var(--space-md); border: none; background: transparent; box-shadow: none;
+}
+.card > * { position: relative; z-index: 1; }
+.card::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background: var(--colour-white);
+  border: 2.5px solid var(--colour-navy); border-radius: var(--radius-lg);
+  filter: url(#rough); box-shadow: var(--shadow-hard-sm);
 }
 .card h3 { font-size: var(--size-md); color: var(--colour-navy); }
 
 /* ——— TICKET STUBS ——— */
 .ticket-card {
-  background: var(--colour-white); border: 2.5px solid var(--colour-navy); border-radius: var(--radius-lg);
+  background: var(--colour-white); border: 2.5px solid var(--colour-navy);
+  border-radius: 20px 24px 18px 26px / 24px 18px 26px 20px;
   padding: var(--space-lg) var(--space-md) var(--space-md);
   display: flex; flex-direction: column; gap: var(--space-sm); position: relative;
   box-shadow: var(--shadow-hard);
+  background-image: var(--tex-paper); background-size: 220px 220px; background-blend-mode: multiply;
 }
 /* punched holes down each side, like a torn-off stub */
 .ticket-card::before, .ticket-card::after {
@@ -500,6 +600,12 @@ section { padding: var(--space-2xl) 0; position: relative; }
 .plate { margin: 0; background: var(--colour-white); padding: 10px 10px 0; border: 2.5px solid var(--colour-navy);
   border-radius: var(--radius-md); box-shadow: var(--shadow-hard-sm); }
 .plate img { width: 100%; height: auto; display: block; border-radius: 4px; }
+.plate { position: relative; }
+.plate::after {
+  content: ''; position: absolute; inset: 10px 10px auto; height: calc(100% - 3.4rem);
+  background-image: var(--tex-grain); background-size: 160px 160px; opacity: 0.12;
+  mix-blend-mode: multiply; pointer-events: none;
+}
 .plate figcaption {
   font-family: var(--font-condensed); font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--colour-navy); padding: 0.7rem 0.2rem; display: flex; justify-content: space-between; gap: var(--space-sm);
@@ -563,8 +669,13 @@ section { padding: var(--space-2xl) 0; position: relative; }
 
 /* ——— ACCORDION ——— */
 .accordion-item {
-  background: var(--colour-white); border: 2.5px solid var(--colour-navy); border-radius: var(--radius-md);
-  margin-bottom: var(--space-sm); overflow: hidden;
+  position: relative; margin-bottom: var(--space-sm);
+}
+.accordion-item > * { position: relative; z-index: 1; }
+.accordion-item::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; background: var(--colour-white);
+  border: 2.5px solid var(--colour-navy); border-radius: var(--radius-md);
+  filter: url(#rough); box-shadow: var(--shadow-hard-sm);
 }
 .accordion-trigger {
   width: 100%; text-align: left; background: none; border: none; cursor: pointer;
