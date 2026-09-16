@@ -401,7 +401,37 @@ section { padding: var(--space-2xl) 0; position: relative; }
 .counter .counter-head { text-align: center; margin-bottom: var(--space-lg); }
 .counter .counter-head h2 { color: var(--colour-cream); }
 .counter .counter-head p { color: rgba(253,241,224,0.85); max-width: 60ch; margin: 0 auto; }
-.tags { display: flex; flex-wrap: wrap; gap: var(--space-md); justify-content: center; }
+
+/* The display itself: real cheese, with the tags stuck into it.
+   Mobile stacks them in flow; from 760px they're pegged onto the wheels. */
+.display-case {
+  position: relative; border: 4px solid var(--colour-navy); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-hard); overflow: hidden; background-size: cover; background-position: center;
+}
+.display-case::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(20,26,22,0.32) 0%, rgba(20,26,22,0.05) 35%, rgba(20,26,22,0.45) 100%);
+}
+.tags {
+  position: relative; display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md) var(--space-sm); padding: var(--space-md) var(--space-sm) var(--space-lg);
+  justify-items: center;
+}
+
+@media (min-width: 760px) {
+  .display-case { min-height: 620px; }
+  .tags { display: block; padding: 0; height: 620px; }
+  .tags .tag-slate { position: absolute; margin: 0; }
+  /* pegged where the cheese actually sits in the photograph */
+  .tags .tag-slate:nth-child(1) { top: 7%;  left: 5%;  --tilt: -4deg; }
+  .tags .tag-slate:nth-child(2) { top: 15%; left: 37%; --tilt: 3deg; }
+  .tags .tag-slate:nth-child(3) { top: 6%;  left: 70%; --tilt: -2deg; }
+  .tags .tag-slate:nth-child(4) { top: 40%; left: 14%; --tilt: 2.5deg; }
+  .tags .tag-slate:nth-child(5) { top: 46%; left: 52%; --tilt: -3deg; }
+  .tags .tag-slate:nth-child(6) { top: 37%; left: 78%; --tilt: 4deg; }
+  .tags .tag-slate:nth-child(7) { top: 72%; left: 28%; --tilt: -2deg; }
+  .tags .tag-slate:nth-child(8) { top: 76%; left: 62%; --tilt: 3deg; }
+}
 
 /* A slate price tag */
 .tag-slate {
@@ -422,10 +452,20 @@ section { padding: var(--space-2xl) 0; position: relative; }
   display: block; font-family: var(--font-condensed); font-size: 0.7rem; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--colour-sunshine); margin-top: 0.25rem;
 }
-/* the little wire spike that stakes the tag into the cheese */
+/* The wire spike, driven into the wheel. It sits behind the tag and casts a
+   small shadow where it enters the rind, so the tag reads as standing in the
+   cheese rather than floating in front of it. */
 .tag-slate::after {
-  content: ''; position: absolute; left: 50%; bottom: -14px; width: 2px; height: 14px;
-  background: rgba(0,0,0,0.4); transform: translateX(-50%);
+  content: ''; position: absolute; left: 50%; bottom: -22px; width: 3px; height: 24px;
+  transform: translateX(-50%); border-radius: 0 0 2px 2px;
+  background: linear-gradient(to bottom, #B9B4AA 0%, #8C877E 55%, rgba(60,50,35,0.85) 100%);
+  box-shadow: 0 0 5px 2px rgba(0,0,0,0.28);
+}
+/* the dimple where the wire goes in */
+.tag-slate::before {
+  content: ''; position: absolute; left: 50%; bottom: -25px; width: 16px; height: 7px;
+  transform: translateX(-50%); border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 70%);
 }
 
 /* ——— KRAFT / GREASEPROOF PAPER PANEL ——— */
@@ -750,4 +790,19 @@ section { padding: var(--space-2xl) 0; position: relative; }
   [data-reveal] { transition: none; }
   .btn { transition: none; }
   html { scroll-behavior: auto; }
+}
+
+/* Narrow screens: the price tags sit square in a two-up grid. Placed at the
+   end of the file so these beat the base .tag-slate sizing. */
+@media (max-width: 759px) {
+  .tags .tag-slate,
+  .tags .tag-slate:nth-child(even),
+  .tags .tag-slate:nth-child(3n) { --tilt: 0deg; }
+  .tags .tag-slate {
+    min-width: 0; width: 100%; max-width: 100%; padding: 0.7rem 0.5rem 0.75rem;
+  }
+  .tags .tag-slate .name { font-size: 1.02rem; overflow-wrap: break-word; hyphens: auto; }
+  .tags .tag-slate .from { font-size: 0.6rem; }
+  .tags .tag-slate::after { bottom: -10px; height: 12px; }
+  .tags .tag-slate::before { bottom: -13px; }
 }
