@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Abril+Fatface&family=Oswald:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Abril+Fatface&family=Caveat:wght@500;700&family=Oswald:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap');
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -222,6 +222,140 @@ section { padding: var(--space-2xl) 0; position: relative; }
   color: rgba(253,241,224,0.85);
 }
 
+/* ——— AWNING VALANCE: scalloped tent edge, used to close a section ———
+   The stripe is the awning; the mask bites semicircles out of the bottom. */
+.valance {
+  height: 30px; width: 100%;
+  background: repeating-linear-gradient(90deg,
+    var(--colour-tomato) 0 44px, var(--colour-cream) 44px 88px);
+  -webkit-mask-image: radial-gradient(circle 22px at 22px 0, transparent 0 21.5px, #000 22px);
+  mask-image: radial-gradient(circle 22px at 22px 0, transparent 0 21.5px, #000 22px);
+  -webkit-mask-size: 44px 30px; mask-size: 44px 30px;
+  -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x;
+  -webkit-mask-position: bottom; mask-position: bottom;
+  transform: scaleY(-1);
+}
+.valance-sun { background: repeating-linear-gradient(90deg, var(--colour-sunshine) 0 44px, var(--colour-cream) 44px 88px); }
+.valance-sky { background: repeating-linear-gradient(90deg, var(--colour-sky) 0 44px, var(--colour-cream) 44px 88px); }
+
+/* ——— HANDWRITTEN MARGIN NOTES ——— */
+.scrawl {
+  font-family: var(--font-hand); font-weight: 700; font-size: 1.5rem; line-height: 1.15;
+  color: var(--colour-tomato); display: inline-block; transform: rotate(-3deg);
+}
+.scrawl-sage { color: var(--colour-sage); }
+.scrawl-navy { color: var(--colour-navy); }
+.scrawl-cream { color: var(--colour-sunshine); }
+.scrawl-arrow::after { content: ' ↘'; font-size: 1.3em; }
+
+/* ——— PRIZE ROSETTE ——— */
+.rosette { position: relative; width: 116px; height: 116px; flex: 0 0 auto; }
+.rosette svg { width: 100%; height: 100%; display: block; }
+.rosette-text {
+  position: absolute; inset: 0; display: grid; place-content: center; text-align: center;
+  font-family: var(--font-condensed); text-transform: uppercase; color: var(--colour-navy);
+  line-height: 1; padding-bottom: 18px;
+}
+.rosette-text b { display: block; font-family: var(--font-display); font-size: 1.5rem; }
+.rosette-text span { font-size: 0.6rem; letter-spacing: 0.1em; }
+
+/* ——— CHEESE-HOLE TEXTURE ——— */
+.holey {
+  background-color: var(--colour-sunshine);
+  background-image:
+    radial-gradient(circle at 18% 28%, rgba(44,33,19,0.14) 0 16px, transparent 17px),
+    radial-gradient(circle at 74% 20%, rgba(44,33,19,0.10) 0 11px, transparent 12px),
+    radial-gradient(circle at 46% 72%, rgba(44,33,19,0.12) 0 20px, transparent 21px),
+    radial-gradient(circle at 88% 66%, rgba(44,33,19,0.09) 0 9px, transparent 10px),
+    radial-gradient(circle at 8% 78%, rgba(44,33,19,0.10) 0 13px, transparent 14px);
+}
+
+/* ——— WASHI-TAPED SNAPSHOT ——— */
+.taped { position: relative; }
+.taped::before {
+  content: ''; position: absolute; top: -14px; left: 50%; width: 110px; height: 30px;
+  transform: translateX(-50%) rotate(-3deg); z-index: 2;
+  background: repeating-linear-gradient(45deg,
+    rgba(224,86,140,0.55) 0 7px, rgba(224,86,140,0.35) 7px 14px);
+  border-left: 1px dashed rgba(255,255,255,0.5); border-right: 1px dashed rgba(255,255,255,0.5);
+}
+.taped-sun::before { background: repeating-linear-gradient(45deg, rgba(242,183,5,0.6) 0 7px, rgba(242,183,5,0.38) 7px 14px); }
+
+/* ——— CHALKBOARD PROGRAMME ——— */
+.chalkboard {
+  background: var(--colour-slate);
+  background-image:
+    radial-gradient(ellipse at 22% 28%, rgba(255,255,255,0.045) 0%, transparent 55%),
+    radial-gradient(ellipse at 78% 72%, rgba(255,255,255,0.035) 0%, transparent 50%);
+  border: 10px solid #6B4B2A; border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.14), var(--shadow-soft);
+  padding: var(--space-lg) var(--space-md);
+  color: #F4F1E6;
+}
+.chalkboard h2, .chalkboard h3 { color: #F4F1E6; }
+.chalkboard .chalk-head {
+  font-family: var(--font-hand); font-size: 2.1rem; color: var(--colour-sunshine);
+  text-align: center; margin-bottom: var(--space-md); transform: rotate(-1deg);
+}
+.chalk-row {
+  display: grid; grid-template-columns: 5.5rem 1fr; gap: var(--space-md); align-items: baseline;
+  padding: 0.55rem 0; border-bottom: 1px dashed rgba(244,241,230,0.25);
+}
+.chalk-row:last-child { border-bottom: none; }
+.chalk-row .t { font-family: var(--font-condensed); font-weight: 600; letter-spacing: 0.06em; color: var(--colour-sunshine); }
+.chalk-row .w { font-weight: 600; }
+.chalk-row .w small { display: block; font-weight: 400; font-size: 0.85rem; color: rgba(244,241,230,0.7); }
+
+/* ——— THE CHEESE COUNTER ————————————————————————————————
+   Wooden counter with slate price tags propped against the cheese,
+   the way a proper cheesemonger labels a display. */
+.counter {
+  background-color: #6B4B2A;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.10) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.045) 0 1px, transparent 1px 6px),
+    linear-gradient(180deg, rgba(255,255,255,0.09), rgba(0,0,0,0.22));
+  border-top: 4px solid var(--colour-navy); border-bottom: 4px solid var(--colour-navy);
+  padding: var(--space-xl) 0;
+}
+.counter .counter-head { text-align: center; margin-bottom: var(--space-lg); }
+.counter .counter-head h2 { color: var(--colour-cream); }
+.counter .counter-head p { color: rgba(253,241,224,0.85); max-width: 60ch; margin: 0 auto; }
+.tags { display: flex; flex-wrap: wrap; gap: var(--space-md); justify-content: center; }
+
+/* A slate price tag */
+.tag-slate {
+  position: relative; background: var(--colour-slate); color: #F4F1E6;
+  border-radius: 6px; padding: 0.9rem 1.2rem 1rem; min-width: 168px; text-align: center;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.16), 3px 4px 0 rgba(0,0,0,0.35);
+  transform: rotate(var(--tilt, -2deg));
+}
+.tag-slate:nth-child(even) { --tilt: 2deg; }
+.tag-slate:nth-child(3n) { --tilt: -1deg; }
+.tag-slate .name {
+  display: block; font-family: var(--font-hand); font-weight: 700; font-size: 1.45rem; line-height: 1.1;
+  color: #FFFDF8;
+}
+.tag-slate .from {
+  display: block; font-family: var(--font-condensed); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--colour-sunshine); margin-top: 0.25rem;
+}
+/* the little wire spike that stakes the tag into the cheese */
+.tag-slate::after {
+  content: ''; position: absolute; left: 50%; bottom: -14px; width: 2px; height: 14px;
+  background: rgba(0,0,0,0.4); transform: translateX(-50%);
+}
+
+/* ——— KRAFT / GREASEPROOF PAPER PANEL ——— */
+.kraft {
+  background-color: #E8D5B0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.5) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 60%, rgba(160,130,90,0.16) 0 3px, transparent 4px),
+    radial-gradient(circle at 45% 85%, rgba(255,255,255,0.35) 0 2px, transparent 3px);
+  background-size: 70px 70px, 110px 110px, 90px 90px;
+}
+
 /* ——— ATTRACTION TILES ——— */
 .tiles { display: grid; gap: var(--space-md); grid-template-columns: 1fr; }
 @media (min-width: 640px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
@@ -235,7 +369,7 @@ section { padding: var(--space-2xl) 0; position: relative; }
 .tile:hover { transform: translateY(-5px); }
 .tile::after {
   content: ''; position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(22,41,107,0.94) 8%, rgba(22,41,107,0.55) 48%, rgba(22,41,107,0.12) 100%);
+  background: linear-gradient(to top, rgba(20,26,22,0.92) 0%, rgba(20,26,22,0.6) 34%, rgba(20,26,22,0.12) 62%, rgba(20,26,22,0) 100%);
 }
 .tile-body { position: relative; z-index: 1; padding: var(--space-md); }
 .tile-body h3 { color: var(--colour-cream); font-family: var(--font-display); text-transform: uppercase; font-size: var(--size-lg); font-weight: 400; margin-bottom: 0.3rem; }
@@ -390,14 +524,42 @@ section { padding: var(--space-2xl) 0; position: relative; }
 .photo-band h2 { color: var(--colour-cream); max-width: 16ch; }
 .photo-band p { color: rgba(253,241,224,0.9); max-width: 48ch; }
 
-/* ——— CTA STRIP ——— */
+/* ——— CTA STRIP: photographic, not a flat colour block ——— */
 .cta-strip {
-  background: var(--colour-tomato); color: var(--colour-white); padding: var(--space-lg);
-  text-align: center; border: 3px solid var(--colour-navy); border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-hard);
+  position: relative; overflow: hidden; color: var(--colour-white);
+  padding: var(--space-xl) var(--space-lg); text-align: center;
+  border: 3px solid var(--colour-navy); border-radius: var(--radius-lg); box-shadow: var(--shadow-hard);
+  background-size: cover; background-position: center; background-color: var(--colour-slate);
 }
+.cta-strip::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(120deg, rgba(217,72,47,0.86) 0%, rgba(217,72,47,0.62) 45%, rgba(22,41,107,0.72) 100%);
+}
+.cta-strip > * { position: relative; z-index: 1; }
 .cta-strip h2 { color: var(--colour-white); }
-.cta-strip p { color: rgba(255,255,255,0.92); }
+.cta-strip p { color: rgba(255,255,255,0.95); }
+
+/* ——— PHOTO PAGE HERO (subpages) ——— */
+.page-hero.has-photo {
+  position: relative; overflow: hidden; background-size: cover; background-position: center;
+  background-color: var(--colour-navy-deep); padding: var(--space-2xl) 0 var(--space-xl);
+}
+.page-hero.has-photo::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(22,41,107,0.62) 0%, rgba(22,41,107,0.5) 40%, rgba(22,41,107,0.9) 100%);
+}
+.page-hero.has-photo .container { position: relative; z-index: 1; }
+.page-hero.has-photo h1 { color: var(--colour-cream); }
+.page-hero.has-photo p { color: rgba(253,241,224,0.92); }
+
+/* Photo header on a day card */
+.day-photo { height: 150px; background-size: cover; background-position: center; border-bottom: 3px solid var(--colour-navy); }
+
+/* Vendor card with a photo */
+.vendor-card .vendor-photo {
+  height: 160px; margin: calc(var(--space-md) * -1) calc(var(--space-md) * -1) var(--space-md);
+  background-size: cover; background-position: center; border-bottom: 2.5px solid var(--colour-navy);
+}
 
 /* ——— ACCORDION ——— */
 .accordion-item {
