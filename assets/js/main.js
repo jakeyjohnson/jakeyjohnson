@@ -1,4 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Brand mark: show it only once it has actually loaded, so a missing
+  // logo file leaves the type lockup rather than a broken image.
+  document.querySelectorAll('[data-brand-mark]').forEach((img) => {
+    const reveal = () => {
+      img.style.display = 'block';
+      if (img.closest('.nav-logo')) img.closest('.nav-logo').classList.add('has-mark');
+    };
+    if (img.complete) { if (img.naturalWidth > 0) reveal(); }
+    else { img.addEventListener('load', reveal); }
+  });
+
   // Mobile nav toggle
   const toggle = document.querySelector('.nav-toggle');
   const panel = document.querySelector('.mobile-panel');

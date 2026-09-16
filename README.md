@@ -44,6 +44,23 @@ The homepage's "Buy Tickets" buttons link to `tickets.html` itself, which
 is where the actual per-date checkout links live — keeping the homepage
 free of stale links if dates or prices change.
 
+## Adding the logo
+
+Every page's header and footer already reference `assets/img/logo.png`.
+That file isn't in the repo yet — until it is, the header falls back to the
+type-only lockup and the footer mark stays hidden (no broken images either
+way). To switch the real logo on, add the file at exactly that path:
+
+```
+assets/img/logo.png
+```
+
+The quickest route is GitHub's web uploader: open the repo on the branch,
+go to `assets/img/`, then **Add file → Upload files**. A transparent PNG or
+an SVG works best; if you use SVG, save it as `logo.svg` and update the two
+`src="assets/img/logo.png"` references per page. The footer inverts the mark
+to white automatically, so a black-on-transparent version covers both places.
+
 ## Editing content
 
 - **Colours/type/spacing**: `assets/css/tokens.css` — nothing else should

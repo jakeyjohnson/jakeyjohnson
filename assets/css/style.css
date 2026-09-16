@@ -97,6 +97,11 @@ section { padding: var(--space-2xl) 0; }
   font-family: var(--font-mono); font-weight: 400; font-size: 0.6rem; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--colour-gold); margin-top: 0.3em;
 }
+/* Brand mark. The <img> hides itself if assets/img/logo.png is missing (see
+   assets/js/main.js), leaving the type lockup as the live fallback. */
+.nav-logo img { height: 58px; width: auto; }
+.nav-logo.has-mark .nav-logo-type { display: none; }
+.site-footer .footer-mark { height: 48px; width: auto; filter: invert(1) brightness(1.6); margin-bottom: var(--space-sm); }
 .nav-links { display: flex; align-items: center; gap: var(--space-lg); list-style: none; margin: 0; padding: 0; }
 .nav-links a {
   font-family: var(--font-mono); font-weight: 500; font-size: var(--size-xs); letter-spacing: 0.08em;
