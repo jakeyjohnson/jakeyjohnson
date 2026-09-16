@@ -10,25 +10,14 @@
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <filter id="chalk" x="-6%" y="-6%" width="112%" height="112%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" seed="7" result="noise"/>
-    <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.4" xChannelSelector="R" yChannelSelector="G"/>
-  </filter>
-  <filter id="rough" x="-4%" y="-4%" width="108%" height="108%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="11" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/>
-  </filter>
-</svg>
 <a class="skip-link" href="#main">Skip to content</a>
 
 <header class="site-header">
-  <div class="masthead-bar">
-    <span>Venue to be announced</span>
-    <span>5–6 June 2027</span>
-  </div>
   <nav class="nav">
-    <a href="index.html" class="nav-logo"><img src="assets/img/logo.png" alt="The Great British Cheese Festival" data-brand-mark style="display:none"><span class="nav-logo-type">The Great British<br>Cheese Festival<small>2027</small></span></a>
+    <a href="index.html" class="nav-logo">
+      <img src="assets/img/logo.png" alt="The Great British Cheese Festival" data-brand-mark style="display:none">
+      <span class="nav-logo-type">The Great British<br>Cheese Festival<small>5–6 June 2027</small></span>
+    </a>
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
       <li><a href="tickets.html">Tickets</a></li>
@@ -36,7 +25,7 @@
       <li><a href="about.html">About</a></li>
       <li><a href="contact.html">Contact</a></li>
     </ul>
-    <a href="tickets.html" class="btn btn-primary nav-cta">Buy Tickets</a>
+    <a href="tickets.html" class="btn btn-primary nav-cta">Book tickets</a>
     <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="mobile-panel">
       <span></span><span></span><span></span>
     </button>
@@ -49,80 +38,76 @@
       <li><a href="about.html">About</a></li>
       <li><a href="contact.html">Contact</a></li>
     </ul>
-    <a href="tickets.html" class="btn btn-primary btn-block">Buy Tickets</a>
+    <a href="tickets.html" class="btn btn-primary btn-block">Book tickets</a>
   </div>
 </header>
-<div class="bunting" aria-hidden="true"></div>
 
 <main id="main">
 
-  <section class="page-hero has-photo" style="background-image:url('assets/img/cheese-crates.jpg')">
+  <section class="page-hero">
     <div class="container">
-      <span class="folio folio-sun">Calling all makers</span>
-      <h1>Trade at the <em>festival</em>.</h1>
-      <p>Pitches across cheese, cider, craft beer and artisan food, 5–6 June 2027. Apply below — we get back to every applicant within 5 working days.</p>
+      <span class="label">Stallholders</span>
+      <h1>Trade at the festival.</h1>
+      <p>Pitches across cheese, cider, craft beer and artisan food, 5–6 June 2027. We reply to every application within five working days.</p>
     </div>
   </section>
 
-  <section>
+  <section class="section-tight">
     <div class="container">
-      <div class="feature-list" style="margin-bottom: var(--space-2xl);">
-        <div class="feature-row" data-reveal>
-          <span class="num">01</span>
-          <div><h3>5,000–6,000 visitors</h3><p>Across the weekend, all there specifically to buy and taste cheese and drink.</p></div>
-        </div>
-        <div class="feature-row" data-reveal>
-          <span class="num">02</span>
-          <div><h3>60+ traders alongside you</h3><p>Premium pitch options with easy access to the main event and VIP areas.</p></div>
-        </div>
-        <div class="feature-row" data-reveal>
-          <span class="num">03</span>
-          <div><h3>Full weekend access</h3><p>On-site parking for your van right by your pitch, both event days.</p></div>
-        </div>
+      <div class="stats" data-reveal>
+        <div class="stat"><strong>5–6k</strong><span>Visitors across the weekend</span></div>
+        <div class="stat"><strong>60+</strong><span>Traders alongside you</span></div>
+        <div class="stat"><strong>2</strong><span>Full trading days</span></div>
+        <div class="stat"><strong>Free</strong><span>Parking beside your pitch</span></div>
       </div>
+    </div>
+  </section>
 
-      <figure class="plate plate-wide" style="margin-bottom: var(--space-2xl);" data-reveal>
-        <img src="assets/img/cheese-display.jpg" alt="Cheese stall display with wheels and wedges stacked on wooden crates" width="1000" height="1000" loading="lazy">
-        <figcaption><span>A pitch in the tasting tent</span><span>2027</span></figcaption>
-      </figure>
-
-      <div class="section-head" data-reveal>
-        <span class="folio folio-sage">Who's trading</span>
-        <h2>Meet a few of the makers already confirmed.</h2>
+  <section class="section-tight">
+    <div class="container">
+      <div data-reveal style="max-width: 46ch; margin-bottom: var(--space-lg);">
+        <span class="label">Who trades</span>
+        <h2>Independent makers only.</h2>
+        <p class="lede">No resellers. Every stall is the producer, on the stall, talking to customers about what they made.</p>
       </div>
-      <div class="grid grid-3" style="margin-bottom: var(--space-2xl);">
-        <div class="card vendor-card" data-reveal>
-          <div class="vendor-photo" style="background-image:url('assets/img/cheese-display.jpg')"></div>
-          <span class="tag">Cheddar</span>
+      <div class="cards" data-reveal>
+        <div class="card">
+          <img src="assets/img/cheese-display.jpg" alt="Clothbound cheddar on a market stall" loading="lazy">
+          <span class="card-kind">Cheddar</span>
           <h3>Mendip Hills Dairy</h3>
-          <p>Award-winning clothbound cheddar, aged 18 months in a Somerset cave.</p>
+          <p>Award-winning clothbound cheddar, aged eighteen months in a Somerset cave.</p>
         </div>
-        <div class="card vendor-card" data-reveal>
-          <div class="vendor-photo" style="background-image:url('assets/img/stall-flowers.jpg')"></div>
-          <span class="tag">Goat's cheese</span>
+        <div class="card">
+          <img src="assets/img/stall-flowers.jpg" alt="Soft cheese on a stall dressed with wildflowers" loading="lazy">
+          <span class="card-kind">Goat's cheese</span>
           <h3>Willow Farm Creamery</h3>
-          <p>Small-batch soft goat's cheese from a 40-strong herd in Devon.</p>
+          <p>Small-batch soft goat's cheese from a forty-strong herd in Devon.</p>
         </div>
-        <div class="card vendor-card" data-reveal>
-          <div class="vendor-photo" style="background-image:url('assets/img/cheers-close.jpg')"></div>
-          <span class="tag">Cider</span>
+        <div class="card">
+          <img src="assets/img/cheers-close.jpg" alt="Cider being poured at the festival bar" loading="lazy">
+          <span class="card-kind">Cider</span>
           <h3>Orchard &amp; Oak</h3>
-          <p>Single-varietal ciders pressed from a 200-year-old West Country orchard.</p>
+          <p>Single-varietal ciders pressed from a two-hundred-year-old West Country orchard.</p>
         </div>
       </div>
+      <p class="mt-lg" style="color: var(--ink-mute); font-size: var(--size-sm);">Example listings — the confirmed 2027 line-up will be published here.</p>
+    </div>
+  </section>
 
-      <div class="grid" style="grid-template-columns: 1fr 1fr; gap: var(--space-xl); align-items: start;" id="apply">
-        <div data-reveal>
-          <span class="folio folio-pink">Get a pitch</span>
-          <h2>Apply for a pitch.</h2>
-          <p>Tell us a bit about what you make and we'll follow up with pitch options and pricing. Priority given to independent producers — no resellers.</p>
-          <ul style="color: var(--colour-ink-soft); padding-left: 1.1rem;">
-            <li>Public liability insurance required (min £5m)</li>
-            <li>Food hygiene certification for any tastings/samples</li>
-            <li>Applications close 1 May 2027</li>
+  <section id="apply">
+    <div class="container">
+      <div class="split" data-reveal>
+        <div class="split-body">
+          <span class="label">Apply</span>
+          <h2>Take a pitch.</h2>
+          <p>Tell us what you make and we'll come back with pitch options and pricing. Priority goes to independent producers.</p>
+          <ul style="list-style:none; padding:0; margin: var(--space-md) 0 0; font-size: var(--size-sm); color: var(--ink-soft);">
+            <li style="padding:0.55rem 0; border-top:1px solid var(--line-faint);">Public liability insurance, minimum £5m</li>
+            <li style="padding:0.55rem 0; border-top:1px solid var(--line-faint);">Food hygiene certification for tastings and samples</li>
+            <li style="padding:0.55rem 0; border-top:1px solid var(--line-faint);">Applications close 1 May 2027</li>
           </ul>
         </div>
-        <form class="card" data-reveal id="vendor-form" novalidate>
+        <form data-reveal id="vendor-form" novalidate>
           <div class="form-field">
             <label for="v-business">Business name</label>
             <input type="text" id="v-business" name="business" required>
@@ -144,7 +129,7 @@
             <select id="v-category" name="category" required>
               <option value="">Choose one…</option>
               <option>Cheese</option>
-              <option>Cider / beer</option>
+              <option>Cider or beer</option>
               <option>Other artisan food &amp; drink</option>
               <option>Non-food trade stand</option>
             </select>
@@ -154,7 +139,7 @@
             <textarea id="v-details" name="details" rows="4" required></textarea>
           </div>
           <button type="submit" class="btn btn-primary btn-block">Submit application</button>
-          <p id="vendor-success" class="form-success" style="display:none; margin-top: var(--space-sm);">Thanks — your application's in. We'll be in touch within 5 working days.</p>
+          <p id="vendor-success" class="form-success" style="display:none; margin-top: var(--space-md);">Thanks — your application's in. We'll be in touch within five working days.</p>
         </form>
       </div>
     </div>
@@ -168,18 +153,19 @@
       <div>
         <img src="assets/img/logo.png" alt="" class="footer-mark" data-brand-mark style="display:none">
         <h4>The Great British Cheese Festival</h4>
-        <p style="max-width:320px;">5–6 June 2027 · Venue to be announced · Savour the Flavours of Britain.</p>
+        <p style="max-width:34ch; font-size: var(--size-sm);">5–6 June 2027. Venue to be announced. Savour the flavours of Britain.</p>
       </div>
       <div>
-        <h4>Explore</h4>
+        <h4>Visit</h4>
         <a href="tickets.html">Tickets</a>
-        <a href="vendors.html">Stallholders</a>
-        <a href="about.html">About</a>
+        <a href="about.html">About the festival</a>
+        <a href="index.html#programme">Programme</a>
       </div>
       <div>
-        <h4>Support</h4>
-        <a href="contact.html">Contact us</a>
-        <a href="privacy.html">Privacy policy</a>
+        <h4>Trade &amp; press</h4>
+        <a href="vendors.html">Stallholders</a>
+        <a href="contact.html">Contact</a>
+        <a href="privacy.html">Privacy</a>
       </div>
     </div>
     <div class="footer-bottom">
