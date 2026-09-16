@@ -26,10 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Countdown to gates opening, Sat 16 May 2026, 10:00
+  // Countdown to gates opening, Sat 5 June 2027, 10:00
   const cd = document.getElementById('countdown');
   if (cd) {
-    const target = new Date('2026-05-16T10:00:00+01:00').getTime();
+    const target = new Date('2027-06-05T10:00:00+01:00').getTime();
     const fields = {};
     cd.querySelectorAll('[data-cd]').forEach((el) => { fields[el.dataset.cd] = el; });
     const pad = (n) => String(n).padStart(2, '0');
