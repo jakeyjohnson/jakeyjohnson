@@ -44,6 +44,45 @@ The homepage's "Buy Tickets" buttons link to `tickets.html` itself, which
 is where the actual per-date checkout links live — keeping the homepage
 free of stale links if dates or prices change.
 
+## Newsletter sign-up
+
+The sign-up block lives on the homepage (`#signup`) and collects a first name,
+an email and an explicit marketing consent tick. It validates in the browser
+first — missing name, malformed email, unticked consent — before anything is
+sent.
+
+**It is not connected to anything yet.** The `<form>` has an empty `action`,
+and while that's the case JavaScript shows the success state in place instead
+of submitting. Nothing is stored. Wire it up one of two ways:
+
+1. **Mailchimp / Brevo / Mailerlite** — paste their form endpoint into the
+   `action` attribute. The fields are already named `FNAME` and `EMAIL`, which
+   is what Mailchimp expects. Once `action` is set the JS stops intercepting
+   and the provider handles the submission and confirmation.
+2. **A WordPress plugin** — delete the `<form>` and drop in the shortcode from
+   Mailchimp for WordPress, Fluent Forms, WPForms or similar. Keep the
+   surrounding `<section class="signup">` markup so the styling still applies.
+
+Either way the consent tick is deliberately its own checkbox, unticked by
+default, and separate from the line about storing details — that's what UK
+ICO guidance expects for marketing consent. Don't pre-tick it or merge the two.
+
+## Putting this on WordPress
+
+This is a static site. It doesn't drop into WordPress as-is — you have three
+realistic options, cheapest first:
+
+| Option | What's involved | When it's right |
+|---|---|---|
+| **Serve it alongside WordPress** | Upload these files to a subdirectory or subdomain and leave WordPress for the blog/admin side | Fastest. Fine if nobody needs to edit page content in WP |
+| **Convert to a small custom theme** | Split each page into `header.php` / `footer.php` / page templates; the CSS and JS carry over untouched | Best long-term. Editable in WP, keeps this design exactly |
+| **Rebuild in a page builder** | Recreate the layouts in Elementor/Bricks by hand | Only if the team must edit layouts visually — the design will drift and none of this code survives |
+
+If you go the theme route, the work is mostly mechanical: the stylesheet and
+`main.js` are plain files that get enqueued in `functions.php`, images move to
+the media library, and each `.html` here becomes a page template. Say the word
+and I can do that conversion.
+
 ## Adding the logo
 
 Every page's header and footer already reference `assets/img/logo.png`.

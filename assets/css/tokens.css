@@ -2,21 +2,25 @@
    Restrained on purpose: two brand colours, one accent, and a lot of space.
    The photography carries the design; nothing here competes with it. */
 :root {
-  /* Colour — straight from the brand mark */
+  /* Dark ground. Photography and light do the work against it — this is
+     what gives the site its after-dark festival feel rather than decoration. */
+  --night: #14130F;
+  --night-soft: #1D1B16;
+  --night-lift: #262319;
   --cream: #FBF4E8;
   --cream-deep: #F3E8D5;
   --navy: #1E3A8A;
   --navy-deep: #152A66;
   --ink: #1B1A17;
-  --ink-soft: #57534B;
-  --ink-mute: #8A8377;
+  --ink-soft: rgba(251, 244, 232, 0.72);
+  --ink-mute: rgba(251, 244, 232, 0.5);
   --white: #FFFFFF;
-  --line: rgba(27, 26, 23, 0.14);
-  --line-faint: rgba(27, 26, 23, 0.08);
+  --line: rgba(251, 244, 232, 0.18);
+  --line-faint: rgba(251, 244, 232, 0.1);
 
   /* One accent. Used for prices, links and the primary action — nothing else. */
-  --gold: #B8893B;
-  --gold-deep: #966D26;
+  --gold: #E3A93C;
+  --gold-deep: #C98E28;
 
   --success: #3F6E48;
   --error: #A33A2A;

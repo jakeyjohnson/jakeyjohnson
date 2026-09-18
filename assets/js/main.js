@@ -36,6 +36,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Newsletter sign-up.
+  // With no action set (the static preview, or before the endpoint is wired
+  // up) it validates and shows the success state without navigating. Once an
+  // action URL is present it submits normally and the provider takes over.
+  const signup = document.getElementById('signup-form');
+  if (signup) {
+    const errorEl = document.getElementById('signup-error');
+    const successEl = document.getElementById('signup-success');
+    const fail = (msg, field) => {
+      errorEl.textContent = msg;
+      errorEl.hidden = false;
+      if (field) field.focus();
+    };
+
+    signup.addEventListener('submit', (e) => {
+      const name = signup.querySelector('#s-name');
+      const email = signup.querySelector('#s-email');
+      const consent = signup.querySelector('#s-consent');
+      errorEl.hidden = true;
+
+      if (!name.value.trim()) { e.preventDefault(); return fail('Please add your first name.', name); }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) {
+        e.preventDefault(); return fail('That email address does not look right.', email);
+      }
+      if (!consent.checked) { e.preventDefault(); return fail('Please tick the box so we know you want the emails.', consent); }
+
+      // No endpoint yet — confirm in place rather than reloading the page.
+      if (!signup.getAttribute('action')) {
+        e.preventDefault();
+        signup.querySelectorAll('.signup-fields, .consent, button, .form-note').forEach((el) => { el.hidden = true; });
+        successEl.hidden = false;
+      }
+    });
+  }
+
   // Scroll reveal
   const revealEls = document.querySelectorAll('[data-reveal]');
   if ('IntersectionObserver' in window && revealEls.length) {

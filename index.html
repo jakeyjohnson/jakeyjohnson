@@ -44,7 +44,7 @@
 
 <main id="main">
 
-  <section class="hero" style="background-image:url('assets/img/hero-cheese-stall.jpg')">
+  <section class="hero" style="background-image:url('assets/img/mascot-crowd.jpg')">
     <div class="container">
       <div class="hero-inner">
         <div class="hero-meta">
@@ -60,6 +60,14 @@
       </div>
     </div>
   </section>
+
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span>60+ makers<em>✦</em>250 cheeses<em>✦</em>Live music<em>✦</em>Cider &amp; craft beer<em>✦</em>Cheesemaking demos<em>✦</em>The Sunday Proms<em>✦</em></span>
+      <span>60+ makers<em>✦</em>250 cheeses<em>✦</em>Live music<em>✦</em>Cider &amp; craft beer<em>✦</em>Cheesemaking demos<em>✦</em>The Sunday Proms<em>✦</em></span>
+    </div>
+  </div>
 
   <section class="section-tight">
     <div class="container">
@@ -156,6 +164,22 @@
     <figure style="margin:0"><img src="assets/img/grilled-cheese.jpg" alt="A toasted cheese sandwich being served" loading="lazy"></figure>
   </section>
 
+  <section class="lineup">
+    <div class="container">
+      <div data-reveal>
+        <span class="label">The 2027 line-up</span>
+        <p class="lineup-list">
+          Mendip Hills Dairy <span class="sep">·</span> Willow Farm Creamery <span class="sep">·</span>
+          Orchard &amp; Oak <span class="sep">·</span> Quicke&rsquo;s <span class="sep">·</span>
+          Cropwell Bishop <span class="sep">·</span> Isle of Mull <span class="sep">·</span>
+          Hafod <span class="sep">·</span> Baron Bigod
+          <span class="small">Plus 50 more makers announced through the spring.</span>
+        </p>
+        <a href="vendors.html" class="btn btn-outline" style="margin-top: var(--space-lg);">See all stallholders</a>
+      </div>
+    </div>
+  </section>
+
   <section>
     <div class="container">
       <div class="split" data-reveal>
@@ -168,6 +192,43 @@
         <div class="split-media wide">
           <img src="assets/img/mascot-crowd.jpg" alt="Crowds enjoying the festival field on a summer afternoon" loading="lazy">
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="signup" id="signup">
+    <div class="container">
+      <div class="signup-inner">
+        <div data-reveal>
+          <span class="label">Stay in the loop</span>
+          <h2>Be first to hear.</h2>
+          <p class="lede">The venue announcement, the full line-up of makers, and early-bird tickets before they go on general sale. No more than one email a month.</p>
+        </div>
+
+        <!-- WORDPRESS: point action= at your Mailchimp/Brevo form URL, or replace
+             this whole form with your newsletter plugin's shortcode. See README. -->
+        <form class="signup-form" id="signup-form" method="post" action="" novalidate data-reveal>
+          <div class="signup-fields">
+            <div class="form-field">
+              <label for="s-name">First name</label>
+              <input type="text" id="s-name" name="FNAME" autocomplete="given-name" required>
+            </div>
+            <div class="form-field">
+              <label for="s-email">Email address</label>
+              <input type="email" id="s-email" name="EMAIL" autocomplete="email" required>
+            </div>
+          </div>
+
+          <div class="consent">
+            <input type="checkbox" id="s-consent" name="consent" value="yes" required>
+            <label for="s-consent">Yes, email me festival news, line-up announcements and ticket releases.</label>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Sign me up</button>
+          <p class="form-note">We store your details only to send you what you&rsquo;ve asked for, and you can unsubscribe from any email. See our <a href="privacy.html" class="link" style="font-size:inherit">privacy policy</a>.</p>
+          <p id="signup-error" class="form-error" hidden></p>
+          <p id="signup-success" class="form-success" hidden>Thanks — you&rsquo;re on the list. Look out for the venue announcement.</p>
+        </form>
       </div>
     </div>
   </section>
@@ -214,6 +275,7 @@
         <a href="tickets.html">Tickets</a>
         <a href="about.html">About the festival</a>
         <a href="index.html#programme">Programme</a>
+        <a href="index.html#signup">Newsletter</a>
       </div>
       <div>
         <h4>Trade &amp; press</h4>
