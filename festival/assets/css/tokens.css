@@ -1,0 +1,233 @@
+/* =========================================================
+   Wilderwood Festival — Design Tokens
+   Aesthetic: folk-psychedelic riso print. Warm paper ground,
+   hand-printed colour, chunky display type, visible texture.
+   Neo-Memphis playfulness disciplined by editorial typography.
+
+   Every component references these variables. No hardcoded
+   colour, radius, type size or spacing in style.css.
+   ========================================================= */
+
+:root{
+  color-scheme: light dark;
+
+  /* ---------- Raw palette (riso ink swatches) ---------- */
+  --raw-oat:        #F7EAD3;  /* paper */
+  --raw-oat-deep:   #EFDBB9;  /* paper, second tone */
+  --raw-oat-shade:  #E4CBA3;
+  --raw-espresso:   #23180F;  /* ink */
+  --raw-espresso-2: #332417;
+  --raw-terracotta: #D6492A;
+  --raw-marigold:   #F2A93B;
+  --raw-teal:       #0E5C52;
+  --raw-teal-light: #1B8377;
+  --raw-plum:       #6B2A57;
+  --raw-sky:        #7FB6C7;
+  --raw-moss:       #7D8C3F;
+
+  /* ---------- Semantic colour ---------- */
+  --c-bg:            var(--raw-oat);
+  --c-bg-alt:        var(--raw-oat-deep);
+  --c-bg-sunk:       var(--raw-oat-shade);
+  --c-bg-invert:     var(--raw-espresso);
+  --c-surface:       #FFFBF2;
+
+  --c-text:          var(--raw-espresso);
+  --c-text-soft:     #5A483A;
+  --c-text-faint:    #665442;
+  --c-text-invert:   var(--raw-oat);
+
+  --c-accent:        var(--raw-terracotta);
+  --c-accent-warm:   var(--raw-marigold);
+  --c-accent-cool:   var(--raw-teal);
+  --c-accent-deep:   var(--raw-plum);
+  --c-accent-soft:   var(--raw-sky);
+  --c-accent-leaf:   var(--raw-moss);
+
+  /* Text-weight accent: the fill hues are too light for small type on
+     paper, so accent TEXT uses a deeper rust that still reads as rust.
+     Verified >=4.5:1 on every background in this file. */
+  --c-accent-ink:    #963015;
+
+  /* Filled controls: background + the text that sits on it, as a pair. */
+  --fill-accent-bg:  #AE3317;
+  --fill-accent-fg:  #FFF6EA;
+  --fill-cool-bg:    var(--raw-teal);
+  --fill-cool-fg:    #F4FBF8;
+  --fill-deep-bg:    var(--raw-plum);
+  --fill-deep-fg:    #FFF1E4;
+  --fill-warm-bg:    var(--raw-marigold);
+  --fill-warm-fg:    var(--raw-espresso);
+  --fill-warm-soft:  #503608;
+
+  /* accents that sit ON an inverted (--c-bg-invert) surface: the ink
+     sections and the footer. These flip independently of --c-accent
+     because in dark mode those surfaces become pale, and a light accent
+     on a pale ground fails contrast. */
+  --c-ink-accent:    var(--raw-marigold);
+  --c-ink-muted:     rgba(247,234,211,0.72);
+  --c-ink-rule:      rgba(247,234,211,0.24);
+
+  --c-line:          rgba(35,24,15,0.22);
+  --c-line-strong:   var(--raw-espresso);
+  --c-focus:         var(--raw-teal);
+
+  --c-shadow-hard:   var(--raw-espresso);
+  --c-shadow-soft:   rgba(35,24,15,0.16);
+
+  /* ---------- Type ---------- */
+  --font-display: "Caprasimo", "Rockwell", Georgia, serif;
+  --font-serif:   "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body:    "DM Sans", "Helvetica Neue", Arial, sans-serif;
+
+  --fs-2xs:  0.75rem;
+  --fs-xs:   0.8125rem;
+  --fs-sm:   0.9375rem;
+  --fs-base: 1.0625rem;            /* >=16px on mobile */
+  --fs-md:   clamp(1.125rem, 0.6vw + 1rem, 1.3125rem);
+  --fs-lg:   clamp(1.375rem, 1.2vw + 1rem, 1.75rem);
+  --fs-xl:   clamp(1.75rem, 2.2vw + 1rem, 2.5rem);
+  --fs-2xl:  clamp(2.25rem, 4vw + 1rem, 3.75rem);
+  --fs-3xl:  clamp(2.75rem, 7vw + 0.5rem, 6rem);
+  --fs-hero: clamp(3.25rem, 13vw, 10.5rem);
+
+  --lh-tight:  0.95;
+  --lh-snug:   1.14;
+  --lh-normal: 1.5;
+  --lh-loose:  1.7;
+
+  --ls-tight:  -0.02em;
+  --ls-wide:   0.08em;
+  --ls-wider:  0.18em;
+
+  /* ---------- Space (4px base) ---------- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
+  --sp-9: 6rem;
+  --sp-10: 8rem;
+
+  --section-y: clamp(3.5rem, 8vw, 7.5rem);
+  --gutter:    clamp(1rem, 4vw, 3rem);
+  --measure:   66ch;
+  --max-w:     78rem;
+  --max-w-wide: 92rem;
+
+  /* ---------- Shape ---------- */
+  --r-sm:   6px;
+  --r-md:   14px;
+  --r-lg:   26px;
+  --r-pill: 999px;
+  --r-blob: 62% 38% 55% 45% / 48% 55% 45% 52%;
+
+  --bd:        2px solid var(--c-line-strong);
+  --bd-hair:   1px solid var(--c-line);
+  --offset:    6px 6px 0 var(--c-shadow-hard);
+  --offset-sm: 4px 4px 0 var(--c-shadow-hard);
+
+  /* ---------- Motion ---------- */
+  --ease-out:  cubic-bezier(0.16, 0.84, 0.44, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 140ms;
+  --t-med:  260ms;
+  --t-slow: 620ms;
+
+  /* ---------- Texture ---------- */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+  --grain-opacity: 0.16;
+  --z-nav: 60;
+  --z-drawer: 70;
+  --z-grain: 90;
+}
+
+/* ---------- Dark: lantern-lit, warm night. Not an inversion. ---------- */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --c-bg:          #17100A;
+    --c-bg-alt:      #1F160E;
+    --c-bg-sunk:     #241A11;
+    --c-bg-invert:   var(--raw-oat);
+    --c-surface:     #221810;
+
+    --c-text:        #F1E3CC;
+    --c-text-soft:   #CDBCA2;
+    --c-text-faint:  #A5947C;
+    --c-text-invert: #17100A;
+
+    --c-accent:      #F2724F;
+    --c-accent-warm: #FFC05E;
+    --c-accent-cool: #3FA596;
+    --c-accent-deep: #C25C9E;
+    --c-accent-soft: #9CCBDA;
+    --c-accent-leaf: #A7B75A;
+
+    --c-accent-ink:  #F2724F;
+    --fill-accent-bg: #F2724F;
+    --fill-accent-fg: #21150E;
+    --fill-cool-bg:  #3FA596;
+    --fill-cool-fg:  #0E1A17;
+    --fill-deep-bg:  #C25C9E;
+    --fill-deep-fg:  #21121B;
+    --fill-warm-bg:  #FFC05E;
+    --fill-warm-fg:  #23180F;
+    --fill-warm-soft: #4A3105;
+    --c-ink-accent:  #96400F;
+    --c-ink-muted:   rgba(35,24,15,0.7);
+    --c-ink-rule:    rgba(35,24,15,0.22);
+
+    --c-line:        rgba(241,227,204,0.26);
+    --c-line-strong: #F1E3CC;
+    --c-focus:       #FFC05E;
+
+    --c-shadow-hard: #0C0805;
+    --c-shadow-soft: rgba(0,0,0,0.5);
+    --grain-opacity: 0.1;
+  }
+}
+:root[data-theme="dark"]{
+  --c-bg:          #17100A;
+  --c-bg-alt:      #1F160E;
+  --c-bg-sunk:     #241A11;
+  --c-bg-invert:   var(--raw-oat);
+  --c-surface:     #221810;
+
+  --c-text:        #F1E3CC;
+  --c-text-soft:   #CDBCA2;
+  --c-text-faint:  #A5947C;
+  --c-text-invert: #17100A;
+
+  --c-accent:      #F2724F;
+  --c-accent-warm: #FFC05E;
+  --c-accent-cool: #3FA596;
+  --c-accent-deep: #C25C9E;
+  --c-accent-soft: #9CCBDA;
+  --c-accent-leaf: #A7B75A;
+
+  --c-accent-ink:  #F2724F;
+  --fill-accent-bg: #F2724F;
+  --fill-accent-fg: #21150E;
+  --fill-cool-bg:  #3FA596;
+  --fill-cool-fg:  #0E1A17;
+  --fill-deep-bg:  #C25C9E;
+  --fill-deep-fg:  #21121B;
+  --fill-warm-bg:  #FFC05E;
+  --fill-warm-fg:  #23180F;
+  --fill-warm-soft: #4A3105;
+
+  --c-ink-accent:  #96400F;
+  --c-ink-muted:   rgba(35,24,15,0.7);
+  --c-ink-rule:  rgba(35,24,15,0.22);
+
+  --c-line:        rgba(241,227,204,0.26);
+  --c-line-strong: #F1E3CC;
+  --c-focus:       #FFC05E;
+
+  --c-shadow-hard: #0C0805;
+  --c-shadow-soft: rgba(0,0,0,0.5);
+  --grain-opacity: 0.1;
+}
