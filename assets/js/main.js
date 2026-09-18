@@ -36,6 +36,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Booking bar: appears once the hero is out of the way, hides again while
+  // the ticket section itself is on screen (the buttons are right there).
+  const bookBar = document.getElementById('book-bar');
+  const ticketsSection = document.getElementById('tickets');
+  if (bookBar) {
+    let ticketsOnScreen = false;
+    if (ticketsSection && 'IntersectionObserver' in window) {
+      new IntersectionObserver((entries) => {
+        ticketsOnScreen = entries[0].isIntersecting;
+      }, { threshold: 0.2 }).observe(ticketsSection);
+    }
+    const updateBar = () => {
+      const past = window.scrollY > window.innerHeight * 0.7;
+      bookBar.classList.toggle('is-visible', past && !ticketsOnScreen);
+    };
+    updateBar();
+    window.addEventListener('scroll', updateBar, { passive: true });
+  }
+
   // Newsletter sign-up.
   // With no action set (the static preview, or before the endpoint is wired
   // up) it validates and shows the success state without navigating. Once an

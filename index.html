@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Great British Cheese Festival</title>
-<meta name="description" content="Two days of British cheese, cider and live music. 5–6 June 2027. 60+ artisan makers, 250+ cheeses, and a philharmonic Proms to finish.">
+<meta name="description" content="Two days of British cheese, cider and live music. 5–6 June 2027. Day tickets from £15, under 12s free. 60+ makers, 250 cheeses.">
 <link rel="icon" href="favicon.ico">
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/style.css">
@@ -19,26 +19,27 @@
       <span class="nav-logo-type">The Great British<br>Cheese Festival<small>5–6 June 2027</small></span>
     </a>
     <ul class="nav-links">
-      <li><a href="index.html" aria-current="page">Home</a></li>
-      <li><a href="tickets.html">Tickets</a></li>
+      <li><a href="#tickets">Tickets</a></li>
+      <li><a href="#whats-on">What's on</a></li>
+      <li><a href="#lineup">Line-up</a></li>
+      <li><a href="#faq">Info</a></li>
       <li><a href="vendors.html">Stallholders</a></li>
-      <li><a href="about.html">About</a></li>
-      <li><a href="contact.html">Contact</a></li>
     </ul>
-    <a href="tickets.html" class="btn btn-primary nav-cta">Book tickets</a>
+    <a href="#tickets" class="btn btn-primary nav-cta">Book tickets</a>
     <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="mobile-panel">
       <span></span><span></span><span></span>
     </button>
   </nav>
   <div class="mobile-panel" id="mobile-panel">
     <ul>
-      <li><a href="index.html">Home</a></li>
-      <li><a href="tickets.html">Tickets</a></li>
+      <li><a href="#tickets">Tickets</a></li>
+      <li><a href="#whats-on">What's on</a></li>
+      <li><a href="#lineup">Line-up</a></li>
+      <li><a href="#faq">Info</a></li>
       <li><a href="vendors.html">Stallholders</a></li>
-      <li><a href="about.html">About</a></li>
       <li><a href="contact.html">Contact</a></li>
     </ul>
-    <a href="tickets.html" class="btn btn-primary btn-block">Book tickets</a>
+    <a href="#tickets" class="btn btn-primary btn-block">Book tickets</a>
   </div>
 </header>
 
@@ -48,19 +49,46 @@
     <div class="container">
       <div class="hero-inner">
         <div class="hero-meta">
-          <span>5–6 June 2027</span>
+          <span>Sat 5 &amp; Sun 6 June 2027</span>
           <span>Venue announced soon</span>
         </div>
         <h1>Savour the flavours of Britain.</h1>
-        <p>Two days given over to British cheese and the people who make it — 60+ makers, 250&nbsp;cheeses to taste, live music through the afternoon and a philharmonic Proms to close.</p>
+        <p>Two days of British cheese, cider and live music. 60+ makers, 250 cheeses to taste, and a philharmonic Proms to close.</p>
         <div class="hero-actions">
-          <a href="tickets.html" class="btn btn-light">Book tickets</a>
-          <a href="#programme" class="btn btn-outline-light">See the programme</a>
+          <a href="#tickets" class="btn btn-light">Book tickets — from £15</a>
+          <a href="#whats-on" class="btn btn-outline-light">What's on</a>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- Practical answers first: what, when, where, how much. -->
+  <section class="section-tight">
+    <div class="container">
+      <div class="essentials" data-reveal>
+        <div class="essential">
+          <span class="k">When</span>
+          <span class="v">Sat 5 &amp; Sun 6 June 2027</span>
+          <span class="sub">Market 10:00 · Main event 14:00–21:30</span>
+        </div>
+        <div class="essential">
+          <span class="k">Where</span>
+          <span class="v">Announced soon</span>
+          <span class="sub">Free on-site parking</span>
+        </div>
+        <div class="essential">
+          <span class="k">Tickets</span>
+          <span class="v">From £15</span>
+          <span class="sub">Under 12s go free</span>
+        </div>
+        <div class="essential">
+          <span class="k">What</span>
+          <span class="v">60+ makers, 250 cheeses</span>
+          <span class="sub">Live music, demos, bars</span>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <div class="ticker" aria-hidden="true">
     <div class="ticker-track">
@@ -69,63 +97,89 @@
     </div>
   </div>
 
-  <section class="section-tight">
+  <!-- Booking, high up: pick a day and go. -->
+  <section id="tickets" class="section-tight">
     <div class="container">
-      <div class="stats" data-reveal>
-        <div class="stat"><strong>60+</strong><span>Artisan makers</span></div>
-        <div class="stat"><strong>250</strong><span>Cheeses to taste</span></div>
-        <div class="stat"><strong>2</strong><span>Days</span></div>
-        <div class="stat"><strong>3</strong><span>Tasting &amp; demo zones</span></div>
+      <div data-reveal style="margin-bottom: var(--space-lg);">
+        <span class="label">Tickets</span>
+        <h2>Pick your day.</h2>
+        <p class="lede">Two days, two very different moods. Or take the weekend and do both.</p>
+      </div>
+
+      <div class="days" data-reveal>
+        <div class="day">
+          <img class="day-img" src="assets/img/toastie-wide.jpg" alt="A toasted cheese sandwich on the griddle" loading="lazy">
+          <div class="day-inner">
+            <span class="day-when">Saturday 5 June</span>
+            <h3>The family day</h3>
+            <p>Funfair rides, fete games, cooking demos through the afternoon, and live music from legacy and chart-topping bands running late into the evening.</p>
+            <div class="day-foot">
+              <span class="day-price">£15 <span>/ adult</span></span>
+              <!-- WORDPRESS: replace # with the checkout URL for this date -->
+              <a href="#" class="btn btn-primary" data-buy="saturday">Book Saturday</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="day">
+          <img class="day-img" src="assets/img/cheers-close.jpg" alt="Festival-goers raising glasses at golden hour" loading="lazy">
+          <div class="day-inner">
+            <span class="day-when">Sunday 6 June</span>
+            <h3>The Proms</h3>
+            <p>A more traditional turn — a full philharmonic orchestra with leading singers through the evening, finishing on a grand spectacle.</p>
+            <div class="day-foot">
+              <span class="day-price">£18 <span>/ adult</span></span>
+              <a href="#" class="btn btn-primary" data-buy="sunday">Book Sunday</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tickets mt-lg" data-reveal style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+        <div class="ticket featured">
+          <div class="ticket-name">Weekend pass</div>
+          <div class="ticket-note">Both days, come and go</div>
+          <div class="price">£25<span> / adult</span></div>
+          <ul>
+            <li>Saturday and Sunday</li>
+            <li>Fast-track entry</li>
+            <li>Festival tote bag</li>
+          </ul>
+          <a href="#" class="btn btn-primary btn-block" data-buy="weekend">Book the weekend</a>
+        </div>
+        <div class="ticket">
+          <div class="ticket-name">VIP</div>
+          <div class="ticket-note">Weekend pass, upgraded</div>
+          <div class="price">£45<span> / adult</span></div>
+          <ul>
+            <li>Lounge with premium drinks</li>
+            <li>Proper seating all weekend</li>
+            <li>Guided pairing session</li>
+          </ul>
+          <a href="#" class="btn btn-outline btn-block" data-buy="vip">Book VIP</a>
+        </div>
+        <div class="ticket">
+          <div class="ticket-name">Groups &amp; families</div>
+          <div class="ticket-note">Under 12s always free</div>
+          <div class="price">10+<span> / group rate</span></div>
+          <ul>
+            <li>Discounted rates for ten or more</li>
+            <li>Coach parking arranged</li>
+            <li>Just drop us a line</li>
+          </ul>
+          <a href="contact.html" class="btn btn-outline btn-block">Enquire</a>
+        </div>
       </div>
     </div>
   </section>
 
-  <section id="programme">
-    <div class="container">
-      <div class="split" data-reveal>
-        <div class="split-media">
-          <img src="assets/img/toastie-wide.jpg" alt="A toasted cheese sandwich on the griddle at a festival food stall" loading="lazy">
-        </div>
-        <div class="split-body">
-          <span class="label">Saturday 5 June</span>
-          <h2>The family day.</h2>
-          <p>Gates and the farmers market open at ten. From two, the main arena fills up: funfair rides, fete games, cooking demos through the afternoon and live music from legacy and chart-topping bands, running late into the evening.</p>
-          <a href="tickets.html" class="link">Saturday tickets</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section-tight">
-    <div class="container">
-      <div class="split reverse" data-reveal>
-        <div class="split-media">
-          <img src="assets/img/cheers-close.jpg" alt="Festival-goers raising glasses of wine and cider at golden hour" loading="lazy">
-        </div>
-        <div class="split-body">
-          <span class="label">Sunday 6 June</span>
-          <h2>The Proms.</h2>
-          <p>A quieter, more traditional turn. The market runs as usual in the morning, then a full philharmonic orchestra takes the main stage with leading singers into the evening, finishing on a grand spectacle.</p>
-          <a href="tickets.html" class="link">Sunday tickets</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="band" style="background-image:url('assets/img/cheese-crates.jpg')">
-    <div class="container" data-reveal>
-      <span class="label label-light">The market</span>
-      <h2>250 British cheeses, and the makers behind every one.</h2>
-      <p>Territorials, soft and blue, washed rinds, goat and sheep — from dairies across Britain, each with someone on the stall who can tell you exactly how it was made.</p>
-      <a href="vendors.html" class="btn btn-light">Meet the makers</a>
-    </div>
-  </section>
-
-  <section>
+  <!-- What actually happens, and when. -->
+  <section id="whats-on" class="section-tight">
     <div class="container-narrow">
       <div data-reveal>
-        <span class="label">Running order</span>
+        <span class="label">What's on</span>
         <h2>How the day goes.</h2>
+        <p class="lede">The same shape both days — the market in the morning, the main event from two.</p>
       </div>
       <div class="programme mt-lg" data-reveal>
         <div class="programme-row">
@@ -157,14 +211,15 @@
     </div>
   </section>
 
-  <section class="gallery" aria-label="Photographs from the festival">
-    <figure style="margin:0"><img src="assets/img/cheese-display.jpg" alt="Wheels and wedges of British cheese stacked on wooden crates" loading="lazy"></figure>
-    <figure style="margin:0"><img src="assets/img/friends-laughing.jpg" alt="Friends laughing together with drinks at the festival" loading="lazy"></figure>
-    <figure style="margin:0"><img src="assets/img/stall-flowers.jpg" alt="A cheese stall dressed with wildflowers under a marquee" loading="lazy"></figure>
-    <figure style="margin:0"><img src="assets/img/grilled-cheese.jpg" alt="A toasted cheese sandwich being served" loading="lazy"></figure>
+  <section class="band" style="background-image:url('assets/img/cheese-crates.jpg')">
+    <div class="container" data-reveal>
+      <span class="label label-light">The market</span>
+      <h2>250 British cheeses, and the makers behind every one.</h2>
+      <p>Territorials, soft and blue, washed rinds, goat and sheep — from dairies across Britain, each with someone on the stall who can tell you exactly how it was made.</p>
+    </div>
   </section>
 
-  <section class="lineup">
+  <section id="lineup" class="lineup section-tight">
     <div class="container">
       <div data-reveal>
         <span class="label">The 2027 line-up</span>
@@ -175,22 +230,48 @@
           Hafod <span class="sep">·</span> Baron Bigod
           <span class="small">Plus 50 more makers announced through the spring.</span>
         </p>
-        <a href="vendors.html" class="btn btn-outline" style="margin-top: var(--space-lg);">See all stallholders</a>
+        <a href="vendors.html" class="btn btn-outline" style="margin-top: var(--space-lg);">Trade with us</a>
       </div>
     </div>
   </section>
 
-  <section>
-    <div class="container">
-      <div class="split" data-reveal>
-        <div class="split-body">
-          <span class="label">Tickets</span>
-          <h2>From £15.</h2>
-          <p>Day tickets for either Saturday or Sunday, a weekend pass covering both, and a VIP option with lounge access and a guided pairing session. Under 12s come in free.</p>
-          <a href="tickets.html" class="btn btn-primary">Book tickets</a>
+  <section class="gallery" aria-label="Photographs from the festival">
+    <figure style="margin:0"><img src="assets/img/cheese-display.jpg" alt="Wheels and wedges of British cheese stacked on wooden crates" loading="lazy"></figure>
+    <figure style="margin:0"><img src="assets/img/friends-laughing.jpg" alt="Friends laughing together with drinks at the festival" loading="lazy"></figure>
+    <figure style="margin:0"><img src="assets/img/stall-flowers.jpg" alt="A cheese stall dressed with wildflowers under a marquee" loading="lazy"></figure>
+    <figure style="margin:0"><img src="assets/img/grilled-cheese.jpg" alt="A toasted cheese sandwich being served" loading="lazy"></figure>
+  </section>
+
+  <section id="faq" class="section-tight">
+    <div class="container-narrow">
+      <div data-reveal>
+        <span class="label">Good to know</span>
+        <h2>Before you come.</h2>
+      </div>
+      <div class="mt-lg">
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="true" aria-controls="faq-1">Where is it?<span class="plus">+</span></button>
+          <div class="accordion-panel is-open" id="faq-1"><p>The 2027 venue is being confirmed and will be announced shortly — join the list below and you'll hear first. On-site parking will be free for ticket holders.</p></div>
         </div>
-        <div class="split-media wide">
-          <img src="assets/img/mascot-crowd.jpg" alt="Crowds enjoying the festival field on a summer afternoon" loading="lazy">
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false" aria-controls="faq-2">Do I need to book in advance?<span class="plus">+</span></button>
+          <div class="accordion-panel" id="faq-2"><p>Yes. Tickets are date-specific and popular days do sell out. Booking ahead is cheaper than paying on the gate.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false" aria-controls="faq-3">Are children welcome?<span class="plus">+</span></button>
+          <div class="accordion-panel" id="faq-3"><p>Very. Under 12s come in free, and Saturday is built around families — funfair, fete games and a kids' tasting area.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false" aria-controls="faq-4">Are dogs allowed?<span class="plus">+</span></button>
+          <div class="accordion-panel" id="faq-4"><p>Well-behaved dogs on leads are welcome across the site, but not inside the tasting tent for food hygiene reasons.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false" aria-controls="faq-5">Is the site accessible?<span class="plus">+</span></button>
+          <div class="accordion-panel" id="faq-5"><p>Yes — level access throughout, accessible toilets, and free entry for one essential companion. Email us ahead and we'll make sure everything's arranged.</p></div>
+        </div>
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false" aria-controls="faq-6">Can I get a refund?<span class="plus">+</span></button>
+          <div class="accordion-panel" id="faq-6"><p>Tickets are transferable to someone else at any time but non-refundable, in line with our ticketing partner's terms.</p></div>
         </div>
       </div>
     </div>
@@ -233,33 +314,6 @@
     </div>
   </section>
 
-  <section class="section-tight">
-    <div class="container-narrow">
-      <div data-reveal>
-        <span class="label">Questions</span>
-        <h2>Good to know.</h2>
-      </div>
-      <div class="mt-lg">
-        <div class="accordion-item">
-          <button class="accordion-trigger" aria-expanded="true" aria-controls="faq-1">Do I need to book in advance?<span class="plus">+</span></button>
-          <div class="accordion-panel is-open" id="faq-1"><p>Yes. Tickets are date-specific and popular days do sell out. Booking ahead is cheaper than paying on the gate.</p></div>
-        </div>
-        <div class="accordion-item">
-          <button class="accordion-trigger" aria-expanded="false" aria-controls="faq-2">Are dogs allowed?<span class="plus">+</span></button>
-          <div class="accordion-panel" id="faq-2"><p>Well-behaved dogs on leads are welcome across the site, but not inside the tasting tent for food hygiene reasons.</p></div>
-        </div>
-        <div class="accordion-item">
-          <button class="accordion-trigger" aria-expanded="false" aria-controls="faq-3">Is the site accessible?<span class="plus">+</span></button>
-          <div class="accordion-panel" id="faq-3"><p>Yes — level access throughout, accessible toilets, and free entry for one essential companion. Email us ahead and we'll make sure everything's arranged.</p></div>
-        </div>
-        <div class="accordion-item">
-          <button class="accordion-trigger" aria-expanded="false" aria-controls="faq-4">Can I get a refund?<span class="plus">+</span></button>
-          <div class="accordion-panel" id="faq-4"><p>Tickets are transferable to someone else at any time but non-refundable, in line with our ticketing partner's terms.</p></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
 </main>
 
 <footer class="site-footer">
@@ -272,10 +326,9 @@
       </div>
       <div>
         <h4>Visit</h4>
-        <a href="tickets.html">Tickets</a>
-        <a href="about.html">About the festival</a>
-        <a href="index.html#programme">Programme</a>
-        <a href="index.html#signup">Newsletter</a>
+        <a href="#tickets">Tickets</a>
+        <a href="#whats-on">What's on</a>
+        <a href="#signup">Newsletter</a>
       </div>
       <div>
         <h4>Trade &amp; press</h4>
@@ -290,6 +343,15 @@
     </div>
   </div>
 </footer>
+
+<!-- Booking stays within reach the whole way down the page. -->
+<div class="book-bar" id="book-bar">
+  <div class="bar-info">
+    <span class="bar-title">From £15 · Under 12s free</span>
+    <span class="bar-sub">Sat 5 &amp; Sun 6 June 2027</span>
+  </div>
+  <a href="#tickets" class="btn btn-primary">Book tickets</a>
+</div>
 
 <script src="assets/js/main.js"></script>
 </body>

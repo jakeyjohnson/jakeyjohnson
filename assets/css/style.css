@@ -344,3 +344,72 @@ section { padding: var(--space-2xl) 0; }
 .consent label { font-size: var(--size-sm); color: var(--ink-soft); line-height: 1.5; cursor: pointer; }
 .form-note { font-size: var(--size-xs); color: var(--ink-mute); margin-top: var(--space-sm); max-width: 48ch; }
 .form-error { font-size: var(--size-sm); color: #E8846F; margin-top: var(--space-xs); }
+
+
+/* ——— THE ESSENTIALS: what, when, where, how much — before anything else ——— */
+.essentials {
+  display: grid; grid-template-columns: 1fr; gap: 0;
+  border: 1px solid var(--line-faint); background: var(--night-soft);
+}
+@media (min-width: 680px) { .essentials { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1000px) { .essentials { grid-template-columns: repeat(4, 1fr); } }
+.essential { padding: var(--space-md); border-bottom: 1px solid var(--line-faint); }
+.essential:last-child { border-bottom: none; }
+@media (min-width: 680px) {
+  .essential { border-right: 1px solid var(--line-faint); }
+  .essential:nth-child(2n) { border-right: none; }
+}
+@media (min-width: 1000px) {
+  .essential { border-bottom: none; border-right: 1px solid var(--line-faint); }
+  .essential:nth-child(2n) { border-right: 1px solid var(--line-faint); }
+  .essential:last-child { border-right: none; }
+}
+.essential .k {
+  display: block; font-size: var(--size-xs); font-weight: 600; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--gold); margin-bottom: 0.5rem;
+}
+.essential .v { font-family: var(--font-display); font-size: var(--size-lg); line-height: 1.15; display: block; }
+.essential .sub { font-size: var(--size-sm); color: var(--ink-mute); margin-top: 0.3rem; display: block; }
+
+/* ——— Day picker: choose which day, book it, right at the top ——— */
+.days { display: grid; gap: var(--space-md); }
+@media (min-width: 820px) { .days { grid-template-columns: 1fr 1fr; } }
+.day {
+  border: 1px solid var(--line-faint); background: var(--night-soft); overflow: hidden;
+  display: flex; flex-direction: column; transition: border-color 0.25s var(--ease);
+}
+.day:hover { border-color: var(--line); }
+.day-img { aspect-ratio: 21 / 9; object-fit: cover; width: 100%; }
+.day-inner { padding: var(--space-md); display: flex; flex-direction: column; flex: 1; }
+.day-when {
+  font-size: var(--size-xs); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 0.6rem;
+}
+.day h3 { font-family: var(--font-display); font-weight: 500; font-size: var(--size-lg); margin-bottom: 0.5rem; }
+.day p { color: var(--ink-soft); font-size: var(--size-sm); }
+.day-foot {
+  margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--line-faint);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap;
+}
+.day-price { font-family: var(--font-display); font-size: var(--size-lg); color: var(--cream); }
+.day-price span { font-family: var(--font-body); font-size: var(--size-sm); color: var(--ink-mute); }
+
+/* ——— Persistent booking bar ——— */
+.book-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 95;
+  background: rgba(20,19,15,0.94); backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line-faint);
+  padding: 0.75rem var(--space-md);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-md);
+  transform: translateY(110%); transition: transform 0.3s var(--ease);
+}
+.book-bar.is-visible { transform: translateY(0); }
+.book-bar .bar-info { min-width: 0; }
+.book-bar .bar-title { font-family: var(--font-display); font-size: var(--size-md); line-height: 1.1; display: block; }
+.book-bar .bar-sub {
+  font-size: var(--size-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-mute);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
+}
+.book-bar .btn { flex: 0 0 auto; padding: 0.85rem 1.6rem; }
+@media (max-width: 480px) { .book-bar .bar-sub { display: none; } }
+body { padding-bottom: 0; }
