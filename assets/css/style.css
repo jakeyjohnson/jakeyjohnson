@@ -413,3 +413,59 @@ section { padding: var(--space-2xl) 0; }
 .book-bar .btn { flex: 0 0 auto; padding: 0.85rem 1.6rem; }
 @media (max-width: 480px) { .book-bar .bar-sub { display: none; } }
 body { padding-bottom: 0; }
+
+/* ---- Hand-drawn ink marks -------------------------------------------- */
+/* Line illustrations from assets/img/ink.svg, inlined per page as a sprite.
+   They inherit colour from the text around them via currentColor. */
+
+.ink { display: block; width: 100%; height: 100%; }
+
+.ink-essential {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 0.7rem;
+  color: var(--gold);
+}
+
+/* A pen underline under each section heading. Width tracks the heading, so
+   short ones get a short stroke rather than a rule running off into space. */
+.ink-rule {
+  display: block;
+  width: clamp(120px, 42%, 240px);
+  height: 14px;
+  margin: 0.55rem 0 0;
+  color: var(--gold);
+  opacity: 0.85;
+}
+
+.ink-break {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-lg) 1.5rem;
+}
+.ink-divider {
+  width: min(400px, 70%);
+  height: 24px;
+  color: var(--line);
+}
+
+/* The arrow points across at the booking button from its left. */
+.ink-point {
+  display: none;
+  margin-left: auto;
+  width: 54px;
+  height: 34px;
+  margin-right: 0.35rem;
+  color: var(--gold);
+  opacity: 0.8;
+  flex: none;
+}
+.ink-point svg { display: block; width: 100%; height: 100%; }
+@media (min-width: 760px) {
+  .ink-point { display: block; }
+}
+
+@media (max-width: 759px) {
+  .ink-essential { width: 28px; height: 28px; margin-bottom: 0.5rem; }
+  .ink-rule { width: clamp(100px, 55%, 180px); height: 12px; }
+}
