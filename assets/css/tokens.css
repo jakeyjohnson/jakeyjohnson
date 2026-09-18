@@ -1,29 +1,38 @@
 /* The Great British Cheese Festival — design tokens.
-   Restrained on purpose: two brand colours, one accent, and a lot of space.
-   The photography carries the design; nothing here competes with it. */
+   The brand palette: cream paper, festival blue, one warm accent.
+   Photography carries the design; nothing here competes with it. */
 :root {
-  /* Dark ground. Photography and light do the work against it — this is
-     what gives the site its after-dark festival feel rather than decoration. */
-  --night: #14130F;
-  --night-soft: #1D1B16;
-  --night-lift: #262319;
+  /* Paper. Cream is the ground the whole site sits on — the same cream as
+     the brand artwork, not white, so photography sits warm against it. */
+  --paper: #FBF4E8;
+  --paper-soft: #F6ECDA;
+  --paper-lift: #F0E3CC;
   --cream: #FBF4E8;
   --cream-deep: #F3E8D5;
+
+  /* Festival blue. Headings, the primary action, the ink marks, the footer. */
+  --blue: #1E3A8A;
+  --blue-deep: #152A66;
+  --blue-soft: #35539F;
   --navy: #1E3A8A;
   --navy-deep: #152A66;
-  --ink: #1B1A17;
-  --ink-soft: rgba(251, 244, 232, 0.72);
-  --ink-mute: rgba(251, 244, 232, 0.5);
+
+  /* Text, all set in blue-black rather than a neutral grey so nothing on the
+     page falls outside the palette. */
+  --ink: #14204A;
+  --ink-soft: rgba(20, 32, 74, 0.76);
+  --ink-mute: rgba(20, 32, 74, 0.54);
   --white: #FFFFFF;
-  --line: rgba(251, 244, 232, 0.18);
-  --line-faint: rgba(251, 244, 232, 0.1);
+  --line: rgba(30, 58, 138, 0.22);
+  --line-faint: rgba(30, 58, 138, 0.12);
 
-  /* One accent. Used for prices, links and the primary action — nothing else. */
-  --gold: #E3A93C;
-  --gold-deep: #C98E28;
+  /* Warm accent, used sparingly: prices, the ticker marks, a featured edge.
+     Deep enough to hold its own against cream. */
+  --gold: #B8801E;
+  --gold-deep: #9A6916;
 
-  --success: #3F6E48;
-  --error: #A33A2A;
+  --success: #2F6144;
+  --error: #9A3220;
 
   /* Type — Fraunces for display (warm, high-contrast, sits with the logo's
      fat serif), Inter for everything else. Two faces, no more. */
@@ -49,7 +58,7 @@
   --space-2xl: 6rem;
 
   --radius: 2px;
-  --shadow: 0 20px 50px rgba(27, 26, 23, 0.12);
+  --shadow: 0 20px 50px rgba(20, 32, 74, 0.1);
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
