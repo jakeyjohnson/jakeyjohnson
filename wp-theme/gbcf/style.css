@@ -1,0 +1,16 @@
+/*
+Theme Name: The Great British Cheese Festival
+Theme URI: https://thegreatbritishcheesefestival.co.uk/
+Description: The festival site — cream and blue, hand-drawn, built to get
+  someone from "what's this?" to a bought ticket in as few taps as possible.
+Version: 1.0.0
+Requires at least: 6.0
+Tested up to: 6.7
+Requires PHP: 7.4
+License: All rights reserved
+Text Domain: gbcf
+*/
+
+/* The real stylesheets are assets/css/tokens.css and assets/css/style.css,
+   enqueued from functions.php. This file exists so WordPress can identify
+   the theme, and is the right place for any one-off override you add later. */

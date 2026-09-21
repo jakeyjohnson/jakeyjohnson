@@ -1,196 +1,15 @@
-<!DOCTYPE html>
-<html lang="en-GB">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Great British Cheese Festival</title>
-<meta name="description" content="Two days of British cheese, cider and live music. 5–6 June 2027. Day tickets from £15, under 12s free. 60+ makers, 250 cheeses.">
-<link rel="icon" href="favicon.ico">
-<link rel="stylesheet" href="assets/css/tokens.css">
-<link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
-<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
-<!-- Hand-inked line illustrations. Drawn with a consistent pen: round caps,
-     open corners, a little overshoot where a nib would run past the join,
-     and no perfectly straight lines or true circles anywhere. -->
+<?php
+/**
+ * Home — Front page.
+ *
+ * The markup below is the design as built. Edit the copy here, or move a
+ * block into the WordPress editor if the team needs to change it themselves.
+ *
+ * @package GBCF
+ */
+get_header();
+?>
 
-<symbol id="ink-wheel" viewBox="0 0 120 120" fill="none" stroke="currentColor"
-        stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-  <!-- truckle, seen slightly from above -->
-  <path d="M18 46c1-11 19-19 42-19s41 8 42 19"/>
-  <path d="M18 46v22c0 11 19 19 42 19s42-8 42-19V46"/>
-  <path d="M18.5 46.5c2 10 20 17 41.5 17s39.5-7 41.5-17.5"/>
-  <!-- cut wedge lifted out of the wheel -->
-  <path d="M60 63.5 78 54"/>
-  <path d="M60 63.5 44 52.5"/>
-  <!-- rind texture, two quick passes -->
-  <path d="M25 72c3 4 9 7 16 8.5" opacity=".65"/>
-  <path d="M95 71c-3 4-8 6.5-14 8" opacity=".65"/>
-  <!-- eyes -->
-  <path d="M47 41.5c2.6 0 4.6-1 4.6-2.3s-2-2.3-4.6-2.3-4.7 1-4.7 2.3 2.1 2.3 4.7 2.3Z"/>
-  <path d="M71 45c2 0 3.6-.8 3.6-1.8S73 41.4 71 41.4s-3.7.8-3.7 1.8S69 45 71 45Z"/>
-  <path d="M59 36.6c1.5 0 2.7-.6 2.7-1.3s-1.2-1.4-2.7-1.4-2.8.6-2.8 1.4 1.3 1.3 2.8 1.3Z"/>
-</symbol>
-
-<symbol id="ink-wedge" viewBox="0 0 120 120" fill="none" stroke="currentColor"
-        stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M16 78c0-2 30-44 44-45.5 3-.3 44 16 45.5 19.5 1 2.5-3 9-3 9"/>
-  <path d="M16 78c1 3.5 42 12 45.5 10.5S105 55 105 52"/>
-  <path d="M60 32.5C58 42 59.5 84.5 61.5 88.5"/>
-  <path d="M30 71c2.2 0 4-1 4-2.2s-1.8-2.2-4-2.2-4 1-4 2.2 1.8 2.2 4 2.2Z"/>
-  <path d="M44 62.5c1.7 0 3-.8 3-1.7s-1.3-1.8-3-1.8-3.1.8-3.1 1.8 1.4 1.7 3.1 1.7Z"/>
-  <path d="M84 63c2 0 3.6-.9 3.6-2s-1.6-2-3.6-2-3.7.9-3.7 2 1.7 2 3.7 2Z"/>
-</symbol>
-
-<symbol id="ink-tent" viewBox="0 0 120 120" fill="none" stroke="currentColor"
-        stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-  <!-- peaked marquee: straight roof runs to two poles, scalloped valance -->
-  <path d="M60 18v7"/>
-  <path d="M60 25 17 64"/>
-  <path d="M60 25l43 39"/>
-  <path d="M17 64h86"/>
-  <!-- valance: four scallops hanging off the roof line -->
-  <path d="M17 64c4 7 9 7 12.5 0"/>
-  <path d="M29.5 64c4 7 9 7 12.5 0"/>
-  <path d="M78 64c4 7 9 7 12.5 0"/>
-  <path d="M90.5 64c4 7 9 7 12.5 0"/>
-  <!-- poles and the open doorway between them -->
-  <path d="M19 64v34"/>
-  <path d="M101 64v34"/>
-  <path d="M19 98h82"/>
-  <path d="M46 98V70c0-4 4-6 8-6"/>
-  <path d="M74 98V70c0-4-4-6-8-6"/>
-  <!-- pennant -->
-  <path d="M60 18c5 1 8 2.5 8 4s-3.5 2.5-8 3.5"/>
-</symbol>
-
-<symbol id="ink-ticket" viewBox="0 0 120 120" fill="none" stroke="currentColor"
-        stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M14 44c0-3 1-4.5 4-4.5h84c3 0 4 1.5 4 4.5v10c-4.5.5-7.5 3-7.5 6.5s3 6 7.5 6.5v10c0 3-1 4.5-4 4.5H18c-3 0-4-1.5-4-4.5V67c4.5-.5 7.5-3 7.5-6.5S18.5 54.5 14 54V44Z"/>
-  <path d="M63 41v6"/><path d="M63 55v5.5"/><path d="M63 69v5.5"/>
-  <path d="M30 53h22"/><path d="M30 63h16"/>
-</symbol>
-
-<symbol id="ink-glass" viewBox="0 0 120 120" fill="none" stroke="currentColor"
-        stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M38 24c-1 20 3 33 12 38.5"/>
-  <path d="M82 24c1 20-3 33-12 38.5"/>
-  <path d="M38 24c6-1.5 38-1.5 44 0"/>
-  <path d="M50 62.5c4 2 16 2 20 0"/>
-  <path d="M60 64v28"/>
-  <path d="M43 94c5-2.5 29-2.5 34 0"/>
-  <path d="M41 38c7 2.5 31 2.5 38 0" opacity=".65"/>
-</symbol>
-
-<symbol id="ink-note" viewBox="0 0 120 120" fill="none" stroke="currentColor"
-        stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M46 84V32c14-3 28-6 40-9v52"/>
-  <path d="M46 44c14-3 28-6 40-9" opacity=".7"/>
-  <path d="M38 94c5 0 9-3 9-7s-4-6-9-6-9 3-9 7 4 6 9 6Z"/>
-  <path d="M78 85c5 0 9-3 9-7s-4-6-9-6-9 3-9 7 4 6 9 6Z"/>
-</symbol>
-
-<symbol id="ink-knife" viewBox="0 0 120 120" fill="none" stroke="currentColor"
-        stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-  <!-- a cheesemonger's knife, laid on the diagonal: holed blade, forked tip -->
-  <path d="M24 82c-3-3-3-6 0-9l44-38c3-2.5 6-2.5 8.5.5l4 4.5c2.5 3 2 6-1 8.5L35 84c-3 2.5-7 1-11-2Z"/>
-  <path d="M33 74c2.4 0 4.3-1.6 4.3-3.6S35.4 67 33 67s-4.3 1.6-4.3 3.5S30.6 74 33 74Z" opacity=".75"/>
-  <path d="M50 58c2 0 3.6-1.4 3.6-3s-1.6-3-3.6-3-3.7 1.3-3.7 3 1.7 3 3.7 3Z" opacity=".75"/>
-  <path d="M66 43c1.8 0 3.2-1.2 3.2-2.6s-1.4-2.6-3.2-2.6-3.2 1.2-3.2 2.6 1.4 2.6 3.2 2.6Z" opacity=".75"/>
-  <!-- handle -->
-  <path d="M80.5 39.5 94 27c3-2.5 8-2 10.5 1s2 7.5-1 10L90 50.5"/>
-  <!-- forked tip -->
-  <path d="M24 82l-8 7"/>
-  <path d="M28 86l-7 6"/>
-</symbol>
-
-<symbol id="ink-cow" viewBox="0 0 120 120" fill="none" stroke="currentColor"
-        stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M22 54c-2-8 2-13 8-13s9 4 12 4h30c4 0 8-3 14-3s10 4 11 10"/>
-  <path d="M97 52c4 2 7 7 6 13s-5 9-5 9"/>
-  <path d="M22 54c-3 10-2 22 2 30"/>
-  <path d="M24 84c8 4 22 6 36 6s26-2 34-6"/>
-  <path d="M34 88v14"/><path d="M48 90v13"/><path d="M74 90v13"/><path d="M88 87v15"/>
-  <path d="M100 74c3 3 5 8 4 14"/>
-  <path d="M30 41c-3-4-3-8-1-9s5 2 6 5" opacity=".8"/>
-  <path d="M42 40c0-5 2-8 4-7s2 5 1 8" opacity=".8"/>
-  <path d="M52 66c4 0 7-2 7-4.5s-3-4.5-7-4.5-7 2-7 4.5 3 4.5 7 4.5Z" opacity=".7"/>
-  <path d="M76 74c3 0 5-1.5 5-3.5S79 67 76 67s-5 1.5-5 3.5S73 74 76 74Z" opacity=".7"/>
-</symbol>
-
-<symbol id="ink-wheat" viewBox="0 0 120 120" fill="none" stroke="currentColor"
-        stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M60 104V44"/>
-  <path d="M60 44c-6-8-6-16 0-22 6 6 6 14 0 22Z"/>
-  <path d="M60 58c-7-6-9-13-5-19 6 3 8 11 5 19Z"/>
-  <path d="M60 58c7-6 9-13 5-19-6 3-8 11-5 19Z"/>
-  <path d="M60 74c-8-5-11-12-8-18 7 2 10 10 8 18Z"/>
-  <path d="M60 74c8-5 11-12 8-18-7 2-10 10-8 18Z"/>
-  <path d="M60 90c-9-4-12-11-10-17 8 1 11 9 10 17Z"/>
-  <path d="M60 90c9-4 12-11 10-17-8 1-11 9-10 17Z"/>
-</symbol>
-
-<!-- UI marks: a pen underlining, circling and pointing -->
-<symbol id="ink-underline" viewBox="0 0 300 18" fill="none" stroke="currentColor"
-        stroke-width="3" stroke-linecap="round">
-  <path d="M6 11c46-5 98-7 148-6 40 .8 106 3 140 5"/>
-  <path d="M28 16c58-4 132-5 208-2" opacity=".55"/>
-</symbol>
-
-<symbol id="ink-arrow" viewBox="0 0 140 90" fill="none" stroke="currentColor"
-        stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M10 14c34-6 74 6 94 40"/>
-  <path d="M86 46l20 10-4-22"/>
-</symbol>
-
-<symbol id="ink-circle" viewBox="0 0 220 110" fill="none" stroke="currentColor"
-        stroke-width="3" stroke-linecap="round">
-  <path d="M112 10C58 8 12 26 10 54c-2 30 52 48 108 46 50-2 94-20 94-46 0-24-40-42-96-44"/>
-  <path d="M22 30C14 38 10 46 10 54" opacity=".5"/>
-</symbol>
-
-<symbol id="ink-divider" viewBox="0 0 400 24" fill="none" stroke="currentColor"
-        stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M8 14c44-8 84 6 128 0s72-12 112-4 92 10 144 4"/>
-</symbol>
-</svg>
-
-<a class="skip-link" href="#main">Skip to content</a>
-
-<header class="site-header">
-  <nav class="nav">
-    <a href="index.html" class="nav-logo">
-      <img src="assets/img/logo.png" alt="The Great British Cheese Festival" data-brand-mark style="display:none">
-      <span class="nav-logo-type">The Great British<br>Cheese Festival<small>5–6 June 2027</small></span>
-    </a>
-    <ul class="nav-links">
-      <li><a href="#tickets">Tickets</a></li>
-      <li><a href="#whats-on">What's on</a></li>
-      <li><a href="#lineup">Line-up</a></li>
-      <li><a href="#faq">Info</a></li>
-      <li><a href="vendors.html">Stallholders</a></li>
-    </ul>
-    <a href="#tickets" class="btn btn-primary nav-cta">Book tickets</a>
-    <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="mobile-panel">
-      <span></span><span></span><span></span>
-    </button>
-  </nav>
-  <div class="mobile-panel" id="mobile-panel">
-    <ul>
-      <li><a href="#tickets">Tickets</a></li>
-      <li><a href="#whats-on">What's on</a></li>
-      <li><a href="#lineup">Line-up</a></li>
-      <li><a href="#faq">Info</a></li>
-      <li><a href="vendors.html">Stallholders</a></li>
-      <li><a href="contact.html">Contact</a></li>
-    </ul>
-    <a href="#tickets" class="btn btn-primary btn-block">Book tickets</a>
-  </div>
-</header>
-<div class="bunting" aria-hidden="true"></div>
-
-<main id="main">
 
   <section class="hero" style="background-image:url('assets/img/mascot-crowd.jpg')">
     <div class="container">
@@ -260,7 +79,7 @@
 
       <div class="days" data-reveal>
         <div class="day">
-          <img class="day-img" src="assets/img/toastie-wide.jpg" alt="A toasted cheese sandwich on the griddle" loading="lazy">
+          <img class="day-img" src="<?php echo esc_url( get_template_directory_uri() ); ?>/assets/img/toastie-wide.jpg" alt="A toasted cheese sandwich on the griddle" loading="lazy">
           <div class="day-inner">
             <span class="day-when">Saturday 5 June</span>
             <h3>The family day</h3>
@@ -274,7 +93,7 @@
         </div>
 
         <div class="day">
-          <img class="day-img" src="assets/img/cheers-close.jpg" alt="Festival-goers raising glasses at golden hour" loading="lazy">
+          <img class="day-img" src="<?php echo esc_url( get_template_directory_uri() ); ?>/assets/img/cheers-close.jpg" alt="Festival-goers raising glasses at golden hour" loading="lazy">
           <div class="day-inner">
             <span class="day-when">Sunday 6 June</span>
             <h3>The Proms</h3>
@@ -319,7 +138,7 @@
             <li>Coach parking arranged</li>
             <li>Just drop us a line</li>
           </ul>
-          <a href="contact.html" class="btn btn-outline btn-block">Enquire</a>
+          <a href="<?php echo esc_url( home_url( '/contact/' ) ); ?>" class="btn btn-outline btn-block">Enquire</a>
         </div>
       </div>
     </div>
@@ -386,16 +205,16 @@
           Hafod <span class="sep">·</span> Baron Bigod
           <span class="small">Plus 50 more makers announced through the spring.</span>
         </p>
-        <a href="vendors.html" class="btn btn-outline" style="margin-top: var(--space-lg);">Trade with us</a>
+        <a href="<?php echo esc_url( home_url( '/vendors/' ) ); ?>" class="btn btn-outline" style="margin-top: var(--space-lg);">Trade with us</a>
       </div>
     </div>
   </section>
 
   <section class="gallery" aria-label="Photographs from the festival">
-    <figure style="margin:0"><img src="assets/img/cheese-display.jpg" alt="Wheels and wedges of British cheese stacked on wooden crates" loading="lazy"></figure>
-    <figure style="margin:0"><img src="assets/img/friends-laughing.jpg" alt="Friends laughing together with drinks at the festival" loading="lazy"></figure>
-    <figure style="margin:0"><img src="assets/img/stall-flowers.jpg" alt="A cheese stall dressed with wildflowers under a marquee" loading="lazy"></figure>
-    <figure style="margin:0"><img src="assets/img/grilled-cheese.jpg" alt="A toasted cheese sandwich being served" loading="lazy"></figure>
+    <figure style="margin:0"><img src="<?php echo esc_url( get_template_directory_uri() ); ?>/assets/img/cheese-display.jpg" alt="Wheels and wedges of British cheese stacked on wooden crates" loading="lazy"></figure>
+    <figure style="margin:0"><img src="<?php echo esc_url( get_template_directory_uri() ); ?>/assets/img/friends-laughing.jpg" alt="Friends laughing together with drinks at the festival" loading="lazy"></figure>
+    <figure style="margin:0"><img src="<?php echo esc_url( get_template_directory_uri() ); ?>/assets/img/stall-flowers.jpg" alt="A cheese stall dressed with wildflowers under a marquee" loading="lazy"></figure>
+    <figure style="margin:0"><img src="<?php echo esc_url( get_template_directory_uri() ); ?>/assets/img/grilled-cheese.jpg" alt="A toasted cheese sandwich being served" loading="lazy"></figure>
   </section>
 
   <div class="ink-break" aria-hidden="true"><svg class="ink-divider"><use href="#ink-divider"></use></svg></div>
@@ -466,7 +285,7 @@
           </div>
 
           <button type="submit" class="btn btn-primary">Sign me up</button>
-          <p class="form-note">We store your details only to send you what you&rsquo;ve asked for, and you can unsubscribe from any email. See our <a href="privacy.html" class="link" style="font-size:inherit">privacy policy</a>.</p>
+          <p class="form-note">We store your details only to send you what you&rsquo;ve asked for, and you can unsubscribe from any email. See our <a href="<?php echo esc_url( home_url( '/privacy/' ) ); ?>" class="link" style="font-size:inherit">privacy policy</a>.</p>
           <p id="signup-error" class="form-error" hidden></p>
           <p id="signup-success" class="form-success" hidden>Thanks — you&rsquo;re on the list. Look out for the venue announcement.</p>
         </form>
@@ -474,46 +293,5 @@
     </div>
   </section>
 
-</main>
-
-<footer class="site-footer">
-  <div class="container">
-    <div class="footer-grid">
-      <div>
-        <img src="assets/img/logo.png" alt="" class="footer-mark" data-brand-mark style="display:none">
-        <h4>The Great British Cheese Festival</h4>
-        <p style="max-width:34ch; font-size: var(--size-sm);">5–6 June 2027. Venue to be announced. Savour the flavours of Britain.</p>
-      </div>
-      <div>
-        <h4>Visit</h4>
-        <a href="#tickets">Tickets</a>
-        <a href="#whats-on">What's on</a>
-        <a href="#signup">Newsletter</a>
-      </div>
-      <div>
-        <h4>Trade &amp; press</h4>
-        <a href="vendors.html">Stallholders</a>
-        <a href="contact.html">Contact</a>
-        <a href="privacy.html">Privacy</a>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <span>© 2027 The Great British Cheese Festival</span>
-      <span>5–6 June 2027</span>
-    </div>
-  </div>
-</footer>
-
-<!-- Booking stays within reach the whole way down the page. -->
-<div class="book-bar" id="book-bar">
-  <div class="bar-info">
-    <span class="bar-title">From £15 · Under 12s free</span>
-    <span class="bar-sub">Sat 5 &amp; Sun 6 June 2027</span>
-  </div>
-  <span class="ink-point" aria-hidden="true"><svg><use href="#ink-arrow"></use></svg></span>
-  <a href="#tickets" class="btn btn-primary">Book tickets</a>
-</div>
-
-<script src="assets/js/main.js"></script>
-</body>
-</html>
+<?php
+get_footer();
