@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { generateRams, type ActionResult } from "@/app/actions";
+import { generateDocumentPack, type ActionResult } from "@/app/actions";
 
-export function GenerateRams({ projectId }: { projectId: string }) {
+export function GeneratePack({ projectId }: { projectId: string }) {
   const [pending, start] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
 
@@ -12,11 +12,11 @@ export function GenerateRams({ projectId }: { projectId: string }) {
       <button
         type="button"
         disabled={pending}
-        onClick={() => start(async () => setResult(await generateRams(projectId)))}
+        onClick={() => start(async () => setResult(await generateDocumentPack(projectId)))}
         className="rounded-md px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
         style={{ background: "var(--brand-primary)" }}
       >
-        {pending ? "Generating…" : "Generate RAMS pack"}
+        {pending ? "Generating…" : "Generate document pack"}
       </button>
 
       {result && (

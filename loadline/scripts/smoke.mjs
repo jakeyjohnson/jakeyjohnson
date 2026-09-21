@@ -69,13 +69,31 @@ check("HIGH band shown before controls", (await page.locator("text=15 HIGH").cou
 check("residual risk reduced to LOW", (await page.locator("text=4 LOW").count()) > 0);
 await shot("5-project");
 
-// 4. Generate the RAMS pack
-await page.getByRole("button", { name: /Generate RAMS pack/ }).click();
-await page.waitForSelector("text=/issued as PROD2026-001a/", { timeout: 30000 });
-check("RAMS pack generated", true);
+// 4. Generate the full document pack
+check("pack contents listed before generating", (await page.locator("text=COSHH Assessment").count()) > 0);
+await page.getByRole("button", { name: /Generate document pack/ }).click();
+await page.waitForSelector("text=/documents issued as PROD2026-001a/", { timeout: 60000 });
+check("document pack generated", true);
 await page.reload({ waitUntil: "networkidle" });
-check("risk assessment listed", (await page.locator("text=Risk Assessment PROD2026-001a.docx").count()) > 0);
-check("method statement listed", (await page.locator("text=Method Statement PROD2026-001a.docx").count()) > 0);
+
+for (const name of [
+  "Risk Assessment PROD2026-001a.docx",
+  "Method Statement PROD2026-001a.docx",
+  "COSHH Assessment PROD2026-001a.docx",
+  "Lifting Plan PROD2026-001a.docx",
+  "Site Induction Record PROD2026-001a.docx",
+  "Accident & Near Miss Report PROD2026-001a.docx",
+  "Production Schedule PROD2026-001a.docx",
+  "Call Sheet PROD2026-001a.docx",
+  "Procurement Schedule PROD2026-001a.docx",
+  "Purchase Order PROD2026-001a.docx",
+  "Approved Supplier Register PROD2026-001a.docx",
+  "Subcontractor Questionnaire PROD2026-001a.docx",
+  "Licence & Permissions Register PROD2026-001a.docx",
+]) {
+  check(`generated: ${name}`, (await page.getByText(name, { exact: true }).count()) > 0);
+}
+check("filed across folders", (await page.locator("text=02 Procurement").count()) > 0);
 await shot("6-generated");
 
 // 5. Second project proves the register increments rather than repeating

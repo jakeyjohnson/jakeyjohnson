@@ -60,6 +60,55 @@ copying a directory. **Neither is ever pointed at a Drive by configuration** —
 Multi-tenancy falls out of this: each company's documents live in their own
 storage, under their own branding, with their own job-code series.
 
+## The base pack
+
+Generating a project's documentation produces thirteen documents in one pass,
+each filed into the folder it belongs in and stamped with the project's job
+code:
+
+| Document | Folder | What it is for |
+|---|---|---|
+| Risk Assessment | 01 RAMS | Hazards, controls and residual risk per activity |
+| Method Statement | 01 RAMS | The safe system of work, arrival through get-out |
+| COSHH Assessment | 01 RAMS | Required by the method statement's haze commitments |
+| Lifting Plan | 01 RAMS | LOLER plan with an appointed person and capacity check |
+| Site Induction Record | 01 RAMS | Briefing content and the sheet crew sign on arrival |
+| Accident & Near Miss Report | 01 RAMS | Blank form; assessments are reviewed on incidents |
+| Procurement Schedule | 02 Procurement | What to order and the date it must be ordered by |
+| Purchase Order | 02 Procurement | Order template with computed totals |
+| Production Schedule | 03 Schedule | Phases, owners and milestones |
+| Call Sheet | 03 Schedule | Daily calls, contacts and emergency details |
+| Licence & Permissions Register | 04 Licences | Licences to work through, with owner and status |
+| Approved Supplier Register | 05 Suppliers | Suppliers and insurance expiry, flagged when lapsing |
+| Subcontractor Questionnaire | 05 Suppliers | Sent out before work is placed |
+
+Two of these exist because the source pack promised them and did not contain
+them. The method statement commits to "COSHH assessment implemented" for haze
+fluid, but no COSHH assessment exists. Every risk assessment is reviewed "In
+event of Accident or Near Miss", but there is no form to record one on.
+
+### These are starting points, not finished paperwork
+
+Documents needing human input are marked **Needs completion** in the app, and
+carry a visible `[COMPLETE BEFORE ISSUE]` marker in the text. Where content is
+genuinely job-specific — a substance's hazard statements, a load's weight — the
+default is a marked placeholder rather than an invented value, because a
+plausible wrong number in a safety document is more dangerous than an obvious
+blank.
+
+### Arithmetic the documents do for you
+
+- **Lifting plan** flags any equipment whose safe working load is under the
+  total load, shaded on the page. Specifying gear too light for the load is a
+  multiplication, so the document does it.
+- **Procurement schedule** counts lead times back over *working* days from the
+  on-site date, because suppliers quote in working days and a weekend silently
+  eats two. Items past their order-by date are shaded.
+- **Purchase orders** total their own lines and round VAT once on the net, which
+  is what the supplier's invoice will show, so the two reconcile.
+- **Supplier register and licence register** flag insurance and licences that
+  have expired or expire within 30 days.
+
 ## Branding
 
 Every company sets a logo, colours, heading font, document footer and

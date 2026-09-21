@@ -3,13 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getStore, getWorkspace } from "@/lib/workspace";
-import { HAZARD_LIBRARY } from "@/domain/hazard-library";
-import { methodStatementFor } from "@/domain/method-statement-template";
-import { renderRiskAssessment } from "@/documents/risk-assessment";
-import { renderMethodStatement } from "@/documents/method-statement";
+import { generatePack } from "@/documents/pack";
 import { formatJobCode } from "@/domain/job-code";
 import { sanitiseTheme, validateLogo, type StoredLogo } from "@/domain/branding";
-import type { ProjectStatus, RiskAssessment } from "@/domain/types";
+import type { ProjectStatus } from "@/domain/types";
 
 export type ActionResult = { ok: true; message: string } | { ok: false; error: string };
 
@@ -52,48 +49,40 @@ export async function createProject(_prev: ActionResult | null, form: FormData) 
 }
 
 /**
- * Generates the RAMS pair for a project.
+ * Generates the full base pack for a project.
  *
- * The assessment starts as the full library, which is the honest default: a
- * production manager removes what does not apply to this build rather than
- * being handed a blank page and trusted to remember loading hazards.
+ * Every document lands in the folder it belongs to, branded and carrying the
+ * project's job code. Documents that contain placeholders are counted and
+ * reported, because a pack that looks finished but is not is worse than one
+ * that obviously needs work.
  */
-export async function generateRams(projectId: string): Promise<ActionResult> {
+export async function generateDocumentPack(projectId: string): Promise<ActionResult> {
   const store = getStore();
   const workspace = await getWorkspace();
   const project = await store.getProject(workspace, projectId);
   if (!project) return { ok: false, error: `No project ${projectId}.` };
 
-  const code = formatJobCode(project.code);
+  let written = 0;
+  let needingCompletion = 0;
 
   try {
-    const assessment: RiskAssessment = {
-      code: project.code,
-      projectId: project.id,
-      circulation: workspace.defaultCirculation,
-      activities: HAZARD_LIBRARY,
-      assessedBy: project.productionManager || workspace.companyName,
-      assessedOn: new Date().toISOString().slice(0, 10),
-      reviewTrigger: "In event of Accident or Near Miss",
-      packVersion: workspace.packVersion,
-    };
-
-    const rams = await renderRiskAssessment(assessment, workspace.branding);
-    await store.putDocument(project, "01 RAMS", `Risk Assessment ${code}.docx`, rams);
-
-    const statement = methodStatementFor(project, project.code);
-    const method = await renderMethodStatement(
-      statement,
-      workspace.branding,
-      workspace.packVersion,
-    );
-    await store.putDocument(project, "01 RAMS", `Method Statement ${code}.docx`, method);
+    const documents = await generatePack(project, workspace);
+    for (const document of documents) {
+      await store.putDocument(project, document.section, document.filename, document.contents);
+      written += 1;
+      if (document.needsCompletion) needingCompletion += 1;
+    }
   } catch (error) {
     return { ok: false, error: (error as Error).message };
   }
 
   revalidatePath(`/projects/${projectId}`);
-  return { ok: true, message: `Risk assessment and method statement issued as ${code}.` };
+
+  const code = formatJobCode(project.code);
+  return {
+    ok: true,
+    message: `${written} documents issued as ${code}. ${needingCompletion} contain placeholders that must be completed before issue.`,
+  };
 }
 
 export async function saveBranding(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
