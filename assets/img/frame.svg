@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" fill="none"
+     stroke="#1E3A8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5">
+  <!-- A rectangle ruled by hand: corners overshoot, edges bow. Used as a
+       border-image so the corners never stretch. -->
+  <path d="M7 10c26-2.5 62-3 84-1.5 14 1 20 0 22 1.5"/>
+  <path d="M112 8c2 24 2.5 62 1 84-1 14 0 20-1.5 22"/>
+  <path d="M113 112c-26 2.5-62 3-84 1.5-14-1-20 0-22-1.5"/>
+  <path d="M8 113c-2-24-2.5-62-1-84 1-14 0-20 1.5-22"/>
+</svg>

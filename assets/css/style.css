@@ -8,7 +8,9 @@ body {
   font-size: var(--size-base);
   line-height: 1.65;
   color: var(--ink);
-  background: var(--paper);
+  background-color: var(--paper);
+  background-image: url('../img/paper.svg');
+  background-size: 180px 180px;
   -webkit-font-smoothing: antialiased;
 }
 img { max-width: 100%; display: block; }
@@ -43,9 +45,11 @@ section { padding: var(--space-2xl) 0; }
 
 /* ——— Small caps label. The only "decoration" left. ——— */
 .label {
-  display: block; font-size: var(--size-xs); font-weight: 600;
-  letter-spacing: 0.16em; text-transform: uppercase; color: var(--blue);
-  margin-bottom: var(--space-sm);
+  display: block; font-family: var(--font-display); font-style: italic;
+  font-weight: 400; font-size: var(--size-md); line-height: 1.2;
+  letter-spacing: 0; text-transform: none; color: var(--gold);
+  margin-bottom: var(--space-xs); transform: rotate(-1.2deg);
+  transform-origin: left center;
 }
 .label-light { color: rgba(255,255,255,0.72); }
 
@@ -96,8 +100,8 @@ section { padding: var(--space-2xl) 0; }
 }
 .nav-logo.has-mark .nav-logo-type { display: none; }
 .nav-logo small {
-  display: block; font-family: var(--font-body); font-weight: 500; font-size: 0.6rem;
-  letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-mute); margin-top: 0.4em;
+  display: block; font-family: var(--font-display); font-style: italic; font-weight: 400;
+  font-size: 0.82rem; letter-spacing: 0; text-transform: none; color: var(--gold); margin-top: 0.15em;
 }
 .nav-links { display: flex; align-items: center; gap: var(--space-md); list-style: none; margin: 0; padding: 0; }
 .nav-links a {
@@ -138,7 +142,7 @@ section { padding: var(--space-2xl) 0; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: var(--space-lg); }
 .hero-meta {
   display: flex; flex-wrap: wrap; gap: var(--space-sm) var(--space-md); margin-bottom: var(--space-md);
-  font-size: var(--size-sm); font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.82);
+  font-family: var(--font-display); font-style: italic; font-size: var(--size-md); letter-spacing: 0; text-transform: none; color: rgba(255,255,255,0.9);
 }
 
 /* ——— Stat row ——— */
@@ -177,7 +181,9 @@ section { padding: var(--space-2xl) 0; }
 .tickets { display: grid; gap: var(--space-md); }
 @media (min-width: 820px) { .tickets { grid-template-columns: repeat(3, 1fr); } }
 .ticket {
-  background: var(--paper-soft); border: 1px solid var(--line-faint); padding: var(--space-lg) var(--space-md);
+  background: var(--paper-soft); padding: var(--space-lg) var(--space-md);
+  border: 2px solid transparent;
+  border-image: url('../img/frame.svg') 12 / 12px / 0 round;
   display: flex; flex-direction: column;
 }
 .ticket.featured { border-color: var(--gold); background: var(--paper-lift); }
@@ -263,8 +269,8 @@ section { padding: var(--space-2xl) 0; }
 .footer-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg); }
 @media (min-width: 760px) { .footer-grid { grid-template-columns: 2fr 1fr 1fr; } }
 .site-footer h4 {
-  color: #fff; font-family: var(--font-body); font-size: var(--size-xs); font-weight: 600;
-  letter-spacing: 0.16em; text-transform: uppercase; margin: 0 0 var(--space-sm);
+  color: #fff; font-family: var(--font-display); font-style: italic; font-weight: 400;
+  font-size: var(--size-md); letter-spacing: 0; text-transform: none; margin: 0 0 var(--space-sm);
 }
 .site-footer a { display: block; margin-bottom: 0.6rem; font-size: var(--size-sm); color: rgba(255,255,255,0.68); }
 .site-footer a:hover { color: #fff; }
@@ -348,16 +354,22 @@ section { padding: var(--space-2xl) 0; }
 
 /* ——— THE ESSENTIALS: what, when, where, how much — before anything else ——— */
 .essentials {
-  display: grid; grid-template-columns: 1fr; gap: 0;
-  border: 1px solid var(--line-faint); background: var(--paper-soft);
+  display: grid; grid-template-columns: 1fr; gap: var(--space-sm);
 }
 @media (min-width: 680px) { .essentials { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 1000px) { .essentials { grid-template-columns: repeat(4, 1fr); } }
-.essential { padding: var(--space-md); border-bottom: 1px solid var(--line-faint); }
-.essential:last-child { border-bottom: none; }
+.essential {
+  padding: var(--space-md);
+  background: var(--paper-soft);
+  border: 2px solid transparent;
+  border-image: url('../img/frame.svg') 12 / 12px / 0 round;
+  transform: rotate(var(--tilt, 0deg));
+}
+.essential:nth-child(2) { --tilt: 0.7deg; }
+.essential:nth-child(3) { --tilt: -0.5deg; }
+.essential:nth-child(4) { --tilt: 0.4deg; }
+.essential:nth-child(1) { --tilt: -0.8deg; }
 @media (min-width: 680px) {
-  .essential { border-right: 1px solid var(--line-faint); }
-  .essential:nth-child(2n) { border-right: none; }
 }
 @media (min-width: 1000px) {
   .essential { border-bottom: none; border-right: 1px solid var(--line-faint); }
@@ -365,8 +377,9 @@ section { padding: var(--space-2xl) 0; }
   .essential:last-child { border-right: none; }
 }
 .essential .k {
-  display: block; font-size: var(--size-xs); font-weight: 600; letter-spacing: 0.16em;
-  text-transform: uppercase; color: var(--blue); margin-bottom: 0.5rem;
+  display: block; font-family: var(--font-display); font-style: italic;
+  font-size: var(--size-base); letter-spacing: 0; text-transform: none;
+  color: var(--gold); margin-bottom: 0.3rem;
 }
 .essential .v { font-family: var(--font-display); font-size: var(--size-lg); line-height: 1.15; display: block; }
 .essential .sub { font-size: var(--size-sm); color: var(--ink-mute); margin-top: 0.3rem; display: block; }
@@ -375,15 +388,18 @@ section { padding: var(--space-2xl) 0; }
 .days { display: grid; gap: var(--space-md); }
 @media (min-width: 820px) { .days { grid-template-columns: 1fr 1fr; } }
 .day {
-  border: 1px solid var(--line-faint); background: var(--paper-soft); overflow: hidden;
+  background: var(--paper-soft); overflow: hidden;
+  border: 2px solid transparent;
+  border-image: url('../img/frame.svg') 12 / 12px / 0 round;
   display: flex; flex-direction: column; transition: border-color 0.25s var(--ease);
 }
 .day:hover { border-color: var(--line); }
 .day-img { aspect-ratio: 21 / 9; object-fit: cover; width: 100%; }
 .day-inner { padding: var(--space-md); display: flex; flex-direction: column; flex: 1; }
 .day-when {
-  font-size: var(--size-xs); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
-  color: var(--blue); margin-bottom: 0.6rem;
+  font-family: var(--font-display); font-style: italic; font-size: var(--size-base);
+  letter-spacing: 0; text-transform: none;
+  color: var(--gold); margin-bottom: 0.4rem;
 }
 .day h3 { font-family: var(--font-display); font-weight: 500; font-size: var(--size-lg); margin-bottom: 0.5rem; }
 .day p { color: var(--ink-soft); font-size: var(--size-sm); }
@@ -477,3 +493,33 @@ body { padding-bottom: 0; }
    follow their surroundings rather than the default blue-on-cream. */
 .band .ink-rule, .hero .ink-rule { color: rgba(255,255,255,0.85); }
 .band .ink-rule, .text-center .ink-rule, .lineup .ink-rule { margin-inline: auto; }
+
+
+/* ---- Fete dressing ---------------------------------------------------- */
+/* Bunting, hung once at the top of the page. One run, properly drawn — it
+   does the whole job that a page covered in decoration was failing to do. */
+.bunting {
+  height: 54px;
+  background-image: url('../img/bunting.svg');
+  background-repeat: repeat-x;
+  background-position: left top;
+  background-size: auto 54px;
+  position: relative;
+  z-index: 3;
+  margin-bottom: calc(var(--space-sm) * -1);
+  pointer-events: none;
+}
+@media (max-width: 759px) {
+  .bunting { height: 38px; background-size: auto 38px; }
+}
+
+/* Photographs sit on the page like prints laid out on a table, not tiles
+   snapped to a grid. */
+.day:nth-child(odd) { transform: rotate(-0.5deg); }
+.day:nth-child(even) { transform: rotate(0.45deg); }
+.ticket:nth-child(1) { transform: rotate(0.5deg); }
+.ticket:nth-child(3) { transform: rotate(-0.6deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .essential, .day, .ticket, .label { transform: none; }
+}
