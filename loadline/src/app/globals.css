@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/*
+ * Brand tokens. Every value here is overridden at runtime from the workspace's
+ * branding, injected as inline custom properties on <html> by the layout, so a
+ * company's colours reach the whole app without a rebuild.
+ */
+:root {
+  --brand-primary: #1b3a5c;
+  --brand-ink: #12181f;
+  --brand-surface: #ffffff;
+  --brand-accent: #c8963e;
+  --brand-heading-font: var(--font-geist-sans), system-ui, sans-serif;
+
+  --rule: #e3e6ea;
+  --muted: #5c6672;
+  --raised: #f7f8f9;
+
+  /* Risk bands, matching the document generator's table shading. */
+  --band-low: #d6e8d5;
+  --band-medium: #fbe7c6;
+  --band-high: #f6cba6;
+  --band-critical: #e9a8a8;
+  /* Text sitting on a band fill. Flips with the fills below so pills stay
+     readable in both modes. */
+  --band-text: #12181f;
+}
+
+:root[data-mode="dark"] {
+  --brand-ink: #e8ecf1;
+  --brand-surface: #0f1419;
+  --rule: #232b34;
+  --muted: #94a1b0;
+  --raised: #171d24;
+  --band-low: #2f4a33;
+  --band-medium: #5a4526;
+  --band-high: #6b3f28;
+  --band-critical: #6e2f2f;
+  --band-text: #e8ecf1;
+}
+
+@theme inline {
+  --color-surface: var(--brand-surface);
+  --color-ink: var(--brand-ink);
+  --color-primary: var(--brand-primary);
+  --color-accent: var(--brand-accent);
+  --color-rule: var(--rule);
+  --color-muted: var(--muted);
+  --color-raised: var(--raised);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--brand-heading-font);
+  letter-spacing: -0.015em;
+}
+
+/* Job codes are identifiers people read aloud and cross-check. Monospace. */
+.code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-ligatures: none;
+}
