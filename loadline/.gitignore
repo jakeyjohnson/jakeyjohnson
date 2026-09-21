@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Local workspace: generated documents and manifests, never committed.
 .loadline-workspace/
+
+# Screenshots written by the smoke test.
+smoke-screenshots/

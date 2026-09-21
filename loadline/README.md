@@ -97,11 +97,47 @@ npm install
 npm run dev          # http://localhost:3000
 ```
 
+### Testing
+
 ```bash
-npm test             # domain, rendering, store and end-to-end tests
+npm test             # 72 tests: domain, rendering, store, end-to-end
 npm run typecheck
 npm run lint
 ```
+
+`npm test` covers the parts that matter without a browser: risk scoring
+against every band printed in the source documents, job code issuing and
+stale-code detection, store round-trips, and an end-to-end pass that unzips
+generated `.docx` files and reads their text back — because asserting on a
+file's size proves nothing about a zip.
+
+For the full product in a real browser:
+
+```bash
+npm install
+npx playwright install chromium   # once
+npm run build
+npm start &                        # http://localhost:3000
+BASE=http://localhost:3000 npm run smoke
+```
+
+The smoke test sets branding, uploads a logo, creates a project, generates its
+RAMS pack, checks the job code register increments across independent series,
+and confirms the layout does not scroll sideways on a phone. It writes
+screenshots to `smoke-screenshots/` and exits non-zero on any failure.
+
+Point it at a throwaway workspace so it never touches real work:
+
+```bash
+LOADLINE_WORKSPACE_DIR=/tmp/loadline-demo npm start &
+```
+
+### Testing it by hand
+
+1. **Branding** — set a logo and colours first, so documents carry them.
+2. **New project** — the job code is issued for you; you never type one.
+3. **Generate RAMS pack** — documents appear under
+   `<workspace>/Projects/<code> <name>/01 RAMS/`. Open them in Word.
 
 Configuration, all optional:
 

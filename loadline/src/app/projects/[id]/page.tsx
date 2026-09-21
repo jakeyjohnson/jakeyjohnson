@@ -63,8 +63,8 @@ export default async function ProjectPage({
         <h2 className="text-xl font-semibold">RAMS</h2>
         <p className="mt-1 text-sm text-[var(--muted)]">
           Generating writes a risk assessment and method statement into this
-          project&rsquo;s <span className="code">01 RAMS</span> folder, branded and
-          numbered {formatJobCode(project.code)}.
+          project&rsquo;s <strong className="font-medium">01 RAMS</strong> folder,
+          branded and numbered {formatJobCode(project.code)}.
         </p>
 
         <div className="mt-4">
