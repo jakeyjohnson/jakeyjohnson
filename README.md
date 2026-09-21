@@ -69,19 +69,36 @@ ICO guidance expects for marketing consent. Don't pre-tick it or merge the two.
 
 ## Putting this on WordPress
 
-This is a static site. It doesn't drop into WordPress as-is — you have three
-realistic options, cheapest first:
+**Done — it's packaged.** `wp-theme/gbcf-theme.zip` is a complete WordPress
+theme carrying this exact design.
 
-| Option | What's involved | When it's right |
-|---|---|---|
-| **Serve it alongside WordPress** | Upload these files to a subdirectory or subdomain and leave WordPress for the blog/admin side | Fastest. Fine if nobody needs to edit page content in WP |
-| **Convert to a small custom theme** | Split each page into `header.php` / `footer.php` / page templates; the CSS and JS carry over untouched | Best long-term. Editable in WP, keeps this design exactly |
-| **Rebuild in a page builder** | Recreate the layouts in Elementor/Bricks by hand | Only if the team must edit layouts visually — the design will drift and none of this code survives |
+In WordPress: **Appearance → Themes → Add New → Upload Theme**, choose that
+zip, Install, Activate. Then create five empty pages with the slugs
+`tickets`, `vendors`, `about`, `contact`, `privacy`, set a static homepage
+under **Settings → Reading**, and set permalinks to **Post name**. Full
+instructions are in `wp-theme/gbcf/README.txt`, which ships inside the zip.
 
-If you go the theme route, the work is mostly mechanical: the stylesheet and
-`main.js` are plain files that get enqueued in `functions.php`, images move to
-the media library, and each `.html` here becomes a page template. Say the word
-and I can do that conversion.
+How it is put together:
+
+| File | What it is |
+|---|---|
+| `header.php` / `footer.php` | The chrome every page shares — head, sticky header, bunting; footer and booking bar |
+| `front-page.php` | The homepage |
+| `page-tickets.php` and friends | One per page, attached automatically by slug |
+| `page.php` / `index.php` / `404.php` | Fallbacks, so anything the team adds later still gets the design |
+| `functions.php` | Enqueues the fonts, tokens, stylesheet and script |
+| `inc/ink-sprite.svg` | The hand-drawn illustrations, inlined once per page |
+| `assets/` | Unchanged from the static site — same CSS, JS and images |
+
+Rebuild the zip after any change to the static site by re-running the
+packaging step, or edit the theme in `wp-theme/gbcf/` directly and re-zip:
+
+```bash
+cd wp-theme && zip -rq gbcf-theme.zip gbcf
+```
+
+The static site in the repo root still works on its own, so you can keep
+previewing changes without WordPress in the way.
 
 ## Adding the logo
 
