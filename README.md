@@ -21,6 +21,8 @@ still plain HTML/CSS/JS you deploy by uploading files.
 | `partners.html` | Commercial pitch and enquiry form |
 | `about.html` | Brand story and north star |
 | `invitational.html` | Sign-up form for The Invitational. See "The Invitational" below. |
+| `crm.html` | Back office CRM: leads, pipeline, email mailers and SMS. See "CRM" below. |
+| `unsubscribe.html` | Public unsubscribe page linked from every CRM mailer |
 
 ## Structure
 
@@ -37,6 +39,10 @@ assets/js/events.js      Shared event-data helpers (loads events from
 assets/js/supabase-config.js  Your Supabase project URL + anon key. Ships to
                           every browser — that's expected, see "Back office"
 assets/js/supabase-client.js  Turns the config above into window.PartyPadelDB
+supabase/crm.sql         Run once AFTER schema.sql: the CRM tables
+supabase/functions/      Edge Functions that send CRM email/SMS and
+                          handle unsubscribes and STOP replies
+assets/js/crm.js         + assets/css/crm.css: the CRM page itself
 supabase/schema.sql      Run once in the Supabase SQL Editor — creates the
                           events table, security policies, and seeds the 3
                           events this site originally launched with
@@ -289,10 +295,9 @@ straight to a `invitational_signups` table with the public anon key, the
 same way the rest of the site reads events. Row-level security is what
 keeps that safe: the public can only ever INSERT a new row, never read,
 edit or delete one (including their own), so submitting the form can't
-leak anyone else's details back out. To see who's registered, open
-Table Editor for `invitational_signups` in the Supabase dashboard — there's
-no in-app viewer for this yet, since only you (logged in) can read that
-table at all.
+leak anyone else's details back out. Every sign-up also lands in the CRM
+(`crm.html`, see "CRM" below) as a lead, so that's where to see who's
+registered and follow up with them.
 
 The consent checkbox covers both data storage and marketing email consent
 in one tick, per how the form was asked for. Worth knowing: UK guidance
@@ -300,6 +305,98 @@ in one tick, per how the form was asked for. Worth knowing: UK guidance
 unticked-by-default checkbox rather than bundled with "we'll store your
 details" — this form doesn't do that split. Fine for how it's being used
 now; flag it if this ever needs to hold up to stricter scrutiny.
+
+## CRM (leads, mailers & SMS)
+
+`crm.html` (also `partypadel.uk/crm`) is the back office for everyone who's
+shown interest in Party Padel: players, spectators, partners and venues.
+Same login as `admin.html`. Four tabs:
+
+- **Dashboard**: lead totals, conversion, how many people you can email
+  or text, pipeline and lead-source breakdowns, latest activity.
+- **Leads**: searchable, filterable table (stage, type, source, event,
+  tag, consent). Click a lead to edit it, see its timeline, log a note or
+  call, or send them a one-off email/SMS. Tick rows for bulk stage moves,
+  tagging or deleting. **Export CSV** downloads whatever's filtered.
+  **Import CSV** takes Ticket Tailor, Google Sheets or any CSV with a
+  header row; people already in the CRM (same email or mobile) are
+  updated, not duplicated.
+- **Pipeline**: a board with one column per stage
+  (New → Contacted → Interested → Registered → Attended, or Lost). Drag
+  cards between columns, or use the stage menu on each card.
+- **Mailers & SMS**: write a campaign, pick who gets it (stage, type,
+  source, event, city, tags), see the exact recipient count and a live
+  preview as a real recipient, send yourself a test, then send. Merge
+  fields like `{{first_name}}`, `{{event_city}}`, `{{event_date}}` and
+  `{{event_link}}` fill in per person; `{{first_name|there}}` gives a
+  fallback when the field is blank. The SMS editor counts characters and
+  segments (what Twilio bills by).
+
+Invitational sign-ups flow into the CRM automatically (tagged
+`invitational`, stage Interested). Anyone who signed up before the CRM
+was installed is backfilled when you run `crm.sql`.
+
+**Consent is enforced, not optional.** A mailer only ever goes to leads
+with "Agreed to marketing email" ticked and an address; an SMS only to
+leads with "Agreed to marketing SMS" and a mobile. Every mailer has an
+unsubscribe link and a one-click List-Unsubscribe header (Gmail, Apple
+Mail and Outlook show their own Unsubscribe button). Every SMS ends with
+"Reply STOP to opt out", and a STOP reply switches SMS off for that
+number. The Invitational form's consent wording ("contact me about The
+Invitational and future events") is channel-neutral, so it switches on
+both; for imports, only tick consent if you actually collected it (UK
+PECR rules).
+
+### Setting it up
+
+1. **Database**: Supabase Dashboard > SQL Editor > New query, paste in all
+   of `supabase/crm.sql`, run. Safe to re-run.
+2. **Email (Resend)**: create an account at [resend.com](https://resend.com),
+   add and verify `partypadel.uk` under Domains (it gives you DNS records
+   to add), and create an API key. Free tier: 3,000 emails/month.
+3. **SMS (Twilio)**: create an account at [twilio.com](https://twilio.com),
+   buy a UK mobile number (or create a Messaging Service), and note the
+   Account SID and Auth Token from the console. An alphanumeric sender
+   like `PartyPadel` also works in the UK, but people can't reply to it,
+   so STOP replies won't reach you: a real number is better.
+4. **Deploy the Edge Functions** with the
+   [Supabase CLI](https://supabase.com/docs/guides/cli) from this folder:
+
+   ```bash
+   supabase login
+   supabase link --project-ref nmsnayyacfqejoyrppny
+   supabase secrets set RESEND_API_KEY=re_xxx \
+     MAIL_FROM="Party Padel <hello@partypadel.uk>" \
+     MAIL_REPLY_TO=hello@partypadel.uk \
+     MAIL_POSTAL_ADDRESS="Party Padel, <your business address>" \
+     TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxx TWILIO_FROM=+447xxxxxxxxx \
+     SITE_URL=https://partypadel.uk
+   supabase functions deploy crm-send
+   supabase functions deploy crm-unsubscribe --no-verify-jwt
+   supabase functions deploy crm-sms-inbound --no-verify-jwt
+   ```
+
+   `crm-send` requires the admin login to call it. The other two are
+   public on purpose (mail clients and Twilio can't log in): one can only
+   switch consent off for an unguessable per-lead token, the other checks
+   Twilio's request signature.
+5. **Twilio replies**: in the Twilio console, set your number's (or
+   Messaging Service's) "A message comes in" webhook to
+   `https://nmsnayyacfqejoyrppny.supabase.co/functions/v1/crm-sms-inbound`
+   (HTTP POST).
+6. Upload `crm.html`, `crm/`, `unsubscribe.html` and `assets/` as usual.
+
+You can use the CRM (leads, pipeline, import/export) before steps 2 to 5.
+Sending just shows a "not set up yet" message until the keys are in.
+
+**How sending works**: pressing Send saves the campaign and hands it to
+`crm-send`, which carries on in the background (you can close the tab)
+while the page shows progress. Email goes out in batches of 100 via
+Resend, SMS about 8 at a time via Twilio. Every message is logged in
+`crm_messages` and on the lead's timeline. If a send is interrupted,
+**Retry Send** only goes to people who didn't get it. A campaign can't be
+sent twice; duplicate it to send again. No provider key ever reaches a
+browser; they live only in the Edge Function secrets.
 
 ## Editing content
 

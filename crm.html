@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM | Party Padel</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/webp" href="assets/img/logo-icon-pp.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2">
+<link rel="stylesheet" href="assets/css/style.css?v=2">
+<link rel="stylesheet" href="assets/css/crm.css?v=1">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ci-cross" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><img src="assets/img/logo-icon-pp.webp" alt="Party Padel" width="120" height="120"></a>
+    <nav class="nav-links" id="navLinks">
+      <a href="admin.html">Events</a>
+      <a href="eventmanager.html">Event Manager</a>
+      <a href="index.html">View Site</a>
+    </nav>
+    <div class="nav-cta" id="signedInBar" hidden>
+      <span class="admin-user" id="adminUserEmail"></span>
+      <button type="button" class="btn btn-outline btn-small" id="signOutBtn">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="crm-section">
+    <div class="container">
+
+      <div id="configMissingView" class="crm-narrow" hidden>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> CRM</span>
+          <h1>Not Set Up Yet</h1>
+          <p class="lede">The CRM needs Supabase connected first. Follow the "Back office" and "CRM" sections in README.md.</p>
+        </div>
+      </div>
+
+      <div id="loginView" class="crm-narrow" hidden>
+        <div class="section-head">
+          <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> CRM</span>
+          <h1>Sign In</h1>
+          <p class="lede">Same login as the events admin.</p>
+        </div>
+        <form id="loginForm" novalidate>
+          <div class="form-row">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" required autocomplete="username">
+          </div>
+          <div class="form-row">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" required autocomplete="current-password">
+          </div>
+          <div class="form-alert" id="loginError" hidden></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large" id="loginSubmit"><span class="btn-text">Sign In</span></button>
+          </div>
+        </form>
+      </div>
+
+      <div id="appView" hidden>
+        <div class="crm-head">
+          <div>
+            <span class="eyebrow"><svg class="icon icon-xs"><use href="#ci-cross"/></svg> CRM</span>
+            <h1 id="crmHeading">Dashboard</h1>
+          </div>
+          <div class="admin-row-actions">
+            <button type="button" class="btn btn-outline btn-small" id="headerImportBtn">Import CSV</button>
+            <button type="button" class="btn btn-primary btn-small" id="headerAddLeadBtn">+ Add Lead</button>
+          </div>
+        </div>
+
+        <div class="crm-tabs" role="tablist" aria-label="CRM sections">
+          <button type="button" class="crm-tab" role="tab" id="tabbtn-dashboard" aria-controls="tab-dashboard" data-tab="dashboard">Dashboard</button>
+          <button type="button" class="crm-tab" role="tab" id="tabbtn-leads" aria-controls="tab-leads" data-tab="leads">Leads <span class="crm-tab-count" id="leadsTabCount"></span></button>
+          <button type="button" class="crm-tab" role="tab" id="tabbtn-pipeline" aria-controls="tab-pipeline" data-tab="pipeline">Pipeline</button>
+          <button type="button" class="crm-tab" role="tab" id="tabbtn-campaigns" aria-controls="tab-campaigns" data-tab="campaigns">Mailers &amp; SMS</button>
+        </div>
+
+        <!-- ============ Dashboard ============ -->
+        <div id="tab-dashboard" role="tabpanel" aria-labelledby="tabbtn-dashboard" hidden>
+          <div class="crm-stats" id="dashStats"></div>
+          <div class="crm-grid-2">
+            <div class="crm-panel">
+              <h2 class="crm-panel-title">Pipeline</h2>
+              <div class="crm-bars" id="dashPipeline"></div>
+            </div>
+            <div class="crm-panel">
+              <h2 class="crm-panel-title">Where leads come from</h2>
+              <div class="crm-bars" id="dashSources"></div>
+            </div>
+          </div>
+          <div class="crm-grid-2">
+            <div class="crm-panel">
+              <h2 class="crm-panel-title">Recent activity</h2>
+              <ul class="crm-feed" id="dashActivity"><li>Loading…</li></ul>
+            </div>
+            <div class="crm-panel">
+              <h2 class="crm-panel-title">Recent mailers &amp; SMS</h2>
+              <ul class="crm-feed" id="dashCampaigns"><li>Loading…</li></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ Leads ============ -->
+        <div id="tab-leads" role="tabpanel" aria-labelledby="tabbtn-leads" hidden>
+          <div class="crm-toolbar">
+            <input type="search" class="crm-search" id="leadSearch" placeholder="Search name, email, phone, company, tag" aria-label="Search leads">
+            <select id="filterStage" aria-label="Filter by stage"><option value="">All stages</option></select>
+            <select id="filterType" aria-label="Filter by type"><option value="">All types</option></select>
+            <select id="filterSource" aria-label="Filter by source"><option value="">All sources</option></select>
+            <select id="filterEvent" aria-label="Filter by event"><option value="">All events</option></select>
+            <select id="filterTag" aria-label="Filter by tag"><option value="">All tags</option></select>
+            <select id="filterConsent" aria-label="Filter by consent">
+              <option value="">Any consent</option>
+              <option value="email">Can email</option>
+              <option value="sms">Can SMS</option>
+              <option value="none">No consent</option>
+            </select>
+            <button type="button" class="btn btn-outline btn-small" id="exportBtn">Export CSV</button>
+          </div>
+
+          <div class="crm-bulkbar" id="bulkBar" hidden>
+            <strong id="bulkCount"></strong>
+            <select id="bulkStage" aria-label="Move selected to stage"><option value="">Move to stage…</option></select>
+            <input type="text" id="bulkTag" placeholder="Add tag" aria-label="Tag to add to selected" size="12">
+            <button type="button" class="btn btn-outline btn-small" id="bulkTagBtn">Add Tag</button>
+            <span class="crm-toolbar-spacer"></span>
+            <button type="button" class="btn btn-outline btn-small" id="bulkDeleteBtn">Delete</button>
+            <button type="button" class="btn btn-outline btn-small" id="bulkClearBtn">Clear</button>
+          </div>
+
+          <p class="crm-result-count" id="leadCount"></p>
+          <div class="crm-table-wrap">
+            <table class="crm-table">
+              <thead>
+                <tr>
+                  <th class="crm-col-check"><input type="checkbox" id="selectAll" aria-label="Select all shown"></th>
+                  <th>Name</th>
+                  <th>Stage</th>
+                  <th class="crm-hide-sm">Type</th>
+                  <th class="crm-hide-sm">Event</th>
+                  <th class="crm-hide-sm">Tags</th>
+                  <th>Consent</th>
+                  <th class="crm-hide-sm">Source</th>
+                  <th class="crm-hide-sm">Added</th>
+                </tr>
+              </thead>
+              <tbody id="leadRows"></tbody>
+            </table>
+          </div>
+          <p class="empty-note" id="leadEmpty" hidden></p>
+        </div>
+
+        <!-- ============ Pipeline ============ -->
+        <div id="tab-pipeline" role="tabpanel" aria-labelledby="tabbtn-pipeline" hidden>
+          <div class="crm-toolbar">
+            <select id="pipeEvent" aria-label="Show leads for event"><option value="">All events</option></select>
+            <select id="pipeType" aria-label="Show lead type"><option value="">All types</option></select>
+            <p class="form-note" style="margin:0">Drag a card to another column, or use its stage menu.</p>
+          </div>
+          <div class="crm-board" id="board"></div>
+        </div>
+
+        <!-- ============ Campaigns ============ -->
+        <div id="tab-campaigns" role="tabpanel" aria-labelledby="tabbtn-campaigns" hidden>
+          <div id="campaignListView">
+            <div class="crm-toolbar">
+              <p class="form-note" style="margin:0">Email and SMS only ever go to leads who've opted in to that channel. Unsubscribes and STOP replies are handled automatically.</p>
+              <span class="crm-toolbar-spacer"></span>
+              <button type="button" class="btn btn-outline btn-small" id="newSmsBtn">+ New SMS</button>
+              <button type="button" class="btn btn-primary btn-small" id="newEmailBtn">+ New Mailer</button>
+            </div>
+            <div class="admin-list" id="campaignList"></div>
+          </div>
+
+          <div id="campaignEditView" hidden>
+            <button type="button" class="btn btn-outline btn-small" id="backToCampaigns" style="margin-bottom:var(--space-5)">&larr; All Mailers &amp; SMS</button>
+            <div class="crm-composer">
+              <div>
+                <div class="crm-panel">
+                  <div class="crm-segmented" role="group" aria-label="Channel">
+                    <button type="button" data-channel="email" aria-pressed="true">Email</button>
+                    <button type="button" data-channel="sms" aria-pressed="false">SMS</button>
+                  </div>
+                  <div class="form-row">
+                    <label for="cName">Campaign name (internal)</label>
+                    <input type="text" id="cName" placeholder="e.g. Manchester early-bird">
+                  </div>
+                  <div class="form-row" id="cSubjectRow">
+                    <label for="cSubject">Subject line</label>
+                    <input type="text" id="cSubject" placeholder="e.g. {{first_name|You}}, Manchester entries are open">
+                  </div>
+                  <div class="form-row">
+                    <label for="cBody">Message</label>
+                    <div class="crm-merge-tags" id="mergeTags" aria-label="Insert a merge field"></div>
+                    <textarea id="cBody" placeholder="Hi {{first_name|there}},&#10;&#10;..."></textarea>
+                  </div>
+                  <div class="crm-meter" id="cMeter"></div>
+                  <p class="form-note" id="cBodyNote"></p>
+                </div>
+
+                <div class="crm-panel" style="margin-top:var(--space-4)">
+                  <h2 class="crm-panel-title">Who gets it</h2>
+                  <div class="form-row"><label>Stage</label><div class="crm-chipset" id="audStages"></div></div>
+                  <div class="form-row"><label>Type</label><div class="crm-chipset" id="audTypes"></div></div>
+                  <div class="form-row"><label>Source</label><div class="crm-chipset" id="audSources"></div></div>
+                  <div class="form-grid">
+                    <div class="form-row">
+                      <label for="audEvent">Event</label>
+                      <select id="audEvent"><option value="">Any event</option></select>
+                    </div>
+                    <div class="form-row">
+                      <label for="audCity">City</label>
+                      <input type="text" id="audCity" placeholder="Any city">
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <label for="audTags">Has any of these tags</label>
+                    <input type="text" id="audTags" placeholder="e.g. vip, invitational (comma separated)" list="tagOptions">
+                  </div>
+                  <p class="form-note">Nothing picked in a row means no filter on it. Leads without consent for this channel are always left out.</p>
+                </div>
+              </div>
+
+              <div>
+                <div class="crm-panel">
+                  <h2 class="crm-panel-title">Recipients</h2>
+                  <div class="crm-audience-count"><span id="audCount">–</span> <small id="audCountLabel">opted-in leads</small></div>
+                  <div id="sendProgress" hidden>
+                    <div class="crm-progress"><span id="sendProgressBar" style="width:0"></span></div>
+                    <p class="form-note" id="sendProgressText"></p>
+                  </div>
+                  <div class="form-alert" id="campaignError" hidden></div>
+                  <div class="admin-row-actions" style="flex-wrap:wrap">
+                    <button type="button" class="btn btn-outline" id="saveCampaignBtn">Save Draft</button>
+                    <button type="button" class="btn btn-primary" id="sendCampaignBtn">Send Now</button>
+                  </div>
+                </div>
+
+                <div class="crm-panel" style="margin-top:var(--space-4)">
+                  <h2 class="crm-panel-title">Preview</h2>
+                  <p class="crm-preview-for" id="previewFor"></p>
+                  <div id="preview"></div>
+                </div>
+
+                <div class="crm-panel" style="margin-top:var(--space-4)">
+                  <h2 class="crm-panel-title">Send a test</h2>
+                  <div class="crm-inline-form">
+                    <input type="text" id="testTo" style="flex:1 1 200px" aria-label="Test recipient">
+                    <button type="button" class="btn btn-outline btn-small" id="sendTestBtn">Send Test</button>
+                  </div>
+                  <p class="form-note">Uses sample details (Alex, London) for the merge fields.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<datalist id="tagOptions"></datalist>
+
+<!-- ============ Lead drawer ============ -->
+<dialog class="crm-dialog crm-drawer" id="leadDialog" aria-labelledby="leadDialogTitle">
+  <div class="crm-dialog-inner">
+    <div class="crm-dialog-head">
+      <div>
+        <span class="eyebrow" id="leadDialogEyebrow">Lead</span>
+        <h2 id="leadDialogTitle">New Lead</h2>
+      </div>
+      <button type="button" class="crm-close" data-close aria-label="Close">&times;</button>
+    </div>
+
+    <form id="leadForm" novalidate>
+      <div class="form-grid">
+        <div class="form-row"><label for="lFirst">First name</label><input type="text" id="lFirst" autocomplete="off"></div>
+        <div class="form-row"><label for="lLast">Last name</label><input type="text" id="lLast" autocomplete="off"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label for="lEmail">Email</label><input type="email" id="lEmail" autocomplete="off"></div>
+        <div class="form-row"><label for="lPhone">Mobile</label><input type="tel" id="lPhone" autocomplete="off" placeholder="07700 900123"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label for="lStage">Stage</label><select id="lStage"></select></div>
+        <div class="form-row"><label for="lType">Type</label><select id="lType"></select></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label for="lEvent">Event</label><select id="lEvent"><option value="">None</option></select></div>
+        <div class="form-row"><label for="lSource">Source</label><select id="lSource"></select></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label for="lCity">City</label><input type="text" id="lCity"></div>
+        <div class="form-row"><label for="lCompany">Company</label><input type="text" id="lCompany" placeholder="Partners &amp; venues"></div>
+      </div>
+      <div class="form-row"><label for="lTags">Tags</label><input type="text" id="lTags" placeholder="comma separated, e.g. vip, beginner" list="tagOptions"></div>
+      <div class="form-row"><label for="lNotes">Notes</label><textarea id="lNotes" rows="3"></textarea></div>
+      <div class="crm-checks">
+        <label><input type="checkbox" class="crm-check" id="lEmailOptIn"> Agreed to marketing email</label>
+        <label><input type="checkbox" class="crm-check" id="lSmsOptIn"> Agreed to marketing SMS</label>
+      </div>
+      <p class="form-note">Only tick these if the person actually agreed to hear from you on that channel.</p>
+      <div class="form-alert" id="leadFormError" hidden></div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" id="deleteLeadBtn" hidden>Delete</button>
+        <button type="submit" class="btn btn-primary" id="saveLeadBtn">Save Lead</button>
+      </div>
+    </form>
+
+    <div id="leadExtras" hidden>
+      <h3 class="crm-subhead">Message</h3>
+      <div class="crm-segmented" role="group" aria-label="Message channel">
+        <button type="button" data-msg-channel="email" aria-pressed="true">Email</button>
+        <button type="button" data-msg-channel="sms" aria-pressed="false">SMS</button>
+      </div>
+      <div class="form-row" id="msgSubjectRow"><input type="text" id="msgSubject" placeholder="Subject" aria-label="Subject"></div>
+      <div class="crm-inline-form">
+        <textarea id="msgBody" placeholder="Write a message… merge fields like {{first_name}} work here too" aria-label="Message"></textarea>
+        <div class="crm-inline-actions"><button type="button" class="btn btn-primary btn-small" id="msgSendBtn">Send</button></div>
+      </div>
+      <p class="form-note" id="msgNote"></p>
+
+      <h3 class="crm-subhead">Timeline</h3>
+      <div class="crm-inline-form">
+        <select id="noteKind" aria-label="Entry type"><option value="note">Note</option><option value="call">Call</option></select>
+        <textarea id="noteBody" placeholder="Add a note or log a call" aria-label="Note"></textarea>
+        <div class="crm-inline-actions"><button type="button" class="btn btn-outline btn-small" id="addNoteBtn">Add</button></div>
+      </div>
+      <ul class="crm-feed" id="leadTimeline"></ul>
+    </div>
+  </div>
+</dialog>
+
+<!-- ============ Import ============ -->
+<dialog class="crm-dialog crm-modal" id="importDialog" aria-labelledby="importTitle">
+  <div class="crm-dialog-inner">
+    <div class="crm-dialog-head">
+      <h2 id="importTitle">Import Leads</h2>
+      <button type="button" class="crm-close" data-close aria-label="Close">&times;</button>
+    </div>
+    <p class="form-note">A CSV with a header row. Recognised columns: first name, last name (or just name), email, phone/mobile, city, company, tags, notes. Anyone already in the CRM (same email or phone) is updated, not duplicated. Ticket Tailor and Google Sheets exports work as-is.</p>
+    <div class="form-row">
+      <label for="importFile">CSV file</label>
+      <input type="file" id="importFile" accept=".csv,text/csv">
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label for="importSource">Source</label><select id="importSource"></select></div>
+      <div class="form-row"><label for="importStage">Stage</label><select id="importStage"></select></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label for="importEvent">Event</label><select id="importEvent"><option value="">None</option></select></div>
+      <div class="form-row"><label for="importTag">Tag everyone with</label><input type="text" id="importTag" placeholder="e.g. london-2026"></div>
+    </div>
+    <div class="crm-checks">
+      <label><input type="checkbox" class="crm-check" id="importEmailOptIn"> These people agreed to marketing email</label>
+      <label><input type="checkbox" class="crm-check" id="importSmsOptIn"> These people agreed to marketing SMS</label>
+    </div>
+    <p class="form-note">Only tick consent if you collected it. Importing never switches off consent someone already gave, and never switches on consent for columns the file says "no" to.</p>
+    <p class="form-note" id="importPreview"></p>
+    <div class="form-alert" id="importError" hidden></div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-outline" data-close>Cancel</button>
+      <button type="button" class="btn btn-primary" id="importRunBtn" disabled>Import</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="crm-toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/supabase-config.js?v=2"></script>
+<script src="assets/js/supabase-client.js?v=2"></script>
+<script src="assets/js/crm.js?v=1"></script>
+</body>
+</html>

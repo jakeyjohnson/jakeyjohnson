@@ -4,5 +4,8 @@ Disallow: /admin.html
 Disallow: /admin/
 Disallow: /eventmanager.html
 Disallow: /eventmanager/
+Disallow: /crm.html
+Disallow: /crm/
+Disallow: /unsubscribe.html
 
 Sitemap: https://partypadel.uk/sitemap.xml
