@@ -56,6 +56,15 @@ Almost monochrome by design.
 
 A calm control room: dark graphite surfaces, the most important decision obvious, hierarchy from spacing and contrast before colour. 8 px spacing grid (8 / 16 / 24 / 32). 1 px dividers, 2–3 px interactive lines, no bevels, gradients or shadows on the logo. Graphic texture comes from signal lines, fluid curves and measured dot grids, never nautical props.
 
+## Lighting and watermark
+
+Tool backgrounds are lit, not flat:
+- **Background:** soft gradients, with graphite light from the top centre, a faint Spectral glow (10% at most) and darker towards the bottom.
+- **Raised surfaces:** the product bar, panels and primary buttons catch the light with gentle gradients.
+- **Watermark:** the K sits fixed in the centre, large (up to 760 px wide), in solid Shell White at about 4% opacity, behind all content.
+
+The logo itself stays one solid colour.
+
 ## Stamping a tool
 
 1. **Header:** a raised bar in `#1E242C` with the white K (at least 40 px tall) and "KOBI / <TOOL NAME>" in uppercase, like the guide's "KOBI / EQ".
