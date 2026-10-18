@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64" role="img" aria-label="KobiKlang">
+  <g>
+  <rect width="64" height="64" rx="14" fill="#16191D"/>
+  <rect x="15.5" y="11" width="6" height="42" rx="3" fill="#9AA3AD"/>
+  <path d="M22 31L37.5 13.5M22 33L37.5 50.5" fill="none" stroke="#E9EDF1" stroke-width="5.5" stroke-linecap="round"/>
+  <rect x="9.5" y="26.5" width="18" height="11" rx="2.5" fill="#FFB020"/>
+  <rect x="9.5" y="31.3" width="18" height="1.4" fill="#16191D" opacity=".55"/>
+  <path d="M45 25.5a8.5 8.5 0 0 1 0 13" fill="none" stroke="#FFB020" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M50.5 20a16 16 0 0 1 0 24" fill="none" stroke="#FFB020" stroke-width="3.2" stroke-linecap="round" opacity=".6"/>
+  </g>
+  <text x="78" y="43" font-family="'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif" font-size="38" font-weight="700" letter-spacing="0.5" fill="#16191D">Kobi<tspan font-weight="400" fill="#7A838E">Klang</tspan></text>
+</svg>

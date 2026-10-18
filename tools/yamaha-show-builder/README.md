@@ -1,4 +1,4 @@
-# Show Builder for Yamaha · Scribble Labs
+# Show Builder for Yamaha · KobiKlang
 
 Build a labelled, colour-coded, routed show on a Yamaha digital desk in a couple of minutes, from a laptop or tablet on the same network.
 

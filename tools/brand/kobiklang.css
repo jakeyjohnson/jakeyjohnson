@@ -1,0 +1,27 @@
+/* KobiKlang GUI tokens. Copy into every KobiKlang plugin and build its colours from these.
+   Amber is the accent: primary buttons, selection, focus, toggles and "on" states. */
+:root {
+  --kk-amber: #ffb020;        /* the fader cap: accent fills, outlines, checkboxes */
+  --kk-on-amber: #16191d;     /* text on an amber fill */
+  --kk-amber-text: #9a5b00;   /* amber as text or a focus ring on light backgrounds */
+  --kk-ink: #16191d;          /* console black */
+  --kk-cap: #e9edf1;          /* fader cap */
+  --kk-slot: #454c55;         /* fader slot, quiet lines */
+  --kk-warn: #b4430a;         /* warnings are orange, never amber */
+  --kk-bg: #eef0f2;
+  --kk-panel: #ffffff;
+  --kk-fg: #16191d;
+  --kk-muted: #5d6670;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --kk-amber-text: #ffb020; --kk-warn: #ff8a4c;
+    --kk-bg: #121417; --kk-panel: #1a1d21; --kk-fg: #e6e9ec; --kk-muted: #8e97a2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --kk-amber-text: #ffb020; --kk-warn: #ff8a4c;
+  --kk-bg: #121417; --kk-panel: #1a1d21; --kk-fg: #e6e9ec; --kk-muted: #8e97a2;
+  color-scheme: dark;
+}
