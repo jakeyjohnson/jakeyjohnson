@@ -1,52 +1,68 @@
-# KobiKlang
+# KobiKraken
 
-KobiKlang is the maker's name for my live-sound tools and plug-ins. **Kobi** is the German pet name for Jakob, which is Jakey in German, and **Klang** is German for sound. So KobiKlang is "Jakey's sound".
+KobiKraken is the maker's name for my live-sound tools and plug-ins: **Kobi** (the German pet name for Jakob, so Jakey) and a kraken hidden in the K. The full guide is *KobiKraken Brand Guidelines v1.0* (Oct 2026); this is the short version for building tools.
+
+**Professional. Playful. Precise.** Sound design with a little bite.
 
 ## Files
 
 | File | Use |
 |---|---|
-| `kobiklang-mark.svg` | The mark on its own: app icons, favicons, the maker's plate on a device |
-| `kobiklang-logo.svg` | Mark and wordmark, for light backgrounds |
-| `kobiklang-logo-dark.svg` | Mark and wordmark, for dark backgrounds |
-| `kobiklang.css` | GUI colour tokens to copy into each plugin |
+| `kobikraken-k.svg` / `-k-white.svg` | The K on its own: favicons, plugin lists, splash screens, headers |
+| `kobikraken-wordmark.svg` / `-white.svg` | The word on its own |
+| `kobikraken-logo.svg` / `-white.svg` | Horizontal lockup, K and wordmark |
+| `kobikraken-icon.svg` | The white K centred on a Kraken Ink tile: app icon and favicon |
+| `icons/kobikraken-icon-{64,128,256,512}.png` | The same tile as PNGs |
+| `kobikraken.css` | GUI tokens and the Inter font faces, to copy into each tool |
+| `fonts/` | Inter (Regular, Medium, SemiBold, Bold), subset to Latin, with its licence (OFL 1.1) |
 
-## The mark
+The SVGs are traced from the supplied master artwork. Use them as they are: don't redraw, recolour, outline, rotate or squeeze them, and never add a face, headphones or eyes.
 
-A **K** made from a fader. The fader slot is the K's upright stroke, an amber fader cap sits where the arms meet, and two sound waves ripple out to the right for the *Klang*. It all sits on a dark rounded tile, and stays readable down to 16 px.
+## Logo rules
 
-## Colours
+- **One colour only:** solid Kraken Ink or solid Shell White. Colour never fills the logo.
+- **Clear space:** about 25% of the K's height on every side. No busy waves behind a small logo.
+- **Minimum sizes:** K 48 px (preferred), wordmark 160 px wide, horizontal lockup 240 px wide. Below that, the suction cut-outs collapse.
+- **App icons:** the K alone, centred, with generous margins. Never the wordmark on a small square icon. Check it at 48, 64, 128 and 256 px.
+
+## Colour
+
+Almost monochrome by design.
 
 | Name | Hex | Where |
 |---|---|---|
-| Console black | `#16191D` | Tile, wordmark on light |
-| Fader amber | `#FFB020` | Fader cap, sound waves, GUI accent |
-| Fader cap white | `#E9EDF1` | The K's arms, wordmark on dark |
-| Slot grey | `#9AA3AD` | The K's upright stroke |
-| Label grey | `#7A838E` (light) / `#9AA3AD` (dark) | "Klang" in the wordmark |
+| Kraken Ink | `#11151A` | Dark backgrounds, the logo on light |
+| Shell White | `#F5F4F0` | Light backgrounds, the logo on dark |
+| Control Grey | `#7A8087` | Quiet lines and labels (use `#8E949B` for small text on dark, `#5F656C` on light, for 4.5:1 contrast) |
 
-## GUI colour
+**Product accents** are for interaction and signal only: buttons, selection, focus, toggles, meters and curves. One accent per tool.
 
-Every KobiKlang plugin uses **fader amber `#FFB020`** as its interface accent: primary buttons, selected and "on" states, toggles, checkboxes, progress bars and focus rings. Don't use any other accent colour.
+| Accent | Hex | For |
+|---|---|---|
+| Spectral | `#63CBE8` | EQ, analysis, and the Show Builder |
+| Space | `#9687EF` | Reverb and space |
+| Drive | `#F4B36A` | Saturation and drive |
+| Motion | `#9AD4B8` | Dynamics |
 
-- **Text on amber:** console black `#16191D`.
-- **Amber as text on a light background:** use `#9A5B00`, because amber text on white is too faint to read. On dark backgrounds, plain `#FFB020` is fine.
-- **Warnings:** orange (`#B4430A` light, `#FF8A4C` dark), so they never look like the accent.
-- **Starting point:** `kobiklang.css` has these as ready-made tokens.
+- **Text on an accent:** Kraken Ink.
+- **Accent as text on light backgrounds:** use the darker shade in `kobikraken.css` (`#1A6F87` for Spectral).
+- **Status:** never by colour alone. Pair it with a word or an icon.
 
 ## Type
 
-The wordmark is set in **Barlow Condensed** (Google Fonts, free): Bold for "Kobi", Regular for "Klang", in mixed case with both K's capitalised. The SVGs fall back to Arial Narrow where Barlow Condensed isn't installed. For print or signage, open the logo in a vector editor with Barlow Condensed installed and convert the text to outlines.
+**Inter** throughout: SemiBold 600 or Bold 700 for titles, Regular 400 or Medium 500 for the interface. Tabular numerals for every value and meter, and always show the unit (Hz, kHz, dB, ms, %). UI labels 11–13 px minimum, section titles 16 px and up. Never over-track parameter labels.
+
+## Interface
+
+A calm control room: dark graphite surfaces, the most important decision obvious, hierarchy from spacing and contrast before colour. 8 px spacing grid (8 / 16 / 24 / 32). 1 px dividers, 2–3 px interactive lines, no bevels, gradients or shadows on the logo. Graphic texture comes from signal lines, fluid curves and measured dot grids, never nautical props.
 
 ## Stamping a tool
 
-Every KobiKlang tool carries the brand in four places:
-
-1. **Header:** the mark at 28 px, then "KobiKlang · <tool name>" as the small line above the title.
-2. **Browser tab:** `kobiklang-mark.svg` as the favicon.
-3. **Maker's plate:** the mark at 18–20 px with KOBIKLANG in spaced capitals, in the footer or on the device's surface, like a manufacturer's badge.
-4. **Version and licence:** at the very bottom, "KobiKlang · <tool> v<version> · Licence <number>". Both come from one `about.js` file in the tool, and the version matches its `package.json`. Licence numbers run KK-<tool code>-<4-digit copy number>, e.g. KK-SB-0001 for copy 1 of Show Builder.
+1. **Header:** the white K (at least 40 px tall) and "KobiKraken · <tool name>".
+2. **Browser tab:** `kobikraken-icon.svg` as the favicon.
+3. **Footer:** the wordmark (at least 160 px wide) as the maker's plate, then the version and licence line.
+4. **Version and licence:** "KobiKraken · <tool> v<version> · Licence <number>", read from the tool's `about.js`, with the version matching its `package.json`. Licence numbers run KK-<tool code>-<4-digit copy number>, e.g. KK-SB-0001.
 
 ## Writing in the GUI
 
-Write on-screen text the way an engineer would say it at the desk: short, plain, active. "Put the desk IP in first", not "Please enter the desk IP address". Name things by what people see (inputs, outputs, sockets), not how the code works (zones, commands, banks). No exclamation marks, no "Please", no "Successfully".
+Talk like a good engineer sitting next to the user: useful, direct, quietly witty, never gimmicky. "That setting did not save. Try again.", not "ERROR 0x001 - FAILURE". Name things by what people see (inputs, outputs, sockets). No "Please", "Successfully", hype or exclamation marks, and never claim features a tool doesn't have.

@@ -793,12 +793,12 @@ export function paperwork(show, plan, { version = '', licence = '' } = {}) {
   const check = plan.channels.map((c) => `<tr><td class="box"></td><td>${c.ch}</td><td><b>${esc(c.name)}</b></td><td>${esc(portLabel(c.patch))}</td><td>${esc(c.source.note || '')}</td><td></td></tr>`).join('');
   const strips = plan.channels.map((c) => `<span class="strip"><small>${c.ch}</small>${esc(c.name)}</span>`).join('');
   const boxes = plan.channels.filter((c) => c.patch).map((c) => `<span class="lbl"><small>${esc(portLabel(c.patch))}</small>${esc(c.name)}</span>`).join('');
-  const css = `.kk-paper{font:12px/1.4 system-ui,sans-serif;color:#16191d;background:#fff}
-.kk-paper h1{font-size:20px;margin:0 0 2px}.kk-paper h2{font-size:15px;margin:22px 0 6px;border-bottom:2px solid #16191d;padding-bottom:3px}
+  const css = `.kk-paper{font:12px/1.4 Inter,system-ui,sans-serif;color:#11151a;background:#fff}
+.kk-paper h1{font-size:20px;margin:0 0 2px}.kk-paper h2{font-size:15px;margin:22px 0 6px;border-bottom:2px solid #11151a;padding-bottom:3px}
 .kk-paper .meta{color:#5d6670;margin:0 0 8px}.kk-paper table{border-collapse:collapse;width:100%}
 .kk-paper th,.kk-paper td{border:1px solid #c8cdd3;padding:4px 6px;text-align:left;vertical-align:top}.kk-paper th{background:#eef0f2}
 .kk-paper td.box{width:18px}.kk-paper .row{display:flex;flex-wrap:wrap;gap:4px}
-.kk-paper .strip{display:inline-flex;flex-direction:column;justify-content:center;width:62px;height:30px;border:1px solid #16191d;padding:2px 4px;font:700 11px/1.1 'Arial Narrow',sans-serif;overflow:hidden}
+.kk-paper .strip{display:inline-flex;flex-direction:column;justify-content:center;width:62px;height:30px;border:1px solid #11151a;padding:2px 4px;font:700 11px/1.1 'Arial Narrow',sans-serif;overflow:hidden}
 .kk-paper .lbl{display:inline-flex;flex-direction:column;width:110px;border:1px dashed #5d6670;padding:4px 6px;font-weight:700}
 .kk-paper small{font-weight:400;color:#5d6670}.kk-paper .page{page-break-before:always}
 .kk-paper footer{margin-top:24px;color:#5d6670;font-size:10px}`;
@@ -809,7 +809,7 @@ export function paperwork(show, plan, { version = '', licence = '' } = {}) {
 <h2 class="page">Line check</h2><table><thead><tr><th>✓</th><th>Ch</th><th>Name</th><th>Plugs into</th><th>Mic / note</th><th>Notes</th></tr></thead><tbody>${check}</tbody></table>
 <h2 class="page">Desk tape</h2><p class="meta">Cut along the lines and stick above the faders.</p><div class="row">${strips}</div>
 <h2>Stage-box labels</h2><div class="row">${boxes}</div>
-<footer>KobiKlang · Show Builder ${esc(version ? 'v' + version : '')}${licence ? ' · Licence ' + esc(licence) : ''}</footer>
+<footer>KobiKraken · Show Builder ${esc(version ? 'v' + version : '')}${licence ? ' · Licence ' + esc(licence) : ''}</footer>
 </div>`;
   return { title: `${show.name} paperwork`, css, body };
 }
