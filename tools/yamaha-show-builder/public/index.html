@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Show Builder</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div>
+      <p class="eyebrow">Yamaha show builder</p>
+      <input id="showName" class="show-name" aria-label="Show name">
+    </div>
+    <div class="actions">
+      <button id="newShow" class="ghost">New</button>
+      <label class="ghost button">Open<input id="openFile" type="file" accept=".json" hidden></label>
+      <button id="saveShow" class="ghost">Save</button>
+      <button id="exportCsv" class="ghost">Patch sheet</button>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2><span>1</span>Inputs</h2>
+      <div class="quick-add">
+        <input id="addCount" type="number" min="1" max="32" value="1" aria-label="How many">
+        <div id="addButtons" class="chips"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span>2</span>Speaker zones</h2>
+      <div id="zoneButtons" class="chips"></div>
+    </section>
+
+    <section class="grid-section">
+      <h2><span>3</span>Routing</h2>
+      <p class="hint">Tick which zones each input feeds. Rename anything; the desk shows the first <span id="maxLen"></span> characters.</p>
+      <div class="table-wrap"><table id="grid"></table></div>
+      <ul id="warnings" class="warnings"></ul>
+    </section>
+
+    <section>
+      <h2><span>4</span>Send to desk</h2>
+      <div class="desk-row">
+        <label>Desk IP<input id="host" placeholder="192.168.0.128"></label>
+        <label>Port<input id="port" type="number" value="49280"></label>
+        <label>First channel<input id="firstChannel" type="number" min="1"></label>
+        <label>First mix<input id="firstMix" type="number" min="1"></label>
+        <label>Name length<input id="maxNameLength" type="number" min="4" max="32"></label>
+        <label class="check"><input id="setLevels" type="checkbox">Reset faders (inputs to -∞, zones to 0 dB)</label>
+      </div>
+      <div class="desk-row">
+        <button id="testDesk" class="ghost">Test connection</button>
+        <button id="pushDesk" class="primary">Push show to desk</button>
+        <button id="toggleCommands" class="ghost">Show commands</button>
+        <span id="status" class="status"></span>
+      </div>
+      <progress id="progress" value="0" max="1" hidden></progress>
+      <pre id="log" class="log" hidden></pre>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
