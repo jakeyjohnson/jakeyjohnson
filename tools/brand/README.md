@@ -58,9 +58,9 @@ A calm control room: dark graphite surfaces, the most important decision obvious
 
 ## Stamping a tool
 
-1. **Header:** the white K (at least 40 px tall) and "KobiKraken · <tool name>".
+1. **Header:** a raised bar in `#1E242C` with the white K (at least 40 px tall) and "KOBI / <TOOL NAME>" in uppercase, like the guide's "KOBI / EQ".
 2. **Browser tab:** `kobikraken-icon.svg` as the favicon.
-3. **Footer:** the wordmark (at least 160 px wide) as the maker's plate, then the version and licence line.
+3. **Footer:** the wordmark (at least 160 px wide) as the maker's plate on the left, with the version and licence in mono on the right.
 4. **Version and licence:** "KobiKraken · <tool> v<version> · Licence <number>", read from the tool's `about.js`, with the version matching its `package.json`. Licence numbers run KK-<tool code>-<4-digit copy number>, e.g. KK-SB-0001.
 
 ## Writing in the GUI
