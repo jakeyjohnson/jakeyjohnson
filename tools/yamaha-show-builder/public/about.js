@@ -2,4 +2,4 @@
 // and LICENCE to the licence number of the copy you hand out.
 export const PRODUCT = 'Show Builder';
 export const VERSION = '0.9.0';
-export const LICENCE = 'SL-SB-0001';
+export const LICENCE = 'KK-SB-0001';

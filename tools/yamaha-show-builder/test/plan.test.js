@@ -324,7 +324,7 @@ test('the footer version matches package.json', async () => {
   const { readFile } = await import('node:fs/promises');
   const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
   assert.equal(VERSION, pkg.version);
-  assert.match(LICENCE, /^SL-SB-\d{4}$/);
+  assert.match(LICENCE, /^KK-SB-\d{4}$/);
 });
 
 test('the desk model is read from the name the desk reports', () => {

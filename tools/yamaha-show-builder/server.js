@@ -103,6 +103,6 @@ http.createServer(async (req, res) => {
     res.end(JSON.stringify({ error: err.message }));
   }
 }).listen(PORT, () => {
-  console.log(`Scribble Labs ${PRODUCT} v${VERSION} (licence ${LICENCE}) running: open http://localhost:${PORT}`);
+  console.log(`KobiKlang ${PRODUCT} v${VERSION} (licence ${LICENCE}) running: open http://localhost:${PORT}`);
   console.log('Other devices on this network can use http://<this computer\'s IP>:' + PORT);
 });
