@@ -52,6 +52,23 @@ These figures come from Yamaha's spec tables and reference manuals (checked Octo
 
 The app talks to the desk using Yamaha's remote control protocol (TCP port 49280), which CL, QL, TF, DM3, DM7 and RIVAGE PM desks all support. It only connects to local network addresses (192.168.x.x, 10.x.x.x, 172.16–31.x.x).
 
+## Find devices
+
+Press **Find devices** in the Desk bar to see what's on the network, grouped as Desks, Stage boxes, Radio mics, Amps, Playback and Other. On a Yamaha desk, **Use this desk** fills in its IP and connects.
+
+It works offline and only looks at local addresses:
+- **Control ports:** it checks every address in this computer's network (the /24 around each local IP, plus this computer) for:
+  - Yamaha remote control (49280): asks the desk or Rio/Tio for its model.
+  - Shure command strings (2202): asks ULX-D, QLX-D, Axient Digital and SLX-D receivers for their model and name.
+  - QLab (53000) and AES70 (30013, d&b and others): an open port only, so these say "probably".
+- **Announcements (mDNS/Bonjour):** Dante devices, QLab, OSC, AES70 and Sennheiser Sound Control. Dante only gives a name, so the type is guessed from it (ULXD4Q-…, Rio3224-…, LabGruppen-D20…); anything it can't place goes under Other.
+
+A scan takes around 10 seconds. If the laptop is on more than one network, or the kit is on another range, type it into **Other network** (like 192.168.1) and press **Scan again**. Hover a device to see how it was found. Devices with remote control turned off, or on a different network with no route, won't show up.
+
+## Routing to everything
+
+In the routing grid, the **All** column ticks every output for that input in one go (untick it to clear them all). It shows ticked when the input goes to every output.
+
 ## What gets set
 
 | Thing | How |

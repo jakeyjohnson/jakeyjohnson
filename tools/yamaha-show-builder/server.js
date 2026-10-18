@@ -6,6 +6,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LICENCE, PRODUCT, VERSION } from './public/about.js';
 import { DeskLink } from './desk-link.js';
+import { discover, localTargets } from './discover.js';
 import { matchesReadback, readbackCommand } from './public/plan.js';
 
 const PORT = Number(process.env.PORT || 8080);
@@ -24,6 +25,7 @@ function isLocalHost(host) {
 // The one desk this app is connected to. Every open page hears its status over /api/events.
 const link = new DeskLink();
 const listeners = new Set();
+let scanning = null;
 link.on('status', (status) => {
   for (const res of listeners) res.write(`data: ${JSON.stringify(status)}\n\n`);
 });
@@ -60,6 +62,24 @@ async function handleApi(req, res, path) {
   if (path === '/api/connect') {
     const { host, port } = target(body);
     return json(res, await link.connect(host, port));
+  }
+
+  if (path === '/api/discover') {
+    // One scan at a time; a second page asking while one runs gets the same answer
+    if (!scanning) {
+      const subnet = String(body.subnet || '').trim().replace(/\.(0\/24|\*)?$/, '');
+      let hosts;
+      if (subnet) {
+        if (!/^\d+\.\d+\.\d+$/.test(subnet) || !isLocalHost(`${subnet}.1`)) throw new Error('Type a local network, like 192.168.1.');
+        hosts = Array.from({ length: 254 }, (_, i) => `${subnet}.${i + 1}`);
+      } else {
+        // This computer too, for a desk editor or test desk running here
+        hosts = [...localTargets().hosts, '127.0.0.1'];
+      }
+      scanning = discover({ hosts }).then((r) => ({ ...r, subnets: subnet ? [`${subnet}.0/24`] : localTargets().subnets }))
+        .finally(() => { scanning = null; });
+    }
+    return json(res, await scanning);
   }
 
   if (path === '/api/disconnect') {
