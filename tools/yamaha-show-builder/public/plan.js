@@ -74,22 +74,32 @@ export function orderSources(sources) {
 }
 
 export const ZONE_TYPES = {
-  main:      { label: 'Main L/R',       short: 'Main LR', takes: ['speech', 'band', 'program'], color: 'Red' },
-  frontfill: { label: 'Front fills',    short: 'FrntFil', takes: ['speech', 'band', 'program'], color: 'Magenta' },
-  delay:     { label: 'Delay',          short: 'Delay',   takes: ['speech', 'band', 'program'], color: 'Purple' },
-  ceiling:   { label: 'Ceiling',        short: 'Ceiling', takes: ['bgm'],                       color: 'Orange' },
-  foldback:  { label: 'Foldback',       short: 'Fldbk',   takes: ['program', 'talkback'],       color: 'Yellow' },
-  record:    { label: 'Record/stream',  short: 'Record',  takes: ['speech', 'band', 'program'], color: 'Green' },
+  main:      { label: 'Main L/R',       short: 'Main LR', takes: ['speech', 'band', 'program'], color: 'Red',     send: 'post' },
+  frontfill: { label: 'Front fills',    short: 'FrntFil', takes: ['speech', 'band', 'program'], color: 'Magenta', send: 'post' },
+  delay:     { label: 'Delay',          short: 'Delay',   takes: ['speech', 'band', 'program'], color: 'Purple',  send: 'post' },
+  ceiling:   { label: 'Ceiling',        short: 'Ceiling', takes: ['bgm'],                       color: 'Orange',  send: 'post' },
+  foldback:  { label: 'Foldback',       short: 'Fldbk',   takes: ['program', 'talkback'],       color: 'Yellow',  send: 'pre' },
+  record:    { label: 'Record/stream',  short: 'Record',  takes: ['speech', 'band', 'program'], color: 'Green',   send: 'post' },
 };
 
 const NEG_INF = -32768; // RCP value for -inf; levels are in 1/100 dB
+
+// Send point for InCh/ToMix/PrePost. The desks' parameter lists confirm the 0/1 switch on CL/QL, TF, DM3 and
+// RIVAGE but not which value is which; this follows the parameter's name order (Pre, Post). Check one send
+// on the desk after the first push, and swap these two if they come out reversed.
+const SEND_POINT = { pre: 0, post: 1 };
+
+// Speaker zones default to post-fade, monitor zones to pre-fade. Shows saved before this take the type default.
+export function sendOf(zone) {
+  return zone.send || ZONE_TYPES[zone.type].send;
+}
 
 let nextId = 1;
 const uid = (p) => `${p}${Date.now().toString(36)}${(nextId++).toString(36)}`;
 
 export function makeZone(type, name) {
   const t = ZONE_TYPES[type];
-  return { id: type === 'main' ? 'main' : uid('z'), type, name: name || t.short, color: t.color };
+  return { id: type === 'main' ? 'main' : uid('z'), type, name: name || t.short, color: t.color, send: t.send };
 }
 
 export function makeSource(type, n, zones, name, stereo = SOURCE_TYPES[type].stereo) {
@@ -223,6 +233,7 @@ export function buildPlan(show) {
     for (const { mix, zone } of mixes) {
       const on = source.zones.includes(zone.id);
       set('InCh/ToMix/On', i, mix - 1, on ? 1 : 0);
+      set('InCh/ToMix/PrePost', i, mix - 1, SEND_POINT[sendOf(zone)]);
       // a stereo pair summed into a mono zone is pulled down 3 dB per side
       set('InCh/ToMix/Level', i, mix - 1, on ? (c.side ? -300 : 0) : NEG_INF);
     }
@@ -240,8 +251,8 @@ export function patchSheetCsv(show, plan) {
     rows.push(['Input', `Ch ${c.ch}`, c.name, SOURCE_TYPES[c.source.type].label, hpf ? `${hpf} Hz` : 'off', c.source.zones.map(zoneName).join(' + ')]);
   }
   const main = show.zones.find((z) => z.type === 'main');
-  if (main) rows.push(['Output', 'Stereo L/R', main.name, 'Main PA', '', '']);
-  for (const m of plan.mixes) rows.push(['Output', `Mix ${m.mix}`, m.zone.name, ZONE_TYPES[m.zone.type].label, '', '']);
+  if (main) rows.push(['Output', 'Stereo L/R', main.name, 'Main PA', '', 'Post-fade']);
+  for (const m of plan.mixes) rows.push(['Output', `Mix ${m.mix}`, m.zone.name, ZONE_TYPES[m.zone.type].label, '', sendOf(m.zone) === 'pre' ? 'Pre-fade sends' : 'Post-fade sends']);
   return rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
 }
 
