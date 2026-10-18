@@ -52,6 +52,71 @@ These figures come from Yamaha's spec tables and reference manuals (checked Octo
 
 The app talks to the desk using Yamaha's remote control protocol (TCP port 49280), which CL, QL, TF, DM3, DM7 and RIVAGE PM desks all support. It only connects to local network addresses (192.168.x.x, 10.x.x.x, 172.16–31.x.x).
 
+## Three tabs: Desk, Amplifiers, RF
+
+- **Desk:** the show for the Yamaha desk and its Rio stage boxes: inputs, outputs, routing, patch, sending and line check.
+- **Amplifiers:** which d&b amp channel drives each speaker output, with its input and speaker setup.
+- **RF:** Shure radio mics and PSM IEMs, or Sennheiser Spectera, with a starting frequency plan.
+
+All three work from the same show, so a new output on the Desk tab shows up on the other two.
+
+## Safe start
+
+Everything starts at its lowest, so nothing is loud when the system comes up. It's on by default:
+- **Desk:** every head-amp at -6 dB, the lowest a Yamaha head-amp goes, and every fader at -∞: inputs, every output master and Main L/R. Rio sockets are included, because their gain comes from the desk.
+- **Shure receivers:** gain at -18 dB, their lowest.
+- **Spectera:** mic gain at its lowest (-6 dB on a bodypack, -10 dB on a handheld), and headphone level right down.
+- **d&b amps and PSM transmitters:** listed as "Muted, lowest" for you to set, because the app can't send to them yet.
+
+The gain on each row in the routing grid is then a **target**: line check and the paperwork show it as "Bring gain to". To send the targets instead, untick **Safe start** in step 5.
+
+## Stage boxes (Rio)
+
+In step 4 (Patch), add your Rio or Tio units in the order they sit on the desk's Dante channels. Each one becomes a bank of its own sockets ("Rio 1 · 5"), so you can start the input patch on Rio 1. The desk's own Dante channels follow on after them, numbered as the desk numbers them.
+- **Gain and 48V:** set from the desk, so safe start covers them.
+- **Dante subscriptions:** set them up in Dante Controller or on the desk's Dante patch screen. The Paperwork pack lists every one.
+- **On the Rio:** set its UNIT ID to match the order.
+
+## Amplifiers (d&b)
+
+1. Pick an amp model and press **Add amps for every speaker output**, or add them one at a time. Supported: D80, D40, D20, D90, 40D, 30D, 10D, 5D, D12 and D6.
+2. Each speaker output gets its own channel, filled in order: one per side for Main L/R, then front fills, delays, ceiling and wedges. IEM and record outputs don't need one.
+3. The table shows which desk socket feeds each amp channel, the amp input (A1–A4 for analogue, D1–D4 for AES, Network for Dante/Milan), a guessed speaker setup (Y10P for main, 44S for fills, M4 for wedges; type any d&b setup) and a target gain.
+4. Set each amp's IP, or pick it up with **Find devices** (d&b amps answer on AES70, port 30013).
+
+The app **can't send settings to d&b amps**: d&b doesn't publish the control list for its AES70 interface. Set the amps up in R1 from this table, or from the Amplifiers page in Paperwork. Everything there starts muted with its gain right down.
+
+## RF (Shure and Sennheiser Spectera)
+
+**Radio mics:** handhelds and headsets count as radio by default; tick or untick **Radio** for any mic. Then pick the system:
+- **Shure receivers** (ULXD4, ULXD4D, ULXD4Q, QLXD4, AD4D, AD4Q, SLXD4, SLXD4D): **Add receivers for every radio mic** fills their channels in desk channel order. Give each receiver its IP, or pick it up with Find devices.
+- **Spectera:** handhelds go on SKMs, headsets on SEK bodypacks.
+
+**IEMs:** each mono or stereo IEM output on the Desk tab goes on either:
+- **Shure PSM** (P10T, two channels; P9T, one).
+- **Spectera** SEK bodypacks.
+
+**Frequencies:** the app plans one frequency for every Shure mic and IEM channel:
+- **Ranges:** mics and IEMs each have their own. Type them or pick a preset, such as UK channel 38 (606.500–613.500 MHz) or G50 (470–534 MHz).
+- **The rules:** a 25 kHz grid, mics at least 400 kHz apart, IEMs 600 kHz apart, and clear of the third-order intermod products (2A−B) of every transmitter together.
+- **Spectera:** put in its RF channel and the Shure plan keeps clear of it.
+- **Your own frequency:** type one in any row to fix it, and the rest plan around it.
+
+It's a starting plan only. Scan the room and check the plan in Wireless Workbench before the show.
+
+**Send to RF:**
+- **Shure receivers:**
+  - **Send to receivers** sends each channel its name (8 letters), frequency and gain at -18 dB, over the receiver's command strings (TCP port 2202).
+  - **Check receivers** reads them back.
+- **Spectera:**
+  1. Turn on third-party access on the base station and set its password.
+  2. Put in the base station's IP and password, then press **Read the base station**.
+  3. Match each mic or IEM to a paired pack.
+  4. Press **Send names and safe gains**.
+
+  This uses Sennheiser's HTTPS API (SSCv2). The password is only kept until the page closes, never in the show file.
+- **PSM transmitters:** not sent from here, because Shure's PSM control strings aren't confirmed yet. Set them in Wireless Workbench from the RF table.
+
 ## Find devices
 
 Press **Find devices** in the Desk bar to see what's on the network, grouped as Desks, Stage boxes, Radio mics, Amps, Playback and Other. On a Yamaha desk, **Use this desk** fills in its IP and connects.
@@ -77,7 +142,7 @@ In the routing grid, the **All** column ticks every output for that input in one
 | HPF | High-pass filter on and set per input (see below), or off |
 | Stereo sources | Use two mono channels (L/R) panned hard left and right |
 | Main L/R zone | The stereo bus. Inputs ticked for Main are assigned to it |
-| Other zones | One mix bus each (front fill = Mix 1, and so on). Named, coloured, master at 0 dB, not routed to the stereo bus |
+| Other zones | One mix bus each (front fill = Mix 1, and so on). Named, coloured, master at -∞ with safe start (0 dB without), not routed to the stereo bus |
 | Sends | 0 dB to each ticked speaker output and -3 dB to each ticked monitor output (a stereo source summed into a mono output drops a further 3 dB per side). Off and -∞ everywhere else |
 | Send point | Pre-fade for monitor outputs (Foldback, Mono IEM, Stereo IEM, or any output with "monitor" in its name). Post-fade for everything else: Main L/R, front fills, delays, ceiling, record. Click Post/Pre under an output's name to override it |
 | Stereo IEM | Takes an odd/even pair of mixes. Stereo inputs are panned hard left/right into it, mono inputs centre. On a TF it goes on the stereo mixes (9/10 up) and mono outputs fill mixes 1–8; on other desks, set the pair as stereo in Bus Setup (the app reminds you) |
@@ -231,7 +296,7 @@ Made automatically from the input types (Speech, Drums, Band, Vox, Playback, BGM
 After the first push to a desk, later pushes send only the lines that changed, so a rename mid-show takes one line. **Send everything next time** forgets the last push.
 
 ### Gain and 48V
-Every input type has a starting gain and 48V setting, which you can change per row in the routing grid:
+Every input type has a target gain and a 48V setting, which you can change per row in the routing grid. With safe start (the default) the desk gets the lowest gain and you bring it up to the target at line check:
 - **48V on:** lectern goosenecks, overheads, hi-hat and active DIs.
 - **48V off:** radio mic receivers and dynamic mics.
 
@@ -274,6 +339,7 @@ The footer shows the version and licence number. Both live in `public/about.js`:
 
 - **Save / Open**: the show as a `.show.json` file, so you can reuse templates between jobs. The page also autosaves in the browser.
 - **Patch sheet**: a CSV of every input channel and output bus.
+- **Paperwork**: adds Amplifiers, RF and Dante patch pages when the show has them.
 
 ## Testing without a desk
 
@@ -282,15 +348,22 @@ npm run mock    # pretend desk on 127.0.0.1:49280, prints every command
                 # (DESK_MODEL=QL5 npm run mock to pretend to be a QL5)
 npm start       # in another terminal; use 127.0.0.1 as the desk IP
 npm test        # unit tests for the routing logic
+node mock-shure.js   # pretend Shure ULXD4Q on 127.0.0.1:2202; put 127.0.0.1 on a receiver
 ```
 
 ## Desk notes
 
 - **Parameter names** come from the desks' own `prminfo` replies, as collected in the open-source [Bitfocus Companion Yamaha RCP module](https://github.com/bitfocus/companion-module-yamaha-rcp) (`schemas/`). Those lists cover a selection of each desk's parameters:
   - **Confirmed directly:** names, colours, fader level and on/off, mix sends and pan on every family. HPF on and frequency (sent as Hz × 10) on DM7 and RIVAGE.
-  - **Not in the lists, so not yet confirmed:** HPF on CL/QL/TF/DM3. Stereo bus on/off (`ToSt/On`) on CL/QL/TF/RIVAGE (it is listed for DM3/DM7).
+  - **Not in the lists, so not yet confirmed:** HPF on CL/QL/TF/DM3. Stereo bus on/off (`ToSt/On`) on CL/QL/TF/RIVAGE (it is listed for DM3/DM7). The stereo master fader (`St/Fader/Level`) that safe start closes. If a desk rejects it, pull the Main L/R master down by hand.
 - **Pre/post:** `InCh/ToMix/PrePost` is confirmed on CL/QL, TF, DM3 and RIVAGE, but the lists don't say which value is pre. The app sends 0 = pre and 1 = post (`SEND_POINT` in `public/plan.js`). After the first push, check one wedge send on the desk and swap the two values if they're reversed. On CL/QL, the zone mixes must be VARI buses (Bus Setup) for sends to have a level and send point.
 - **Colours:** TF desks call two colours SkyBlue and Pink where the others say Cyan and Magenta. The app translates automatically.
 
 - **Name length:** older CL, QL and TF firmware shows up to 8 characters. Raise **Name length** for DM7 or RIVAGE.
 - **Rejected commands:** if a desk rejects a command (some parameter names differ between models or firmware), the push carries on and the log lists the rejected lines in red. Send those so the generator can be adjusted.
+
+## RF and amp notes
+
+- **Shure:** the command strings (`CHAN_NAME`, `FREQUENCY` in kHz, `AUDIO_GAIN` 0–60 for -18 to +42 dB) match the open-source [Bitfocus Companion Shure wireless module](https://github.com/bitfocus/companion-module-shure-wireless). Not yet tested on a real receiver. Frequency changes drop the link for a moment, so send them during prep, not in the show.
+- **Spectera:** the paths and fields (`/api/mts/paired/all/{id}`, `name`, `micPreampGain`, `headphoneVolume`, user `controlSennheiser`) match the [Bitfocus Companion Spectera module](https://github.com/bitfocus/companion-module-sennheiser-spectera), which needs base station firmware 1.4.1 or newer. Not yet tested on a real base station.
+- **PSM1000 and d&b:** neither has a public, confirmed control list the app can use, so both are paperwork only for now.

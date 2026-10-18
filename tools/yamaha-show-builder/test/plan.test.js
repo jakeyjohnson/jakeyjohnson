@@ -240,7 +240,7 @@ test('a new show is completely empty and keeps only the desk model', () => {
   assert.deepEqual(show, {
     name: 'New show',
     options: {
-      model: 'TF5', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true,
+      model: 'TF5', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, safeStart: true, autoOrder: true,
       inPatch: { bank: 'analog', port: 1 }, outPatch: { bank: 'analog', port: 1 }, sendPatch: true,
       groups: true, setGain: true,
     },

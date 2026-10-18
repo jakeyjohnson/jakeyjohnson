@@ -110,7 +110,7 @@ function describeService(service, name) {
     case 'qlab': return { kind: 'playback', make: 'Figure 53', model: 'QLab' };
     case 'osc': return { kind: 'playback', make: '', model: 'OSC device' };
     case 'aes70': return { kind: 'amp', make: '', model: 'AES70 device' };
-    case 'ssc': return { kind: 'radio', make: 'Sennheiser', model: 'Sennheiser Sound Control device' };
+    case 'ssc': return { kind: 'radio', make: 'Sennheiser', model: 'Sound Control device (Spectera, EW-DX)' };
     default: return { kind: 'other', make: '', model: service };
   }
 }

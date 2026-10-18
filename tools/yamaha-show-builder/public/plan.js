@@ -64,17 +64,43 @@ export function modelFromProduct(name) {
 // ---- Patch: which socket feeds each channel, and which socket each output comes out of ----
 
 // The banks of ports on a desk, in the order the auto patch fills them
-export function patchBanks(model, dir) {
+// Yamaha stage boxes. They join the desk over Dante, so each one takes the next block of the desk's
+// Dante channels; head-amp gain and 48V on their sockets are then set from the desk.
+export const RIO_MODELS = {
+  'Rio3224-D2': { ins: 32, outs: 16 },
+  'Rio1608-D2': { ins: 16, outs: 8 },
+  'Rio3224-D3': { ins: 32, outs: 16 },
+  'Rio1608-D3': { ins: 16, outs: 8 },
+  'Tio1608-D2': { ins: 16, outs: 8 },
+};
+
+// The desk's sockets as banks. With stage boxes, each Rio is a bank of its own sockets, sitting on the
+// first Dante channels in order; "Dante" is then whatever is left, numbered as the desk numbers it.
+export function patchBanks(model, dir, rios = []) {
   const io = model.io || MODELS.custom.io;
   const banks = [{ key: 'analog', label: 'Analogue', size: dir === 'in' ? io.analogIn : io.analogOut }];
   for (let n = 1; n <= io.cards; n++) banks.push({ key: `card${n}`, label: `Card ${n}`, size: io.cardCh });
-  banks.push({ key: 'dante', label: 'Dante', size: io.dante });
+  let used = 0;
+  (rios || []).forEach((rio, n) => {
+    const sockets = RIO_MODELS[rio.model]?.[dir === 'in' ? 'ins' : 'outs'] || 0;
+    const size = Math.min(sockets, io.dante - used);
+    if (size > 0) banks.push({ key: `rio${n + 1}`, label: `Rio ${n + 1} (${rio.model})`, size, danteFrom: used + 1 });
+    used += Math.max(0, size);
+  });
+  banks.push({ key: 'dante', label: 'Dante', size: io.dante - used, first: used + 1, danteFrom: used + 1 });
   return banks.filter((b) => b.size > 0);
 }
 export function portLabel(patch) {
   if (!patch) return 'unpatched';
+  if (patch.bank.startsWith('rio')) return `Rio ${patch.bank.slice(3)} · ${patch.port}`;
   const name = patch.bank === 'analog' ? 'Analogue' : patch.bank === 'dante' ? 'Dante' : `Card ${patch.bank.slice(4)}`;
   return `${name} ${patch.port}`;
+}
+// The desk's Dante channel a patch lands on, for the Dante patch list (null when it isn't on Dante)
+export function danteChannel(patch, banks) {
+  const bank = patch && banks.find((b) => b.key === patch.bank);
+  if (!bank || bank.danteFrom == null) return null;
+  return bank.danteFrom + patch.port - (bank.first || 1);
 }
 
 // Gives each item (needing 1 or 2 consecutive ports) a port: fixed ones where the show says, the rest in order
@@ -82,7 +108,8 @@ export function portLabel(patch) {
 function allocatePorts(items, banks, start, what) {
   const warnings = [];
   const used = new Map();
-  const size = (key) => banks.find((b) => b.key === key)?.size || 0;
+  const first = (key) => banks.find((b) => b.key === key)?.first || 1;
+  const last = (key) => first(key) + (banks.find((b) => b.key === key)?.size || 0) - 1;
   const take = (bank, port, item) => {
     for (let k = 0; k < item.ports; k++) {
       const id = `${bank}:${port + k}`;
@@ -94,11 +121,11 @@ function allocatePorts(items, banks, start, what) {
   const out = items.map((item) => {
     if (!item.fixed) return null;
     const { bank, port } = item.fixed;
-    if (port < 1 || port + item.ports - 1 > size(bank)) warnings.push(`${item.name} is on ${portLabel(item.fixed)}, which this desk doesn't have`);
+    if (port < first(bank) || port + item.ports - 1 > last(bank)) warnings.push(`${item.name} is on ${portLabel(item.fixed)}, which this desk doesn't have`);
     return take(bank, port, item);
   });
   let b = Math.max(0, banks.findIndex((x) => x.key === start?.bank));
-  let port = start?.bank && banks[b]?.key === start.bank ? Math.max(1, start.port || 1) : 1;
+  let port = start?.bank && banks[b]?.key === start.bank ? Math.max(banks[b].first || 1, start.port || 1) : banks[b]?.first || 1;
   items.forEach((item, i) => {
     if (out[i]) return;
     for (;;) {
@@ -108,12 +135,12 @@ function allocatePorts(items, banks, start, what) {
         return;
       }
       const free = [...Array(item.ports).keys()].every((k) => !used.has(`${bank.key}:${port + k}`));
-      if (port + item.ports - 1 <= bank.size && free) {
+      if (port + item.ports - 1 <= last(bank.key) && free) {
         out[i] = take(bank.key, port, item);
         port += item.ports;
         return;
       }
-      if (port + item.ports - 1 > bank.size) { b++; port = 1; } else port++;
+      if (port + item.ports - 1 > last(bank.key)) { b++; port = banks[b]?.first || 1; } else port++;
     }
   });
   return { patches: out, warnings };
@@ -256,7 +283,7 @@ export function addSources(show, type, count) {
 }
 
 export const DEFAULT_OPTIONS = {
-  model: 'custom', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true,
+  model: 'custom', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, safeStart: true, autoOrder: true,
   inPatch: { bank: 'analog', port: 1 }, outPatch: { bank: 'analog', port: 1 }, sendPatch: true,
   groups: true, setGain: true,
 };
@@ -353,8 +380,8 @@ export function buildPlan(show) {
   }
 
   // Patch: inputs in channel order (a stereo source takes two ports), outputs Main L/R first then each mix
-  const inBanks = patchBanks(model, 'in');
-  const outBanks = patchBanks(model, 'out');
+  const inBanks = patchBanks(model, 'in', show.rios);
+  const outBanks = patchBanks(model, 'out', show.rios);
   const inItems = [];
   for (const c of channels) {
     if (c.side === 'R') continue;
@@ -377,8 +404,13 @@ export function buildPlan(show) {
 
   // Outputs first so the buses are named before anything is sent to them
   const main = show.zones.find((z) => z.type === 'main');
+  const safe = show.options?.safeStart !== false;
   if (main) {
     set('St/Label/Name', 0, 0, `"${label(main.name)}"`);
+    if (setLevels && safe) {
+      set('St/Fader/On', 0, 0, 1);
+      set('St/Fader/Level', 0, 0, NEG_INF);
+    }
   }
   const busIndexes = ({ mix, stereo }) => (stereo ? [mix - 1, mix] : [mix - 1]);
   for (const m of mixes) {
@@ -388,7 +420,7 @@ export function buildPlan(show) {
       set('Mix/ToSt/On', i, 0, 0); // zones never feed back into the main bus
       if (setLevels) {
         set('Mix/Fader/On', i, 0, 1);
-        set('Mix/Fader/Level', i, 0, 0);
+        set('Mix/Fader/Level', i, 0, safe ? NEG_INF : 0); // safe start: every output closed until you open it
       }
     }
   }
@@ -448,14 +480,15 @@ export function buildPlan(show) {
     for (const g of groups.slice(0, caps.muteGroups)) set('MuteMaster/Label/Name', g.number - 1, 0, `"${label(g.name)}"`);
   }
 
-  // Head-amp gain and 48V where the desk takes them
+  // Head-amp gain and 48V where the desk takes them. Safe start sends the lowest gain the desk has
+  // (-6 dB); the gain on each row is then the target to bring it up to at line check.
   if (caps && show.options?.setGain !== false) {
     for (const c of channels) {
       const i = c.ch - 1;
-      const gain = Math.round(gainOf(c.source));
+      const gain = safe ? -6 : Math.round(gainOf(c.source));
       if (caps.gain === 'centi') set('InCh/Port/HA/Gain', i, 0, Math.min(66, Math.max(-6, gain)) * 100);
       else if (caps.gain === 'db') set('InCh/Port/HA/Gain', i, 0, Math.min(66, Math.max(-6, gain)));
-      else if (caps.gain === 'io') commands.push(`set IO:Current/InCh/HAGain ${i} 0 ${Math.min(64, Math.max(0, gain))}`);
+      else if (caps.gain === 'io') commands.push(`set IO:Current/InCh/HAGain ${i} 0 ${safe ? 0 : Math.min(64, Math.max(0, gain))}`);
       if (caps.phantom) commands.push(`set IO:Current/InCh/48VOn ${i} 0 ${phantomOf(c.source) ? 1 : 0}`);
     }
   }
@@ -464,8 +497,9 @@ export function buildPlan(show) {
       if (!o.patch) continue;
       o.buses.forEach((bus, k) => {
         const port = o.patch.port + k - 1;
+        const dante = danteChannel({ bank: o.patch.bank, port: o.patch.port + k }, outBanks);
         if (o.patch.bank === 'analog') set('OmniOutPort/Patch', port, 0, `"${bus}"`);
-        else if (o.patch.bank === 'dante') set('DanteOutPort/Patch', port, 0, `"${bus}"`);
+        else if (dante) set('DanteOutPort/Patch', dante - 1, 0, `"${bus}"`);
         else if (o.patch.bank === 'card1' || o.patch.bank === 'card2') set(`SlotOut${o.patch.bank.slice(4)}Port/Patch`, 0, port, `"${bus}"`);
       });
     }
@@ -476,7 +510,7 @@ export function buildPlan(show) {
     gain: Boolean(caps?.gain), phantom: Boolean(caps?.phantom), cue: Boolean(caps?.cue), scene: Boolean(caps),
   };
 
-  return { channels, mixes, commands, warnings, spares, outputs, patchOnDesk, groups, onDesk };
+  return { channels, mixes, commands, warnings, spares, outputs, patchOnDesk, groups, onDesk, inBanks, outBanks };
 }
 
 // Patch sheet for the engineer: what plugs in where
@@ -784,7 +818,7 @@ export function matchesReadback(cmd, reply) {
 
 // ---- Paperwork pack: input list, outputs, line check, stage-box and desk labels ----
 const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-export function paperwork(show, plan, { version = '', licence = '' } = {}) {
+export function paperwork(show, plan, { version = '', licence = '', extra = '' } = {}) {
   const model = MODELS[show.options?.model] || MODELS.custom;
   const zoneName = (id) => show.zones.find((z) => z.id === id)?.name ?? '';
   const groupOf = (c) => plan.groups?.find((g) => g.channels.includes(c))?.name || '';
@@ -809,6 +843,7 @@ export function paperwork(show, plan, { version = '', licence = '' } = {}) {
 <h2 class="page">Line check</h2><table><thead><tr><th>✓</th><th>Ch</th><th>Name</th><th>Plugs into</th><th>Mic / note</th><th>Notes</th></tr></thead><tbody>${check}</tbody></table>
 <h2 class="page">Desk tape</h2><p class="meta">Cut along the lines and stick above the faders.</p><div class="row">${strips}</div>
 <h2>Stage-box labels</h2><div class="row">${boxes}</div>
+${extra}
 <footer>KobiKraken · Show Builder ${esc(version ? 'v' + version : '')}${licence ? ' · Licence ' + esc(licence) : ''}</footer>
 </div>`;
   return { title: `${show.name} paperwork`, css, body };

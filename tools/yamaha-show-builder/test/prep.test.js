@@ -92,9 +92,26 @@ test('DCAs and mute groups are made from the input types', () => {
   assert.ok(!buildPlan(show).commands.some((c) => c.includes('DCA')));
 });
 
+test('safe start: every head-amp at its lowest and every output fader closed', () => {
+  const show = defaultShow();
+  show.options.model = 'QL5';
+  let plan = buildPlan(show);
+  const gains = plan.commands.filter((c) => c.includes('HA/Gain'));
+  assert.ok(gains.length && gains.every((c) => c.endsWith(' -600')));
+  assert.ok(plan.commands.includes('set MIXER:Current/St/Fader/Level 0 0 -32768'));
+  assert.ok(plan.commands.filter((c) => c.includes('Mix/Fader/Level')).every((c) => c.endsWith(' -32768')));
+  show.options.model = 'DM7';
+  assert.ok(buildPlan(show).commands.filter((c) => c.includes('HA/Gain')).every((c) => c.endsWith(' -6')));
+  show.options.model = 'DM3';
+  assert.ok(buildPlan(show).commands.filter((c) => c.includes('HAGain')).every((c) => c.endsWith(' 0')));
+  // the gain on each row stays as the line-check target
+  assert.match(patchSheetCsv(show, buildPlan(show)).split('\n')[1], /"40 dB"/);
+});
+
 test('gain and 48V defaults go out in each desk family\'s format', () => {
   const show = defaultShow();
   applySuggestion(show, packageSuggestion('band'));
+  show.options.safeStart = false;
   show.options.model = 'QL5';
   let plan = buildPlan(show);
   assert.ok(plan.commands.includes('set MIXER:Current/InCh/Port/HA/Gain 0 0 4000')); // lectern 40 dB
