@@ -109,7 +109,7 @@ Type into the box under the input buttons, for example *"full band, 4 wedges and
 | Speech | lectern, podium, headset, lapel, lav, handheld, radio mic, HH |
 | Band | kick, snare, hi hat, tom, overhead, OH, bass, guitar, gtr, acoustic, keys, keyboard, piano, synth, vocal, vox, singer, talkback, TB, instrument |
 | Playback | laptop, playback, PB, BGM, background music |
-| Outputs | wedge, monitor, foldback, mono IEM, stereo IEM, IEM (stereo), in-ear, delay, front fill, ceiling, record, stream |
+| Outputs | main, main L/R, PA, wedge, monitor, foldback, mono IEM, stereo IEM, IEM (stereo), in-ear, delay, front fill, ceiling, record, stream |
 
 - **Counts:** a number or number word in front sets how many: "4 wedges", "two handhelds", "a kick".
 - **Numbering:** new inputs carry on from ones already in the show (HH 5, HH 6).
@@ -138,6 +138,12 @@ Turn auto order off to set the order by hand with the ↑ ↓ arrows on each row
 - **Physical patching.** Input sockets and Dante patching to channels, and mix buses to output sockets or amps. The **Patch sheet** button exports a CSV listing what goes where.
 - **Bus type.** Set the zone mixes as FIXED or post-fader in Bus Setup so the input faders drive every zone.
 - **Speaker processing.** Delay times, EQ and limiting for the fills, delays and ceiling (on the bus or in the amp or DSP).
+
+## Starting over
+
+- **New show:** wipes the page back to empty: no inputs, no outputs, every option back to default. The typing box, preview and push log clear too. Only the desk model and desk IP are kept, since they describe your hardware. It asks first unless the page is already empty.
+- **Example:** loads the conference example (2 lecterns, 4 handhelds, 4 playbacks, fills, delays and ceiling).
+- **Main L/R:** after a new show, add it with the Main L/R button, or type "main" or "PA".
 
 ## Files
 

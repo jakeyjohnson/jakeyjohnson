@@ -15,7 +15,8 @@
       <label class="model">Desk model <select id="model"></select></label>
     </div>
     <div class="actions">
-      <button id="newShow" class="ghost">New</button>
+      <button id="newShow" class="ghost">New show</button>
+      <button id="exampleShow" class="ghost">Example</button>
       <label class="ghost button">Open<input id="openFile" type="file" accept=".json" hidden></label>
       <button id="saveShow" class="ghost">Save</button>
       <button id="exportCsv" class="ghost">Patch sheet</button>
@@ -23,6 +24,12 @@
   </header>
 
   <main>
+    <div id="newConfirm" class="confirm" hidden>
+      <span id="newText"></span>
+      <button id="newYes" class="primary">Wipe and start</button>
+      <button id="newNo" class="ghost">Cancel</button>
+    </div>
+
     <section>
       <h2><span>1</span>Inputs</h2>
       <div class="quick-add">
@@ -32,7 +39,7 @@
       <div class="typein">
         <label for="typeText">Or type what you need</label>
         <textarea id="typeText" rows="2" placeholder="e.g. full band, 4 wedges and 2 handhelds"></textarea>
-        <p class="hint type-help">Works offline. Understands numbers (&quot;4 wedges&quot;, &quot;two handhelds&quot;) and: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, wedge, mono IEM, stereo IEM, delay, front fill, ceiling, record.</p>
+        <p class="hint type-help">Works offline. Understands numbers (&quot;4 wedges&quot;, &quot;two handhelds&quot;) and: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, main, PA, wedge, mono IEM, stereo IEM, delay, front fill, ceiling, record.</p>
         <div class="type-row"><button id="typeGo" class="primary">Preview</button><span id="typeStatus" class="status"></span></div>
         <div id="typePreview" class="type-preview" hidden>
           <p id="typeSummary"></p>

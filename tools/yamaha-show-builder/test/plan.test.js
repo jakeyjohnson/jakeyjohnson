@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sendOf, makeZone, addSources, applySuggestion, buildPlan, defaultShow, makeSource, packageSuggestion, parseRequest, patchSheetCsv } from '../public/plan.js';
+import { emptyShow, sendOf, makeZone, addSources, applySuggestion, buildPlan, defaultShow, makeSource, packageSuggestion, parseRequest, patchSheetCsv } from '../public/plan.js';
 
 test('default show matches the conference brief', () => {
   const show = defaultShow();
@@ -232,4 +232,24 @@ test('monitor sends default to -3 dB, speaker sends to 0 dB', () => {
   applySuggestion(show, { sources: [{ type: 'talkback', name: 'MD TB', count: 1 }], zones: [] });
   const tb = buildPlan(show).channels.find((c) => c.name === 'MD TB').ch - 1;
   assert.ok(buildPlan(show).commands.includes(`set MIXER:Current/InCh/ToMix/Level ${tb} 4 -300`));
+});
+
+test('a new show is completely empty and keeps only the desk model', () => {
+  const show = emptyShow('TF5');
+  assert.deepEqual(show, {
+    name: 'New show',
+    options: { model: 'TF5', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true },
+    zones: [],
+    sources: [],
+  });
+  const plan = buildPlan(show);
+  assert.deepEqual([plan.channels.length, plan.mixes.length, plan.commands.length, plan.warnings.length], [0, 0, 0, 0]);
+  // building from empty works
+  const s = parseRequest('a wedge, main L/R and 2 handhelds', show);
+  assert.deepEqual(s.unknown, []);
+  applySuggestion(show, s);
+  assert.deepEqual(show.zones.map((z) => z.name), ['Main LR', 'Wedge 1']); // main always first
+  assert.equal(buildPlan(show).channels.length, 2);
+  applySuggestion(show, parseRequest('pa', show)); // never a second main
+  assert.equal(show.zones.filter((z) => z.type === 'main').length, 1);
 });

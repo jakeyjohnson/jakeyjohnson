@@ -1,4 +1,4 @@
-import { sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
+import { emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
 const $ = (id) => document.getElementById(id);
@@ -166,6 +166,7 @@ async function testDesk() {
 
 async function pushDesk() {
   const plan = buildPlan(show);
+  if (!plan.commands.length) return setStatus('Nothing to send yet. Add some inputs or outputs first.', 'bad');
   const target = deskTarget();
   if (!target.host) return setStatus('Enter the desk IP first', 'bad');
   if (!confirm(`Send ${plan.commands.length} commands to the desk at ${target.host}?\n\nThis renames and re-routes the current scene. Store a backup scene on the desk first.`)) return;
@@ -239,7 +240,35 @@ for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) {
 }
 $('autoOrder').onchange = (e) => update(() => { show.options.autoOrder = e.target.checked; });
 $('setLevels').onchange = (e) => update(() => { show.options.setLevels = e.target.checked; });
-$('newShow').onclick = () => confirm('Start a new show? Unsaved changes are lost.') && update(() => { show = defaultShow(); });
+// New show wipes the page back to empty; Example loads the conference example. Both ask first unless the page is already empty.
+let pendingShow = null;
+function resetPage() {
+  $('typeText').value = '';
+  $('typePreview').hidden = true;
+  typeStatus('');
+  $('addCount').value = 1;
+  $('log').textContent = '';
+  $('log').hidden = true;
+  $('progress').hidden = true;
+  showCommands = false;
+  $('toggleCommands').textContent = 'Show commands';
+  setStatus('');
+}
+function startShow(next) {
+  update(() => { show = next; });
+  resetPage();
+}
+function askToReplace(next, text) {
+  if (!show.sources.length && !show.zones.length) return startShow(next);
+  pendingShow = next;
+  $('newText').textContent = text;
+  $('newConfirm').hidden = false;
+  $('newYes').focus();
+}
+$('newShow').onclick = () => askToReplace(emptyShow(show.options.model), 'Start a new, empty show? This clears every input, output and setting on the page.');
+$('exampleShow').onclick = () => askToReplace({ ...defaultShow(), options: { ...defaultShow().options, model: show.options.model } }, 'Load the example show? This replaces everything on the page.');
+$('newYes').onclick = () => { $('newConfirm').hidden = true; startShow(pendingShow); };
+$('newNo').onclick = () => { $('newConfirm').hidden = true; pendingShow = null; };
 $('saveShow').onclick = () => download(`${fileBase()}.show.json`, JSON.stringify(show, null, 2), 'application/json');
 $('exportCsv').onclick = () => download(`${fileBase()}-patch.csv`, patchSheetCsv(show, buildPlan(show)), 'text/csv');
 $('openFile').onchange = async (e) => {
