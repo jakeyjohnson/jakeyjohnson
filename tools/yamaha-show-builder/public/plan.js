@@ -1,7 +1,28 @@
 // Turns a show description into channel/mix allocations and Yamaha RCP commands.
 // Shared by the browser UI and the Node tests, so keep it dependency free.
 
-export const COLORS = ['Blue', 'SkyBlue', 'Cyan', 'Green', 'Yellow', 'Orange', 'Red', 'Magenta', 'Purple', 'White'];
+// Mono input channels and mix buses per model, from Yamaha's published specs.
+// stereoMixFrom: mixes from this number up are stereo pairs on that desk.
+export const MODELS = {
+  custom:  { label: 'Other / not sure', inputs: 0, mixes: 0 },
+  TF1:     { label: 'TF1',            series: 'TF',     inputs: 32,  mixes: 20, stereoMixFrom: 9 },
+  TF3:     { label: 'TF3',            series: 'TF',     inputs: 32,  mixes: 20, stereoMixFrom: 9 },
+  TF5:     { label: 'TF5',            series: 'TF',     inputs: 32,  mixes: 20, stereoMixFrom: 9 },
+  DM3:     { label: 'DM3 / DM3 Standard', series: 'DM3', inputs: 16, mixes: 6 },
+  QL1:     { label: 'QL1',            series: 'QL',     inputs: 32,  mixes: 16 },
+  QL5:     { label: 'QL5',            series: 'QL',     inputs: 64,  mixes: 16 },
+  CL1:     { label: 'CL1',            series: 'CL',     inputs: 48,  mixes: 24 },
+  CL3:     { label: 'CL3',            series: 'CL',     inputs: 64,  mixes: 24 },
+  CL5:     { label: 'CL5',            series: 'CL',     inputs: 72,  mixes: 24 },
+  DM7C:    { label: 'DM7 Compact',    series: 'DM7',    inputs: 72,  mixes: 48 },
+  DM7:     { label: 'DM7',            series: 'DM7',    inputs: 120, mixes: 48 },
+  PM3:     { label: 'RIVAGE PM3',     series: 'RIVAGE', inputs: 120, mixes: 60 },
+  PM5:     { label: 'RIVAGE PM5',     series: 'RIVAGE', inputs: 144, mixes: 72 },
+  PM7:     { label: 'RIVAGE PM7',     series: 'RIVAGE', inputs: 120, mixes: 60 },
+  PM10:    { label: 'RIVAGE PM10',    series: 'RIVAGE', inputs: 144, mixes: 72 },
+};
+
+export const COLORS =['Blue', 'SkyBlue', 'Cyan', 'Green', 'Yellow', 'Orange', 'Red', 'Magenta', 'Purple', 'White'];
 
 // category decides which zones a new source is routed to by default
 export const SOURCE_TYPES = {
@@ -61,7 +82,7 @@ export function defaultShow() {
   ];
   const show = {
     name: 'New show',
-    options: { firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true },
+    options: { model: 'custom', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true },
     zones,
     sources: [],
   };
@@ -105,6 +126,20 @@ export function buildPlan(show) {
       const name = side ? `${clean(source.name, maxNameLength - 2)} ${side}` : source.name;
       channels.push({ ch: ch++, name, side, source });
     }
+  }
+
+  const model = MODELS[show.options?.model] || MODELS.custom;
+  const lastCh = ch - 1;
+  const lastMix = mixNo - 1;
+  if (model.inputs && lastCh > model.inputs) {
+    warnings.push(`Needs channels up to ${lastCh} but the ${model.label} has ${model.inputs} mono inputs`);
+  }
+  if (model.mixes && lastMix > model.mixes) {
+    warnings.push(`Needs mixes up to ${lastMix} but the ${model.label} has ${model.mixes}`);
+  }
+  if (model.stereoMixFrom) {
+    const stereo = mixes.filter((m) => m.mix >= model.stereoMixFrom).map((m) => `${m.zone.name} (Mix ${m.mix})`);
+    if (stereo.length) warnings.push(`On the ${model.label}, mixes ${model.stereoMixFrom} and up are stereo pairs: ${stereo.join(', ')}`);
   }
 
   if (show.sources.some((s) => s.zones.length === 0)) {

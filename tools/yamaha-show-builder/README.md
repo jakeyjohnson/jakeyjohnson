@@ -15,6 +15,21 @@ npm start
 
 Open http://localhost:8080. Other devices on the network (an iPad at FOH, say) can use `http://<laptop IP>:8080`.
 
+## Desk model
+
+Pick your desk from the **Desk model** dropdown at the top. The app then checks your show fits that desk: mono input channels and mix buses, counting from **First channel** and **First mix**. On TF desks it also warns when a zone lands on mixes 9–20, which are stereo pairs. "Other / not sure" skips these checks.
+
+| Model | Mono inputs | Mixes |
+|---|---|---|
+| TF1 / TF3 / TF5 | 32 | 20 (9–20 stereo) |
+| DM3 / DM3 Standard | 16 | 6 |
+| QL1 / QL5 | 32 / 64 | 16 |
+| CL1 / CL3 / CL5 | 48 / 64 / 72 | 24 |
+| DM7 Compact / DM7 | 72 / 120 | 48 |
+| RIVAGE PM3, PM7 / PM5, PM10 | 120 / 144 | 60 / 72 |
+
+These come from Yamaha's spec sheets. If your desk's firmware differs, edit `MODELS` in `public/plan.js`.
+
 ## Desk setup
 
 1. Connect the desk's network port to the same network as the laptop and give it a fixed IP (Setup → Network on the desk).

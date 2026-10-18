@@ -1,4 +1,4 @@
-import { COLORS, SOURCE_TYPES, ZONE_TYPES, addSources, buildPlan, defaultShow, makeZone, patchSheetCsv } from './plan.js';
+import { COLORS, MODELS, SOURCE_TYPES, ZONE_TYPES, addSources, buildPlan, defaultShow, makeZone, patchSheetCsv } from './plan.js';
 
 const SWATCH = { Blue: '#3d6dff', SkyBlue: '#58b8ff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff', White: '#e8e8e8' };
 const $ = (id) => document.getElementById(id);
@@ -27,7 +27,9 @@ function colorSelect(value, onChange) {
 
 function render() {
   const plan = buildPlan(show);
+  const model = MODELS[show.options.model] || MODELS.custom;
   $('showName').value = show.name;
+  $('model').value = MODELS[show.options.model] ? show.options.model : 'custom';
   $('maxLen').textContent = show.options.maxNameLength;
   for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) $(k).value = show.options[k];
   $('setLevels').checked = show.options.setLevels;
@@ -60,7 +62,8 @@ function render() {
   const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 5, className: 'type', textContent: 'No inputs yet. Add some above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty || null));
 
-  const totals = `${plan.channels.length} input channels, ${plan.mixes.length} mixes, ${plan.commands.length} commands`;
+  const of = (n) => (model.inputs ? ` of ${n}` : '');
+  const totals = `${plan.channels.length}${of(model.inputs)} input channels, ${plan.mixes.length}${of(model.mixes)} mixes, ${plan.commands.length} commands`;
   $('warnings').replaceChildren(el('li', { style: 'color: var(--muted); list-style: none; margin-left: -18px', textContent: totals }),
     ...[...new Set(plan.warnings)].map((w) => el('li', { textContent: w })));
 
@@ -175,7 +178,13 @@ for (const [type, t] of Object.entries(SOURCE_TYPES)) {
 for (const [type, t] of Object.entries(ZONE_TYPES)) {
   $('zoneButtons').append(el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addZone(type)) }));
 }
-$('showName').onchange = (e) => update(() => { show.name = e.target.value; });
+const series = {};
+for (const [id, m] of Object.entries(MODELS)) (series[m.series || ''] ||= []).push(el('option', { value: id, textContent: m.label }));
+for (const [name, options] of Object.entries(series)) {
+  $('model').append(name ? el('optgroup', { label: name === 'RIVAGE' ? 'RIVAGE PM' : `${name} series` }, ...options) : options[0]);
+}
+$('model').onchange = (e) => update(() => { show.options.model = e.target.value; });
+$('showName').onchange =(e) => update(() => { show.name = e.target.value; });
 for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) {
   $(k).onchange = (e) => update(() => { show.options[k] = Math.max(1, Number(e.target.value) || 1); });
 }
