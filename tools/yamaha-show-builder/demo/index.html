@@ -84,6 +84,25 @@ table.patch-table { min-width: 0; }
 .link-dot.connected { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 @keyframes pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .link-dot.connecting { animation: none; } }
+.paste { margin-top: 14px; max-width: 760px; }
+.paste summary { cursor: pointer; font-weight: 600; color: var(--accent-text, var(--accent)); padding: 6px 0; }
+.paste textarea { width: 100%; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; margin-bottom: 8px; }
+.pair-row { margin-top: 12px; }
+.groups-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; font-size: 14px; }
+.group-pill { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; margin: 2px; font-size: 13px; }
+.group-pill b { color: var(--accent-text, var(--accent)); font-variant-numeric: tabular-nums; }
+.send-opts { font-size: 14px; }
+td.gain input { width: 64px; }
+td.lc-tick input { width: 22px; height: 22px; accent-color: var(--accent); }
+tr.lc-done td { opacity: .55; }
+tr.lc-solo td { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.solo { padding: 4px 10px; font-size: 13px; }
+.solo.on { background: var(--accent); border-color: var(--accent); color: var(--accent-fg, #16191d); font-weight: 600; }
+.tpl-chip { display: inline-flex; align-items: center; gap: 2px; }
+.tpl-chip .remove { padding: 2px 6px; }
+.paper-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--line); padding: 16px; background: #fff; }
+.strip.soloed { box-shadow: 0 0 0 2px #ffb020; }
+.strip .gain-tag { font: 500 10px var(--f-mono); color: #9aa3ad; min-height: 12px; }
 .type-help { margin: 0; font-size: 13px; }
 td.hpf input { width: 72px; }
 .hpf-tag { font: 600 10px/1 var(--f-strip); color: #8a939d; letter-spacing: .04em; }
@@ -164,6 +183,9 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
       <button id="exampleShow">Example</button>
       <button id="exportJson">Show file</button>
       <button id="exportCsv">Patch sheet</button>
+      <button id="saveTemplate">Save as template</button>
+      <button id="monitorShow">Monitor desk show</button>
+      <button id="paperworkBtn">Paperwork</button>
     </div>
   </header>
   <div class="connect-bar" role="group" aria-label="Desk connection">
@@ -179,7 +201,21 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
     <button id="newYes" class="primary">Wipe and start</button>
     <button id="newNo">Cancel</button>
   </div>
+  <div id="tplBar" class="confirm" hidden>
+    <label for="tplName">Save this show as a template called</label>
+    <input id="tplName" placeholder="Corporate, 8 radio mics">
+    <button id="tplSave" class="primary">Save template</button>
+    <button id="tplCancel">Cancel</button>
+  </div>
 
+  <div id="paperPanel" class="sheet" hidden>
+    <section>
+      <h2>Paperwork</h2>
+      <p class="hint">In the real app this opens a print-ready page. Here it shows below.</p>
+      <div class="desk-row"><button id="closePaper">Close</button></div>
+      <div id="paperBody" class="paper-wrap"></div>
+    </section>
+  </div>
   <div id="sheetPanel" class="sheet" hidden>
     <section>
       <h2 id="sheetTitle"></h2>
@@ -205,12 +241,19 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
         <ul id="typeList" class="pills"></ul>
         <div class="type-row"><button id="typeAdd" class="primary">Add to show</button><button id="typeDiscard">Discard</button></div>
       </div>
+    <details class="paste" id="pasteBox">
+      <summary>Paste an input list</summary>
+      <p class="hint">Paste it from a rider, spreadsheet or email, one line per channel. Names stay as you wrote them. It picks up &quot;48V&quot; and mic models, and turns &quot;Keys L&quot; and &quot;Keys R&quot; into one stereo input.</p>
+      <textarea id="pasteText" rows="7" aria-label="Input list" placeholder="1  Kick In  Beta 91&#10;2  Snare Top  SM57&#10;3  OH L  KM184  48V&#10;4  OH R  KM184  48V"></textarea>
+      <div class="type-row"><button id="pasteGo" class="primary">Preview</button><label class="check"><input id="pasteKeepOrder" type="checkbox" checked>Keep the list&#39;s channel order</label></div>
+    </details>
     </div>
   </section>
 
   <section>
     <h2><span class="n">2</span>Outputs</h2>
     <div id="zoneButtons" class="chip-groups"></div>
+    <div class="type-row pair-row"><button id="pairMon">Give each singer their own monitor</button><span id="monStatus" class="status"></span></div>
   </section>
 
   <section>
@@ -218,6 +261,11 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
     <p class="hint">Tick where each input goes. Click any name to change it; the desk shows the first <span id="maxLen"></span> letters. The example is a conference: 2 lecterns, 4 handhelds and 4 playbacks, with playback 3 as background music in the ceiling. Vocal mics start with the HPF at 180; clear the box to turn it off. Tick St to make an input stereo.</p>
     <label class="check order"><input id="autoOrder" type="checkbox">Auto order channels (speech mics, band, playback, background music last)</label>
     <div class="table-wrap"><table id="grid"></table></div>
+    <div class="groups-line">
+      <label class="check"><input id="autoGroups" type="checkbox">DCAs and mute groups</label>
+      <span id="groupsList"></span>
+      <span id="groupsNote" class="status"></span>
+    </div>
     <ul id="summary" class="summary"></ul>
   </section>
 
@@ -243,6 +291,17 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
       <label>Name length<input id="maxNameLength" type="number" min="4" max="32"></label>
       <label class="check"><input id="setLevels" type="checkbox">Reset faders (inputs to -∞, outputs to 0 dB)</label>
     </div>
+    <div class="desk-row send-opts">
+      <label class="check"><input id="setGain" type="checkbox">Set gain and 48V <span id="gainNote" class="status"></span></label>
+      <label class="check"><input id="backupOn" type="checkbox">Back up the desk&#39;s current scene to scene</label>
+      <input id="backupScene" class="port" type="number" min="1" aria-label="Backup scene number">
+      <span id="backupNote" class="status">This overwrites that scene.</span>
+    </div>
+    <div class="desk-row send-opts">
+      <label class="check"><input id="onlyChanges" type="checkbox">Only send what&#39;s changed since the last push</label>
+      <button id="forgetPush">Send everything next time</button>
+      <span id="changesNote" class="status"></span>
+    </div>
     <div id="confirmBox" class="confirm" hidden>
       <span id="confirmText"></span>
       <button id="confirmYes" class="primary">Send</button>
@@ -250,6 +309,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
     </div>
     <div class="desk-row">
       <button id="pushDesk" class="primary">Push show to desk</button>
+      <button id="verifyDesk">Check the desk</button>
       <button id="resetDesk">Wipe simulated desk</button>
       <button id="toggleCommands">Show commands</button>
       <span id="status" class="status">In the real app this goes straight to the desk.</span>
@@ -259,7 +319,14 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
   </section>
 
   <section>
-    <h2><span class="n">6</span>Desk</h2>
+    <h2><span class="n">6</span>Line check</h2>
+    <p id="lcNote" class="hint"></p>
+    <div class="desk-row"><span id="lcCount" class="status"></span><button id="lcClear">Clear ticks</button></div>
+    <div class="table-wrap"><table id="lcTable" class="patch-table"></table></div>
+    </section>
+
+  <section>
+    <h2><span class="n">7</span>Desk</h2>
     <p class="hint">A pretend desk. It reads the same commands a real one gets. The lamps show where each channel goes: ST is Main L/R, numbers are mixes.</p>
     <div class="surface">
       <div class="surface-head"><span>Input channels</span><span id="deskModel"></span></div>
@@ -274,6 +341,10 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 
 <script type="module">
 import { LICENCE, PRODUCT, VERSION } from './about.js';
+import {
+  applyTemplate, changedCommands, cueCommand, deskCaps, gainOf, makeTemplate, monitorShow, pairMonitors, paperwork, parseInputList, phantomOf,
+  rememberPush, sceneStoreCommand,
+} from './plan.js';
 import { patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 // SkyBlue and Pink are what a TF desk calls Cyan and Magenta
@@ -324,7 +395,7 @@ function render() {
     return m.stereo ? `Mix ${m.mix}/${m.mix + 1}` : `Mix ${m.mix}`;
   };
   const head = el('tr', {},
-    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }),
+    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }), el('th', { textContent: 'Gain dB' }), el('th', { textContent: '48V' }),
     ...show.zones.map((zone) => el('th', { className: 'zone' },
       el('input', { value: zone.name, 'aria-label': 'Zone name', onchange: (e) => update(() => { zone.name = e.target.value; }) }),
       el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: `Remove ${zone.name}`, textContent: '×', onclick: () => update(() => removeZone(zone)) })),
@@ -350,6 +421,14 @@ function render() {
         type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', 'aria-label': 'High-pass filter in Hz. Leave it blank for off.',
         onchange: (e) => update(() => { source.hpf = Math.max(0, Math.round(Number(e.target.value) || 0)); }),
       })),
+      el('td', { className: 'gain' }, el('input', {
+        type: 'number', min: -6, max: 66, step: 1, value: gainOf(source), 'aria-label': 'Head-amp gain in dB',
+        onchange: (e) => update(() => { source.gain = Math.min(66, Math.max(-6, Math.round(Number(e.target.value) || 0))); }),
+      })),
+      el('td', { className: 'route' }, el('input', {
+        type: 'checkbox', checked: phantomOf(source), 'aria-label': '48V phantom power',
+        onchange: (e) => update(() => { source.phantom = e.target.checked; }),
+      })),
       ...show.zones.map((zone) => el('td', { className: 'route' }, el('input', {
         type: 'checkbox', checked: source.zones.includes(zone.id), title: `${source.name} → ${zone.name}`,
         onchange: (e) => update(() => { source.zones = e.target.checked ? [...source.zones, zone.id] : source.zones.filter((z) => z !== zone.id); }),
@@ -357,7 +436,7 @@ function render() {
       el('td', {}, ...moveButtons(source),
         el('button', { className: 'remove', title: `Remove ${source.name}`, textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
   });
-  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 7, textContent: 'Nothing here yet. Add some inputs above.' }));
+  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 9, textContent: 'Nothing here yet. Add some inputs above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty));
 
   const of = (n) => (n ? ` of ${n}` : '');
@@ -368,6 +447,9 @@ function render() {
   if (showCommands && !pushing) { $('log').hidden = false; $('log').textContent = plan.commands.join('\n'); }
   $('deskModel').textContent = model.inputs ? model.label : '';
   renderPatch(plan, model);
+  renderGroups(plan, model);
+  renderSendOptions(plan, model);
+  renderLineCheck(plan, model);
   save();
 }
 function update(fn) { fn(); render(); }
@@ -390,7 +472,7 @@ function removeZone(zone) {
 }
 function changeType(source, type) {
   const t = SOURCE_TYPES[type];
-  Object.assign(source, { type, stereo: t.stereo, color: t.color, hpf: t.hpf });
+  Object.assign(source, { type, stereo: t.stereo, color: t.color, hpf: t.hpf, gain: t.gain, phantom: t.phantom });
   source.zones = show.zones.filter((z) => ZONE_TYPES[z.type].takes.includes(t.category)).map((z) => z.id);
 }
 function addZone(type) {
@@ -403,7 +485,7 @@ function setStatus(text, kind = '') { $('status').textContent = text; $('status'
 
 // ---- simulated desk: applies the same RCP lines a real desk receives ----
 let desk;
-function wipeDesk() { desk = { inCh: {}, mix: {}, st: { name: '' }, sendPoint: {}, outPatch: {} }; }
+function wipeDesk() { desk = { inCh: {}, mix: {}, st: { name: '' }, sendPoint: {}, outPatch: {}, solo: null }; }
 function applyCommand(line) {
   const m = /^set MIXER:Current\/(\w+)\/(.+?) (\d+) (\d+) (.+)$/.exec(line);
   if (!m) return false;
@@ -416,6 +498,8 @@ function applyCommand(line) {
     return true;
   }
   if (kind === 'St') { if (param === 'Label/Name') desk.st.name = v; return true; }
+  if (kind === 'Cue') { if (param === 'InCh/On') desk.solo = v ? x : desk.solo === x ? null : desk.solo; return true; }
+  if (kind !== 'InCh' && kind !== 'Mix') return true; // DCAs and mute groups: the pretend desk doesn't draw them
   const bank = kind === 'InCh' ? desk.inCh : desk.mix;
   const c = (bank[x] ||= { name: '', color: null, level: null, toSt: 0, toMix: {}, hpfOn: 0, hpf: 0 });
   if (param === 'Label/Name') c.name = v;
@@ -424,6 +508,7 @@ function applyCommand(line) {
   else if (param === 'ToSt/On') c.toSt = v;
   else if (param === 'HPF/On') c.hpfOn = v;
   else if (param === 'HPF/Freq') c.hpf = v / 10;
+  else if (param === 'Port/HA/Gain') c.gain = Math.abs(v) > 100 ? v / 100 : v;
   else if (param === 'ToMix/On') c.toMix[y] = v;
   else if (param === 'ToMix/PrePost') desk.sendPoint[y] = v;
   return x;
@@ -449,9 +534,9 @@ function renderDesk(flashIdx) {
     for (let mIdx = 0; mIdx < mixCount; mIdx++) if (desk.mix[mIdx]) lamps.push(el('span', { className: `lamp${c.toMix?.[mIdx] ? ' on' : ''}`, textContent: mIdx + 1 }));
     const cap = el('div', { className: 'cap' });
     cap.style.bottom = `${capPos(c.level)}px`;
-    strips.push(el('div', { className: `strip${flashIdx === i ? ' flash' : ''}` },
+    strips.push(el('div', { className: `strip${flashIdx === i ? ' flash' : ''}${desk.solo === i ? ' soloed' : ''}` },
       el('span', { className: 'num', textContent: i + 1 }), lcd(c.name, c.color),
-      el('div', { className: 'lamps' }, ...lamps), el('span', { className: `hpf-tag${c.hpfOn ? ' on' : ''}`, textContent: c.hpfOn ? `HPF ${c.hpf}` : 'HPF off' }), el('div', { className: 'fader' }, cap), el('span', { className: 'db', textContent: dbText(c.level) })));
+      el('div', { className: 'lamps' }, ...lamps), el('span', { className: `hpf-tag${c.hpfOn ? ' on' : ''}`, textContent: c.hpfOn ? `HPF ${c.hpf}` : 'HPF off' }), el('span', { className: 'gain-tag', textContent: desk.solo === i ? 'SOLO' : c.gain != null ? `${c.gain} dB` : '' }), el('div', { className: 'fader' }, cap), el('span', { className: 'db', textContent: dbText(c.level) })));
   }
   $('inputs').replaceChildren(...strips);
 
@@ -472,42 +557,71 @@ function renderDesk(flashIdx) {
   if (!Object.keys(desk.inCh).length) $('inputs').prepend(el('p', { className: 'empty-desk', textContent: 'Nothing on the desk yet. Press "Push show to desk" to load your show.' }));
 }
 
+let pending = null;
 function askPush() {
   const plan = buildPlan(show);
+  const model = MODELS[show.options.model] || MODELS.custom;
   if (!plan.commands.length) return setStatus('Add some inputs or outputs first.', 'bad');
   if (link.state !== 'connected') {
     setStatus('Connect to the desk first, at the top of the page.', 'bad');
     return $('host').focus();
   }
-  $('confirmText').textContent = `Send this show to the ${link.product} at ${link.host}? On a real desk it renames and re-routes the current scene, so store a backup scene first.`;
+  const last = loadLast();
+  const onlyChanges = Boolean(last) && show.options.onlyChanges !== false;
+  const commands = onlyChanges ? changedCommands(plan.commands, last) : plan.commands;
+  if (!commands.length) return setStatus('Nothing has changed since the last push.', 'ok');
+  const caps = deskCaps(model);
+  const backup = show.options.backup || {};
+  const scene = backup.scene || caps?.sceneMax;
+  const backupCmd = caps && backup.on !== false ? sceneStoreCommand(model, scene) : null;
+  pending = { commands, backupCmd, scene, last };
+  const what = onlyChanges ? `${commands.length} changed lines` : 'this show';
+  $('confirmText').textContent = `Send ${what} to the ${link.product} at ${link.host}? ${backupCmd ? `First it stores the desk's current scene as scene ${scene}, overwriting what's there.` : 'On a real desk it renames and re-routes the current scene, so store a backup scene first.'}`;
   $('confirmBox').hidden = false;
 }
 async function pushDesk() {
   $('confirmBox').hidden = true;
-  const plan = buildPlan(show);
+  const { commands, backupCmd, scene, last } = pending;
   pushing = true;
   $('pushDesk').disabled = true;
   $('progress').hidden = false;
   $('log').hidden = false;
-  $('log').textContent = '';
   setStatus('Sending…');
   const fast = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const lines = [];
-  for (const [i, cmd] of plan.commands.entries()) {
+  const lines = backupCmd ? [`OK ${backupCmd}  (backup)`] : [];
+  $('log').textContent = lines.join('\n');
+  for (const [i, cmd] of commands.entries()) {
     const idx = applyCommand(cmd);
     lines.push(`OK ${cmd}`);
-    if (i % 6 === 0 || i === plan.commands.length - 1) {
-      $('progress').value = (i + 1) / plan.commands.length;
+    if (i % 6 === 0 || i === commands.length - 1) {
+      $('progress').value = (i + 1) / commands.length;
       $('log').textContent = lines.slice(-40).join('\n');
       $('log').scrollTop = $('log').scrollHeight;
       renderDesk(cmd.includes('/InCh/') ? idx : null);
       if (!fast) await new Promise((r) => setTimeout(r, 16));
     }
   }
+  saveLast(rememberPush(last, commands));
   renderDesk();
   pushing = false;
   $('pushDesk').disabled = false;
-  setStatus(`Sent. The pretend desk took all ${plan.commands.length} lines.`, 'ok');
+  render();
+  const n = commands.length;
+  setStatus(`Sent. The pretend desk took ${n === 1 ? 'the 1 line' : `all ${n} lines`}.${backupCmd ? ` Your old scene is safe in scene ${scene}.` : ''}`, 'ok');
+}
+// The pretend desk holds exactly what was pushed, so checking it compares the show with the last push
+function verifyDesk() {
+  if (link.state !== 'connected') {
+    setStatus('Connect to the desk first, at the top of the page.', 'bad');
+    return $('host').focus();
+  }
+  const plan = buildPlan(show);
+  const last = loadLast();
+  if (!last) return setStatus("Nothing's been pushed to this desk yet.", 'bad');
+  const wrong = changedCommands(plan.commands, last);
+  $('log').hidden = !wrong.length;
+  $('log').textContent = wrong.map((c) => `${c}\n  ↳ the desk has something else`).join('\n');
+  setStatus(wrong.length ? `${wrong.length} of ${plan.commands.length} settings don't match the show. They're in the log.` : `The desk matches the show. All ${plan.commands.length} settings checked.`, wrong.length ? 'bad' : 'ok');
 }
 
 // ---- exports (shown on the page; downloads are blocked in this preview) ----
@@ -546,6 +660,8 @@ for (const [type, t] of Object.entries(SOURCE_TYPES)) {
 for (const [name, chips] of Object.entries(groups)) {
   $('addButtons').append(el('div', { className: 'chip-group' }, el('span', { className: 'chip-label', textContent: name }), el('div', { className: 'chips' }, ...chips)));
 }
+$('addButtons').children[0].after(el('div', { className: 'chip-group', id: 'tplGroup', hidden: true },
+  el('span', { className: 'chip-label', textContent: 'Yours' }), el('div', { className: 'chips', id: 'tplChips' })));
 const zoneGroups = { 'Speakers · post-fade': [], 'Monitors · pre-fade': [] };
 for (const [type, t] of Object.entries(ZONE_TYPES)) {
   zoneGroups[t.monitor ? 'Monitors · pre-fade' : 'Speakers · post-fade'].push(el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addZone(type)) }));
@@ -561,6 +677,11 @@ $('setLevels').onchange = (e) => update(() => { show.options.setLevels = e.targe
 let pendingShow = null;
 function resetPage() {
   $('typeText').value = '';
+  $('pasteText').value = '';
+  $('monStatus').textContent = '';
+  $('tplBar').hidden = true;
+  $('paperPanel').hidden = true;
+  soloKey = null;
   $('typePreview').hidden = true;
   typeStatus('');
   $('addCount').value = 1;
@@ -671,22 +792,38 @@ function previewTyped() {
     $('typePreview').hidden = true;
     return typeStatus(unknown || 'Try something like "full band and 4 wedges".', 'bad');
   }
-  suggestion = s;
+  pasteMode = false;
   typeStatus(unknown, unknown ? 'bad' : '');
+  showPreview(s);
+}
+function showPreview(s) {
+  suggestion = s;
   $('typeSummary').textContent = `This adds ${s.summary}`;
   $('typeList').replaceChildren(
-    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name}${(x.stereo ?? SOURCE_TYPES[x.type].stereo) ? ' (L/R)' : ''}` })),
-    ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Zone: ${z.name}` })));
+    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name}${(x.stereo ?? SOURCE_TYPES[x.type].stereo) ? ' (L/R)' : ''}${x.note ? ` · ${x.note}` : ''}${x.phantom ? ' · 48V' : ''}` })),
+    ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Output: ${z.name}` })));
   $('typePreview').hidden = false;
 }
+let pasteMode = false;
+$('pasteGo').onclick = () => {
+  const s = parseInputList($('pasteText').value);
+  if (!s.sources.length) return typeStatus('Paste at least one line, like "1  Kick In  Beta 91".', 'bad');
+  pasteMode = true;
+  typeStatus('');
+  showPreview(s);
+};
 $('typeGo').onclick = previewTyped;
 $('typeText').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); previewTyped(); } };
 $('typeAdd').onclick = () => {
-  update(() => applySuggestion(show, suggestion));
-  renderDesk();
+  const keepOrder = pasteMode && $('pasteKeepOrder').checked;
+  update(() => {
+    applySuggestion(show, suggestion);
+    if (keepOrder) show.options.autoOrder = false;
+  });
   $('typePreview').hidden = true;
-  $('typeText').value = '';
-  typeStatus('Added. Check the routing below.', 'ok');
+  if (pasteMode) $('pasteText').value = '';
+  else $('typeText').value = '';
+  typeStatus(keepOrder ? 'Added. Auto order is off, so your list keeps its order.' : 'Added. Check the routing below.', 'ok');
 };
 $('typeDiscard').onclick = () => { $('typePreview').hidden = true; typeStatus(''); };
 // ---- Desk connection (demo): any IP connects to the pretend desk on this page ----
@@ -704,6 +841,7 @@ function showLink(s) {
   $('connectBtn').className = s.state === 'connected' ? '' : 'primary';
   $('connectBtn').disabled = s.state === 'connecting';
   $('host').disabled = $('port').disabled = s.state !== 'idle';
+  render();
 }
 function connectDesk() {
   if (link.state === 'connected') return showLink({ state: 'idle' });
@@ -715,12 +853,181 @@ function connectDesk() {
 }
 $('connectBtn').onclick = connectDesk;
 $('host').onkeydown = (e) => { if (e.key === 'Enter') connectDesk(); };
+// ---- Your templates: saved on this computer, shown as one-click chips next to the packages ----
+const TPL_KEY = `${STORE}-templates`;
+function loadTemplates() {
+  try { return JSON.parse(localStorage.getItem(TPL_KEY)) || []; } catch { return []; }
+}
+function saveTemplates(list) {
+  try { localStorage.setItem(TPL_KEY, JSON.stringify(list)); } catch { /* storage off */ }
+}
+function renderTemplates() {
+  const list = loadTemplates();
+  $('tplGroup').hidden = !list.length;
+  $('tplChips').replaceChildren(...list.map((tpl, i) => el('span', { className: 'tpl-chip' },
+    el('button', {
+      className: 'chip', textContent: tpl.name, title: `${tpl.sources.length} inputs, ${tpl.zones.length} outputs`,
+      onclick: () => { update(() => applyTemplate(show, tpl)); typeStatus(`Added the ${tpl.name} template.`, 'ok'); },
+    }),
+    el('button', { className: 'remove', textContent: '×', title: `Delete the ${tpl.name} template`, onclick: () => { saveTemplates(loadTemplates().filter((_, j) => j !== i)); renderTemplates(); } }))));
+}
+$('saveTemplate').onclick = () => {
+  $('tplBar').hidden = false;
+  $('tplName').value = show.name === 'New show' ? '' : show.name;
+  $('tplName').focus();
+};
+$('tplSave').onclick = () => {
+  if (!show.sources.length && !show.zones.length) return typeStatus('Add some inputs or outputs before saving a template.', 'bad');
+  const tpl = makeTemplate(show, $('tplName').value);
+  saveTemplates([...loadTemplates().filter((t) => t.name !== tpl.name), tpl]);
+  renderTemplates();
+  $('tplBar').hidden = true;
+  typeStatus(`Saved "${tpl.name}". It's under Yours, next to the packages.`, 'ok');
+};
+$('tplCancel').onclick = () => { $('tplBar').hidden = true; };
+$('tplName').onkeydown = (e) => { if (e.key === 'Enter') $('tplSave').click(); };
+
+// ---- Monitors: pair singers with their own mix, and make a monitor-desk show ----
+$('pairMon').onclick = () => {
+  let pairs = [];
+  update(() => { pairs = pairMonitors(show); });
+  $('monStatus').textContent = pairs.length ? pairs.join(' · ') : 'Add some vocal mics and monitor outputs first.';
+  $('monStatus').className = `status ${pairs.length ? 'ok' : 'bad'}`;
+};
+$('monitorShow').onclick = () => {
+  const mon = monitorShow(show);
+  showSheet('Monitor desk show', `${mon.name}: the same inputs and input patch, with only the monitor outputs. In the real app this saves as a .show.json file for the monitor desk's laptop.`, JSON.stringify(mon, null, 2));
+  $('monStatus').textContent = `Made ${mon.name}. It's at the top of the page.`;
+  $('monStatus').className = 'status ok';
+};
+
+// ---- DCAs, mute groups, gain and push options ----
+function renderGroups(plan, model) {
+  const caps = deskCaps(model);
+  $('autoGroups').checked = show.options.groups !== false;
+  $('groupsList').replaceChildren(...plan.groups.map((g) => el('span', { className: 'group-pill', title: g.channels.map((c) => c.name).join(', ') },
+    el('b', { textContent: g.number }), ` ${g.name} · ${g.channels.length}`)));
+  $('groupsNote').textContent = show.options.groups === false || !plan.groups.length ? ''
+    : !caps ? 'Pick your desk to send these.'
+      : !caps.dcas ? `The ${model.label} won't take DCAs from the app.`
+        : caps.dcaAssign ? `DCAs go to the desk, named and assigned.${caps.muteGroups ? ' Mute groups get their names; assign channels to them on the desk.' : ''}`
+          : 'Names go to the desk. Assign channels to them on the desk.';
+}
+$('autoGroups').onchange = (e) => update(() => { show.options.groups = e.target.checked; });
+
+const lastKey = () => `${STORE}-last-${link.host || 'none'}-${show.options.model}`;
+function loadLast() {
+  if (link.state !== 'connected') return null;
+  try { return JSON.parse(localStorage.getItem(lastKey())); } catch { return null; }
+}
+function saveLast(value) {
+  try { if (value) localStorage.setItem(lastKey(), JSON.stringify(value)); else localStorage.removeItem(lastKey()); } catch { /* storage off */ }
+}
+function renderSendOptions(plan, model) {
+  const caps = deskCaps(model);
+  $('setGain').checked = show.options.setGain !== false;
+  $('gainNote').textContent = !caps ? '(pick your desk)' : !caps.gain ? '(this desk takes neither from the app)' : caps.phantom ? '' : '(gain only: switch 48V on at the desk)';
+  const backup = show.options.backup || {};
+  $('backupOn').disabled = !caps;
+  $('backupOn').checked = Boolean(caps) && backup.on !== false;
+  $('backupScene').value = backup.scene || caps?.sceneMax || 100;
+  $('backupScene').disabled = !caps;
+  $('backupNote').textContent = caps ? 'This overwrites that scene.' : 'Pick your desk to back up from here.';
+  const last = loadLast();
+  $('onlyChanges').disabled = !last;
+  $('onlyChanges').checked = Boolean(last) && show.options.onlyChanges !== false;
+  $('forgetPush').hidden = !last;
+  $('changesNote').textContent = last
+    ? `${changedCommands(plan.commands, last).length} of ${plan.commands.length} lines have changed since the last push to this desk.`
+    : 'After your first push to a desk, later pushes can send only the changes.';
+}
+$('setGain').onchange = (e) => update(() => { show.options.setGain = e.target.checked; });
+$('backupOn').onchange = (e) => update(() => { show.options.backup = { ...show.options.backup, on: e.target.checked }; });
+$('backupScene').onchange = (e) => update(() => { show.options.backup = { ...show.options.backup, scene: Math.max(1, Math.round(Number(e.target.value) || 1)) }; });
+$('onlyChanges').onchange = (e) => update(() => { show.options.onlyChanges = e.target.checked; });
+$('forgetPush').onclick = () => { saveLast(null); render(); setStatus('The next push sends everything.'); };
+$('verifyDesk').onclick = verifyDesk;
+
+// ---- Line check: tick each channel off, soloing it on the desk where the desk allows ----
+let soloKey = null;
+const lcKey = (c) => `${c.source.id}:${c.side || ''}`;
+function renderLineCheck(plan, model) {
+  const caps = deskCaps(model);
+  show.lineCheck ||= {};
+  const done = plan.channels.filter((c) => show.lineCheck[lcKey(c)]).length;
+  $('lcCount').textContent = plan.channels.length ? `${done} of ${plan.channels.length} checked` : '';
+  $('lcCount').className = `status ${done && done === plan.channels.length ? 'ok' : ''}`;
+  const canSolo = Boolean(caps?.cue) && link.state === 'connected';
+  if (!canSolo) soloKey = null;
+  $('lcNote').textContent = !caps?.cue
+    ? (model.inputs ? `The ${model.label} won't take solo from the app, so solo on the desk as you go.` : 'Pick your desk to solo channels from here.')
+    : canSolo ? 'Tap Solo to hear a channel on the desk, then tick it. Ticking a soloed channel moves the solo on to the next one.'
+      : 'Connect to the desk to solo channels from here.';
+  $('lcTable').replaceChildren(
+    el('thead', {}, el('tr', {}, ...['✓', 'Ch', 'Name', 'Plugs into', 'Mic / note', '48V', 'Gain', ''].map((t) => el('th', { textContent: t })))),
+    el('tbody', {}, ...plan.channels.map((c) => {
+      const key = lcKey(c);
+      const ticked = Boolean(show.lineCheck[key]);
+      return el('tr', { className: `${ticked ? 'lc-done' : ''} ${soloKey === key ? 'lc-solo' : ''}` },
+        el('td', { className: 'lc-tick' }, el('input', { type: 'checkbox', checked: ticked, 'aria-label': `${c.name} checked`, onchange: (e) => tickLine(plan, c, e.target.checked) })),
+        el('td', { className: 'ch', textContent: c.ch }),
+        el('td', { textContent: c.name }),
+        el('td', { textContent: portLabel(c.patch) }),
+        el('td', { textContent: c.source.note || '' }),
+        el('td', { textContent: phantomOf(c.source) ? '48V' : '' }),
+        el('td', { textContent: `${gainOf(c.source)} dB` }),
+        el('td', {}, canSolo && el('button', { className: `solo ${soloKey === key ? 'on' : ''}`, textContent: soloKey === key ? 'Soloed' : 'Solo', onclick: () => solo(plan, c) })));
+    })));
+}
+async function sendCue(commands) {
+  for (const cmd of commands) applyCommand(cmd);
+  renderDesk();
+}
+async function solo(plan, c) {
+  const model = MODELS[show.options.model] || MODELS.custom;
+  const key = lcKey(c);
+  const prev = soloKey && plan.channels.find((x) => lcKey(x) === soloKey);
+  const commands = [];
+  if (prev) commands.push(cueCommand(model, prev.ch, false));
+  if (soloKey !== key) commands.push(cueCommand(model, c.ch, true));
+  try {
+    await sendCue(commands);
+    soloKey = soloKey === key ? null : key;
+  } catch (err) {
+    setStatus(err.message, 'bad');
+  }
+  render();
+}
+function tickLine(plan, c, ticked) {
+  const key = lcKey(c);
+  show.lineCheck[key] = ticked;
+  if (ticked && soloKey === key) {
+    const next = plan.channels.slice(plan.channels.indexOf(c) + 1).find((x) => !show.lineCheck[lcKey(x)]);
+    if (next) return solo(plan, next);
+    return solo(plan, c); // last one: solo off
+  }
+  render();
+}
+$('lcClear').onclick = () => update(() => { show.lineCheck = {}; });
+
+// ---- Paperwork: input list, outputs, line check sheet, desk tape and stage-box labels ----
+$('paperworkBtn').onclick = () => {
+  const p = paperwork(show, buildPlan(show), { version: VERSION, licence: LICENCE });
+  const style = document.getElementById('paperCss') || document.head.appendChild(el('style', { id: 'paperCss' }));
+  style.textContent = p.css;
+  $('paperBody').innerHTML = p.body; // built by paperwork() from escaped show data
+  $('paperPanel').hidden = false;
+  $('paperPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+$('closePaper').onclick = () => { $('paperPanel').hidden = true; };
+
 $('resetDesk').onclick = () => { wipeDesk(); renderDesk(); setStatus('Simulated desk wiped.'); };
 
 // Footer: version and licence number, from about.js
 $('footProduct').textContent = `${PRODUCT} v${VERSION}`;
 $('footLicence').textContent = `Licence ${LICENCE}`;
 
+renderTemplates();
 wipeDesk();
 render();
 renderDesk();

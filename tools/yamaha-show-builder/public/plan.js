@@ -26,6 +26,33 @@ export const MODELS = {
   PM7:     { label: 'PM7 (CSD-R7)',                    series: 'RIVAGE', inputs: 144, mixes: 60, io: { analogIn: 0, analogOut: 0, cards: 0, cardCh: 0, dante: 144 } }, // sources disagree on inputs; check yours
 };
 
+// What each desk family accepts over the network, from the desks' own parameter lists (Companion
+// Yamaha RCP module schemas). scene: the store command and its target. gain: how head-amp gain is sent
+// ('centi' = 1/100 dB on the channel's port, 'db' = whole dB, 'io' = the DM3's own head amps).
+const CAPS = {
+  CL:     { scene: ['ssupdate_ex', 'MIXER:Lib/Scene'], sceneMax: 300, dcas: 16, dcaAssign: true, muteGroups: 8, cue: true, gain: 'centi' },
+  QL:     { scene: ['ssupdate_ex', 'MIXER:Lib/Scene'], sceneMax: 300, dcas: 16, dcaAssign: true, muteGroups: 8, cue: true, gain: 'centi' },
+  TF:     { scene: ['ssupdate_ex', 'scene_a'], sceneMax: 100, dcas: 8, dcaAssign: false, muteGroups: 6, cue: false, gain: null },
+  DM3:    { scene: ['ssupdate_ex', 'scene_a'], sceneMax: 100, dcas: 0, dcaAssign: false, muteGroups: 0, cue: true, gain: 'io', phantom: true },
+  DM7:    { scene: ['ssupdatet_ex', 'scene_a'], sceneMax: 100, dcas: 24, dcaAssign: true, muteGroups: 0, cue: true, gain: 'db' },
+  RIVAGE: { scene: ['ssupdatet_ex', 'MIXER:Lib/Scene'], sceneMax: 100, dcas: 24, dcaAssign: true, muteGroups: 0, cue: true, gain: 'centi' },
+};
+export function deskCaps(model) {
+  return CAPS[model?.series] || null;
+}
+
+// The command that stores the desk's current state as scene n (for a backup before a push)
+export function sceneStoreCommand(model, n) {
+  const caps = deskCaps(model);
+  if (!caps) return null;
+  return `${caps.scene[0]} ${caps.scene[1]} ${Math.max(1, Math.round(Number(n) || 1))}`;
+}
+
+// Solo (cue) one input channel on or off, for the line check
+export function cueCommand(model, ch, on) {
+  return deskCaps(model)?.cue ? `set MIXER:Current/Cue/InCh/On ${ch - 1} 0 ${on ? 1 : 0}` : null;
+}
+
 // Matches the name a desk reports ("QL5", "DM7 Compact"…) to a model above. RIVAGE returns null:
 // its size depends on the DSP engine, so the engineer picks that by hand.
 export function modelFromProduct(name) {
@@ -110,30 +137,46 @@ function deskColor(model, color) {
 // high-pass filter in Hz (0 = off). The order here is the auto channel order: speech mics,
 // then the band (drums, bass, guitars, keys, vocals), then program, BGM last.
 export const SOURCE_TYPES = {
-  lectern:  { label: 'Lectern mic',      short: 'Lect',  stereo: false, color: 'Blue',    category: 'speech',  hpf: 180 },
-  headset:  { label: 'Headset mic',      short: 'HS',    stereo: false, color: 'Cyan',    category: 'speech',  hpf: 180 },
-  handheld: { label: 'Handheld mic',     short: 'HH',    stereo: false, color: 'Cyan',    category: 'speech',  hpf: 180 },
-  kick:     { label: 'Kick drum',        short: 'Kick',  stereo: false, color: 'Red',     category: 'band',    hpf: 30 },
-  snare:    { label: 'Snare',            short: 'Snare', stereo: false, color: 'Red',     category: 'band',    hpf: 80 },
-  hihat:    { label: 'Hi-hat',           short: 'HiHat', stereo: false, color: 'Red',     category: 'band',    hpf: 200 },
-  tom:      { label: 'Tom',              short: 'Tom',   stereo: false, color: 'Red',     category: 'band',    hpf: 60 },
-  overhead: { label: 'Overheads',        short: 'OH',    stereo: true,  color: 'Red',     category: 'band',    hpf: 150 },
-  bass:     { label: 'Bass (DI or mic)', short: 'Bass',  stereo: false, color: 'Purple',  category: 'band',    hpf: 30 },
-  guitar:   { label: 'Electric guitar',  short: 'Gtr',   stereo: false, color: 'Orange',  category: 'band',    hpf: 100 },
-  acoustic: { label: 'Acoustic guitar',  short: 'AcGtr', stereo: false, color: 'Orange',  category: 'band',    hpf: 100 },
-  keys:     { label: 'Keys',             short: 'Keys',  stereo: true,  color: 'Yellow',  category: 'band',    hpf: 0 },
-  instrument: { label: 'Other instrument', short: 'Inst', stereo: false, color: 'Yellow', category: 'band',    hpf: 0 },
-  vocal:    { label: 'Vocal mic',        short: 'Vox',   stereo: false, color: 'Magenta', category: 'band',    hpf: 180 },
-  talkback: { label: 'Talkback mic',     short: 'TB',    stereo: false, color: 'Yellow',  category: 'talkback', hpf: 180 },
-  laptop:   { label: 'Laptop audio',     short: 'Lap',   stereo: true,  color: 'Green',   category: 'program', hpf: 0 },
-  playback: { label: 'Stereo playback',  short: 'PB',    stereo: true,  color: 'Green',   category: 'program', hpf: 0 },
-  bgm:      { label: 'Background music', short: 'BGM',   stereo: true,  color: 'Orange',  category: 'bgm',     hpf: 0 },
+  lectern:  { label: 'Lectern mic',      short: 'Lect',  stereo: false, color: 'Blue',    category: 'speech',  hpf: 180, gain: 40, phantom: true },
+  headset:  { label: 'Headset mic',      short: 'HS',    stereo: false, color: 'Cyan',    category: 'speech',  hpf: 180, gain: 10, phantom: false },
+  handheld: { label: 'Handheld mic',     short: 'HH',    stereo: false, color: 'Cyan',    category: 'speech',  hpf: 180, gain: 10, phantom: false },
+  kick:     { label: 'Kick drum',        short: 'Kick',  stereo: false, color: 'Red',     category: 'band',    hpf: 30, gain: 30, phantom: false },
+  snare:    { label: 'Snare',            short: 'Snare', stereo: false, color: 'Red',     category: 'band',    hpf: 80, gain: 30, phantom: false },
+  hihat:    { label: 'Hi-hat',           short: 'HiHat', stereo: false, color: 'Red',     category: 'band',    hpf: 200, gain: 30, phantom: true },
+  tom:      { label: 'Tom',              short: 'Tom',   stereo: false, color: 'Red',     category: 'band',    hpf: 60, gain: 30, phantom: false },
+  overhead: { label: 'Overheads',        short: 'OH',    stereo: true,  color: 'Red',     category: 'band',    hpf: 150, gain: 30, phantom: true },
+  bass:     { label: 'Bass (DI or mic)', short: 'Bass',  stereo: false, color: 'Purple',  category: 'band',    hpf: 30, gain: 25, phantom: false },
+  guitar:   { label: 'Electric guitar',  short: 'Gtr',   stereo: false, color: 'Orange',  category: 'band',    hpf: 100, gain: 35, phantom: false },
+  acoustic: { label: 'Acoustic guitar',  short: 'AcGtr', stereo: false, color: 'Orange',  category: 'band',    hpf: 100, gain: 20, phantom: true },
+  keys:     { label: 'Keys',             short: 'Keys',  stereo: true,  color: 'Yellow',  category: 'band',    hpf: 0, gain: 15, phantom: true },
+  instrument: { label: 'Other instrument', short: 'Inst', stereo: false, color: 'Yellow', category: 'band',    hpf: 0, gain: 30, phantom: false },
+  vocal:    { label: 'Vocal mic',        short: 'Vox',   stereo: false, color: 'Magenta', category: 'band',    hpf: 180, gain: 35, phantom: false },
+  talkback: { label: 'Talkback mic',     short: 'TB',    stereo: false, color: 'Yellow',  category: 'talkback', hpf: 180, gain: 35, phantom: false },
+  laptop:   { label: 'Laptop audio',     short: 'Lap',   stereo: true,  color: 'Green',   category: 'program', hpf: 0, gain: 0, phantom: false },
+  playback: { label: 'Stereo playback',  short: 'PB',    stereo: true,  color: 'Green',   category: 'program', hpf: 0, gain: 0, phantom: false },
+  bgm:      { label: 'Background music', short: 'BGM',   stereo: true,  color: 'Orange',  category: 'bgm',     hpf: 0, gain: 0, phantom: false },
 };
 
-// A source's HPF in Hz, 0 when off. Shows saved before HPF existed take the type's default.
+// A source's HPF in Hz (0 = off), gain in dB and 48V. Shows saved before these existed take the type's default.
 export function hpfOf(source) {
   return source.hpf ?? SOURCE_TYPES[source.type]?.hpf ?? 0;
 }
+export function gainOf(source) {
+  return source.gain ?? SOURCE_TYPES[source.type]?.gain ?? 0;
+}
+export function phantomOf(source) {
+  return source.phantom ?? SOURCE_TYPES[source.type]?.phantom ?? false;
+}
+
+// DCAs and mute groups, made automatically from the input types. Only groups with members are used.
+export const GROUPS = [
+  { key: 'speech', name: 'Speech', color: 'Blue', types: ['lectern', 'headset', 'handheld'] },
+  { key: 'drums', name: 'Drums', color: 'Red', types: ['kick', 'snare', 'hihat', 'tom', 'overhead'] },
+  { key: 'band', name: 'Band', color: 'Purple', types: ['bass', 'guitar', 'acoustic', 'keys', 'instrument'] },
+  { key: 'vox', name: 'Vox', color: 'Magenta', types: ['vocal'] },
+  { key: 'playback', name: 'Playback', color: 'Green', types: ['laptop', 'playback'] },
+  { key: 'bgm', name: 'BGM', color: 'Orange', types: ['bgm'] },
+];
 const TYPE_RANK = Object.keys(SOURCE_TYPES);
 
 // Groups sources by type in the order above, keeping their order within each type
@@ -199,6 +242,8 @@ export function makeSource(type, n, zones, name, stereo = SOURCE_TYPES[type].ste
     stereo,
     color: t.color,
     hpf: t.hpf,
+    gain: t.gain,
+    phantom: t.phantom,
     zones: zones.filter((z) => ZONE_TYPES[z.type].takes.includes(t.category)).map((z) => z.id),
   };
 }
@@ -213,6 +258,7 @@ export function addSources(show, type, count) {
 export const DEFAULT_OPTIONS = {
   model: 'custom', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true,
   inPatch: { bank: 'analog', port: 1 }, outPatch: { bank: 'analog', port: 1 }, sendPatch: true,
+  groups: true, setGain: true,
 };
 
 // A blank show: no inputs, no outputs, default options. The desk model carries over, since it's the hardware.
@@ -379,6 +425,40 @@ export function buildPlan(show) {
   // Output patch: only CL/QL accept it over the network (Omni, Dante, slot 1-2 outputs). Input patch is
   // read-only there, and the other desks don't list patch parameters, so those go on the patch sheet.
   const canPatch = model.series === 'CL' || model.series === 'QL';
+  const caps = deskCaps(model);
+
+  // DCAs and mute groups: one per input group that has members
+  const groups = show.options?.groups === false ? [] : GROUPS
+    .map((g) => ({ ...g, channels: channels.filter((c) => g.types.includes(c.source.type)) }))
+    .filter((g) => g.channels.length)
+    .map((g, i) => ({ ...g, number: i + 1 }));
+  if (caps && groups.length) {
+    if (caps.dcas) {
+      if (groups.length > caps.dcas) warnings.push(`The ${model.label} has ${caps.dcas} DCAs, so ${groups.slice(caps.dcas).map((g) => g.name).join(', ')} won't get one.`);
+      for (const g of groups.slice(0, caps.dcas)) {
+        set('DCA/Label/Name', g.number - 1, 0, `"${label(g.name)}"`);
+        set('DCA/Label/Color', g.number - 1, 0, deskColor(model, g.color));
+      }
+      if (caps.dcaAssign) {
+        for (const c of channels) {
+          for (const g of groups.slice(0, caps.dcas)) set('InCh/DCA/Assign', c.ch - 1, g.number - 1, g.channels.includes(c) ? 1 : 0);
+        }
+      }
+    }
+    for (const g of groups.slice(0, caps.muteGroups)) set('MuteMaster/Label/Name', g.number - 1, 0, `"${label(g.name)}"`);
+  }
+
+  // Head-amp gain and 48V where the desk takes them
+  if (caps && show.options?.setGain !== false) {
+    for (const c of channels) {
+      const i = c.ch - 1;
+      const gain = Math.round(gainOf(c.source));
+      if (caps.gain === 'centi') set('InCh/Port/HA/Gain', i, 0, Math.min(66, Math.max(-6, gain)) * 100);
+      else if (caps.gain === 'db') set('InCh/Port/HA/Gain', i, 0, Math.min(66, Math.max(-6, gain)));
+      else if (caps.gain === 'io') commands.push(`set IO:Current/InCh/HAGain ${i} 0 ${Math.min(64, Math.max(0, gain))}`);
+      if (caps.phantom) commands.push(`set IO:Current/InCh/48VOn ${i} 0 ${phantomOf(c.source) ? 1 : 0}`);
+    }
+  }
   if (canPatch && show.options?.sendPatch !== false) {
     for (const o of outputs) {
       if (!o.patch) continue;
@@ -391,23 +471,29 @@ export function buildPlan(show) {
     }
   }
   const patchOnDesk = { outputs: canPatch, inputs: false };
+  const onDesk = {
+    dcas: Boolean(caps?.dcas), dcaAssign: Boolean(caps?.dcaAssign), muteGroups: Boolean(caps?.muteGroups),
+    gain: Boolean(caps?.gain), phantom: Boolean(caps?.phantom), cue: Boolean(caps?.cue), scene: Boolean(caps),
+  };
 
-  return { channels, mixes, commands, warnings, spares, outputs, patchOnDesk };
+  return { channels, mixes, commands, warnings, spares, outputs, patchOnDesk, groups, onDesk };
 }
 
 // Patch sheet for the engineer: what plugs in where
 export function patchSheetCsv(show, plan) {
   const zoneName = (id) => show.zones.find((z) => z.id === id)?.name ?? id;
-  const rows = [['Kind', 'Number', 'Name', 'Patch', 'Type', 'HPF', 'Routed to']];
+  const rows = [['Kind', 'Number', 'Name', 'Patch', 'Type', 'HPF', 'Routed to', 'Gain', '48V', 'Group', 'Note']];
+  const groupOf = (c) => plan.groups?.find((g) => g.channels.includes(c))?.name || '';
   for (const c of plan.channels) {
     const hpf = hpfOf(c.source);
-    rows.push(['Input', `Ch ${c.ch}`, c.name, portLabel(c.patch), SOURCE_TYPES[c.source.type].label, hpf ? `${hpf} Hz` : 'off', c.source.zones.map(zoneName).join(' + ')]);
+    rows.push(['Input', `Ch ${c.ch}`, c.name, portLabel(c.patch), SOURCE_TYPES[c.source.type].label, hpf ? `${hpf} Hz` : 'off', c.source.zones.map(zoneName).join(' + '),
+      `${gainOf(c.source)} dB`, phantomOf(c.source) ? 'On' : 'Off', groupOf(c), c.source.note || '']);
   }
   for (const o of plan.outputs) {
     const ports = o.patch ? o.buses.map((_, k) => portLabel({ bank: o.patch.bank, port: o.patch.port + k })).join(' + ') : 'unpatched';
     const bus = o.zone.type === 'main' ? 'Stereo L/R' : o.buses.map((b) => b.replace('MIX', 'Mix ')).join('/');
     const type = o.zone.type === 'main' ? 'Main PA' : ZONE_TYPES[o.zone.type].label;
-    rows.push(['Output', bus, o.name, ports, type, '', sendOf(o.zone) === 'pre' ? 'Pre-fade sends' : 'Post-fade sends']);
+    rows.push(['Output', bus, o.name, ports, type, '', sendOf(o.zone) === 'pre' ? 'Pre-fade sends' : 'Post-fade sends', '', '', '', '']);
   }
   return rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
 }
@@ -424,7 +510,7 @@ export const PACKAGES = {
       { type: 'hihat', name: 'Hi Hat' },
       { type: 'tom', name: 'R Tom 1' }, { type: 'tom', name: 'R Tom 2' }, { type: 'tom', name: 'F Tom' },
       { type: 'overhead', name: 'OH' },
-      { type: 'bass', name: 'Bass DI' }, { type: 'bass', name: 'Bass Mic' },
+      { type: 'bass', name: 'Bass DI', phantom: true, gain: 20 }, { type: 'bass', name: 'Bass Mic' },
       { type: 'guitar', name: 'Gtr 1', stereo: true }, { type: 'guitar', name: 'Gtr 2', stereo: true },
       { type: 'keys', name: 'Keys 1' }, { type: 'keys', name: 'Keys 2' },
       { type: 'vocal', name: 'Vox 1' }, { type: 'vocal', name: 'Vox 2' }, { type: 'vocal', name: 'Vox 3' },
@@ -465,7 +551,7 @@ export const TRIGGERS = [
   { words: ['acoustic guitar', 'acoustic'], source: 'acoustic' },
   { words: ['electric guitar', 'guitar', 'gtr'], source: 'guitar' },
   { words: ['keys', 'keyboard', 'piano', 'synth'], source: 'keys' },
-  { words: ['vocal', 'vox', 'singer'], source: 'vocal' },
+  { words: ['backing vocal', 'lead vocal', 'vocal', 'bvox', 'vox', 'bv', 'singer'], source: 'vocal' },
   { words: ['talkback', 'tb'], source: 'talkback' },
   { words: ['instrument'], source: 'instrument' },
   { words: ['laptop'], source: 'laptop' },
@@ -495,30 +581,45 @@ export function parseRequest(text, show) {
   const entries = TRIGGERS.flatMap((t) => t.words.map((w) => ({ ...t, word: w }))).sort((a, b) => b.word.length - a.word.length);
   for (const t of entries) {
     const re = new RegExp(`(?:\\b(\\d+|${Object.keys(NUMBER_WORDS).join('|')})\\s*(?:x\\s*)?)?\\b${escape(t.word)}(?:e?s)?\\b`, 'g');
-    rest = rest.replace(re, (match, n) => {
+    rest = rest.replace(re, (match, n, at) => {
+      const pos = at;
       const count = Math.min(32, Math.max(1, n ? Number(n) || NUMBER_WORDS[n] : 1));
       if (t.package) {
-        for (let i = 0; i < count; i++) sources.push(...packageSuggestion(t.package).sources);
+        for (let i = 0; i < count; i++) sources.push(...packageSuggestion(t.package).sources.map((x) => ({ ...x, pos })));
         summary.push(PACKAGES[t.package].label + ' package');
       } else if (t.source) {
-        sources.push({ type: t.source, name: SOURCE_TYPES[t.source].short, count });
+        sources.push({ type: t.source, name: SOURCE_TYPES[t.source].short, count, pos });
         summary.push(`${count} × ${SOURCE_TYPES[t.source].label}`);
       } else {
         if (t.zone === 'main') {
-          if (!show.zones.some((z) => z.type === 'main') && !zones.some((z) => z.type === 'main')) zones.push({ type: 'main', name: ZONE_TYPES.main.short });
+          if (!show.zones.some((z) => z.type === 'main') && !zones.some((z) => z.type === 'main')) zones.push({ type: 'main', name: ZONE_TYPES.main.short, pos });
           summary.push(ZONE_TYPES.main.label);
-          return ' ';
+          return ' '.repeat(match.length);
         }
         for (let i = 1; i <= count; i++) {
           const taken = zones.map((z) => z.name);
           let name = nextZoneName(show, t.zone, taken);
           if (count > 1 && name === ZONE_TYPES[t.zone].short) name = `${name} 1`;
-          zones.push({ type: t.zone, name });
+          zones.push({ type: t.zone, name, pos });
         }
         summary.push(`${count} × ${ZONE_TYPES[t.zone].label}`);
       }
-      return ' ';
+      return ' '.repeat(match.length); // same length, so later matches keep their place in the text
     });
+  }
+  // Keep things in the order they were typed, and number repeated outputs in that order too
+  const byPos = (a, b) => a.pos - b.pos;
+  sources.sort(byPos).forEach((x) => delete x.pos);
+  zones.sort(byPos);
+  const counts = {};
+  for (const z of zones) {
+    const base = ZONE_TYPES[z.type].short;
+    if (z.name.startsWith(`${base} `)) {
+      const first = Number(nextZoneName(show, z.type).slice(base.length + 1)) || 1;
+      counts[base] ??= first;
+      z.name = `${base} ${counts[base]++}`;
+    }
+    delete z.pos;
   }
   const unknown = rest.split(/[^a-z0-9-]+/).filter((w) => w && !IGNORED.has(w) && !(w in NUMBER_WORDS) && !/^\d+$/.test(w));
   return { sources, zones, summary: summary.join(', '), unknown };
@@ -541,9 +642,174 @@ export function applySuggestion(show, suggestion) {
     const already = show.sources.filter((x) => x.name.startsWith(`${s.name} `) || x.name === s.name).length;
     for (let i = 1; i <= s.count; i++) {
       const name = numbered && !PACKAGE_NAMES.has(s.name) ? `${s.name} ${already + i}` : s.name;
-      show.sources.push(makeSource(s.type, i, show.zones, name, stereo));
+      const source = makeSource(s.type, i, show.zones, name, stereo);
+      for (const k of ['phantom', 'gain', 'hpf', 'note', 'color']) if (s[k] !== undefined) source[k] = s[k];
+      show.sources.push(source);
     }
   }
   return show;
 }
 const PACKAGE_NAMES = new Set(Object.values(PACKAGES).flatMap((p) => p.sources.map((s) => s.name)));
+
+// ---- Pasted input lists: one line per channel, from a rider, spreadsheet or email ----
+// Each line's name is kept as written; the type comes from the trigger words in it. "X L" and "X R" on
+// neighbouring lines become one stereo input. Channel numbers, "48V" and mic models are recognised.
+const SOURCE_WORDS = TRIGGERS.filter((t) => t.source).flatMap((t) => t.words.map((w) => ({ word: w, type: t.source })))
+  .sort((a, b) => b.word.length - a.word.length);
+export function parseInputList(text) {
+  const lines = String(text).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const rows = [];
+  for (const line of lines) {
+    let fields = line.split(/\t|\s*[,;|]\s*|\s{2,}/).map((f) => f.trim()).filter(Boolean);
+    if (/^(ch|chan|channel|#|no\.?)$/i.test(fields[0]) && fields.length > 1 && /^(name|input|source|instrument)$/i.test(fields[1])) continue; // a header row
+    const phantom = /\b(48\s?v|phantom)\b/i.test(line);
+    fields = fields.filter((f) => !/^\d+[.)]?$/.test(f) && !/^(48\s?v|phantom)$/i.test(f));
+    if (!fields.length) continue;
+    const name = fields[0].replace(/^\d+[.)\s-]+/, '').replace(/["\r\n]/g, '').trim().slice(0, 32);
+    if (!name) continue;
+    const note = fields.slice(1).join(', ').slice(0, 60);
+    const lower = ` ${name.toLowerCase()} `;
+    const match = SOURCE_WORDS.find(({ word }) => new RegExp(`\\b${escape(word)}(?:e?s)?\\b`).test(lower));
+    rows.push({ name, type: match?.type || 'instrument', note, phantom: phantom || undefined, stereoHint: /\b(st|stereo|l\/r)\b/i.test(line) });
+  }
+  // Pair "Keys 1 L" + "Keys 1 R" into one stereo input
+  const sources = [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const next = rows[i + 1];
+    const base = r.name.replace(/\s+(L|Left)$/i, '');
+    if (base !== r.name && next && next.name.replace(/\s+(R|Right)$/i, '') === base && next.name !== next.name.replace(/\s+(R|Right)$/i, '')) {
+      sources.push({ type: r.type, name: base, count: 1, stereo: true, note: r.note || next.note || undefined, phantom: r.phantom || next.phantom });
+      i++;
+    } else {
+      const stereo = r.stereoHint || SOURCE_TYPES[r.type].stereo;
+      sources.push({ type: r.type, name: r.name.replace(/\s+\b(st|stereo|l\/r)\b/i, '').trim() || r.name, count: 1, stereo, note: r.note || undefined, phantom: r.phantom });
+    }
+  }
+  for (const src of sources) for (const k of Object.keys(src)) if (src[k] === undefined) delete src[k];
+  return { sources, zones: [], summary: `${sources.length} input${sources.length === 1 ? '' : 's'} from your list`, unknown: [] };
+}
+
+// ---- Your own templates: any show saved as a one-click package, routing kept ----
+export function makeTemplate(show, name) {
+  const zoneName = (id) => show.zones.find((z) => z.id === id)?.name;
+  return {
+    name: String(name).trim().slice(0, 40) || 'My template',
+    autoOrder: show.options?.autoOrder !== false,
+    zones: show.zones.map((z) => ({ type: z.type, name: z.name, color: z.color, send: z.send })),
+    sources: show.sources.map((s) => ({
+      type: s.type, name: s.name, stereo: s.stereo, color: s.color, hpf: s.hpf, gain: s.gain, phantom: s.phantom, note: s.note,
+      zones: s.zones.map(zoneName).filter(Boolean),
+    })),
+  };
+}
+// Adds a template's outputs (unless the show already has one of that name) and inputs, with its routing
+export function applyTemplate(show, tpl) {
+  if (!show.sources.length && tpl.autoOrder === false) show.options.autoOrder = false; // keep a hand-made order
+  for (const z of tpl.zones || []) {
+    if (!ZONE_TYPES[z.type] || show.zones.some((x) => x.name === z.name || (z.type === 'main' && x.type === 'main'))) continue;
+    const zone = makeZone(z.type, z.name);
+    if (z.color) zone.color = z.color;
+    if (z.send) zone.send = z.send;
+    if (z.type === 'main') show.zones.unshift(zone); else show.zones.push(zone);
+  }
+  for (const t of tpl.sources || []) {
+    if (!SOURCE_TYPES[t.type]) continue;
+    const source = makeSource(t.type, 1, show.zones, t.name, Boolean(t.stereo));
+    for (const k of ['color', 'hpf', 'gain', 'phantom', 'note']) if (t[k] !== undefined) source[k] = t[k];
+    source.zones = show.zones.filter((z) => (t.zones || []).includes(z.name)).map((z) => z.id);
+    show.sources.push(source);
+  }
+  return show;
+}
+
+// ---- Monitor mixes: each singer starts with themselves in their own wedge or IEM ----
+// Pairs the n-th vocal mic (then speech mics) with the n-th monitor output, at the monitor default level.
+export function pairMonitors(show) {
+  const monitors = show.zones.filter(isMonitor);
+  const singers = [...show.sources.filter((s) => s.type === 'vocal'), ...show.sources.filter((s) => ['headset', 'handheld', 'lectern'].includes(s.type))];
+  const pairs = [];
+  monitors.forEach((zone, i) => {
+    const s = singers[i];
+    if (!s) return;
+    if (!s.zones.includes(zone.id)) s.zones.push(zone.id);
+    pairs.push(`${s.name} → ${zone.name}`);
+  });
+  return pairs;
+}
+
+// A monitor-desk show from the same inputs: same channels and input patch, only the monitor outputs
+export function monitorShow(show) {
+  const copy = JSON.parse(JSON.stringify(show));
+  copy.name = `${show.name} · Monitors`;
+  copy.zones = copy.zones.filter(isMonitor);
+  if (!copy.zones.length) for (let i = 1; i <= 4; i++) copy.zones.push(makeZone('foldback', `Wedge ${i}`));
+  const keep = new Set(copy.zones.map((z) => z.id));
+  for (const s of copy.sources) s.zones = s.zones.filter((id) => keep.has(id));
+  copy.options = { ...copy.options, outPatch: { bank: 'analog', port: 1 } };
+  for (const z of copy.zones) delete z.patch;
+  pairMonitors(copy);
+  return copy;
+}
+
+// ---- Pushing only what changed since the last push ----
+// A command's key is everything before its value, so a new value for the same parameter replaces the old one
+export function commandKey(cmd) {
+  const m = /^(set \S+ \d+ \d+) /.exec(cmd);
+  return m ? m[1] : cmd;
+}
+export function changedCommands(commands, last) {
+  if (!last) return commands;
+  return commands.filter((c) => last[commandKey(c)] !== c);
+}
+export function rememberPush(last, sent) {
+  const next = { ...(last || {}) };
+  for (const c of sent) if (/^set /.test(c)) next[commandKey(c)] = c;
+  return next;
+}
+
+// ---- Checking the desk after a push ----
+export function readbackCommand(cmd) {
+  const m = /^set (\S+ \d+ \d+) /.exec(cmd);
+  return m ? `get ${m[1]}` : null;
+}
+// True when the desk's reply to the read-back holds the value the push set
+export function matchesReadback(cmd, reply) {
+  const want = /^set \S+ \d+ \d+ (.*)$/.exec(cmd)?.[1];
+  const m = /^OK get \S+ \d+ \d+ (.*)$/.exec(String(reply).trim());
+  if (want === undefined || !m) return false;
+  const norm = (v) => v.trim().replace(/^"(.*)"$/, '$1');
+  return norm(m[1]) === norm(want);
+}
+
+// ---- Paperwork pack: input list, outputs, line check, stage-box and desk labels ----
+const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+export function paperwork(show, plan, { version = '', licence = '' } = {}) {
+  const model = MODELS[show.options?.model] || MODELS.custom;
+  const zoneName = (id) => show.zones.find((z) => z.id === id)?.name ?? '';
+  const groupOf = (c) => plan.groups?.find((g) => g.channels.includes(c))?.name || '';
+  const inputs = plan.channels.map((c) => `<tr><td>${c.ch}</td><td><b>${esc(c.name)}</b></td><td>${esc(portLabel(c.patch))}</td><td>${esc(SOURCE_TYPES[c.source.type].label)}</td><td>${esc(c.source.note || '')}</td><td>${phantomOf(c.source) ? '48V' : ''}</td><td>${hpfOf(c.source) || ''}</td><td>${esc(groupOf(c))}</td><td>${esc(c.source.zones.map(zoneName).join(', '))}</td></tr>`).join('');
+  const outputs = plan.outputs.map((o) => `<tr><td>${o.zone.type === 'main' ? 'ST L/R' : esc(o.buses.join('/').replace(/MIX/g, ''))}</td><td><b>${esc(o.name)}</b></td><td>${o.patch ? esc(o.buses.map((_, k) => portLabel({ bank: o.patch.bank, port: o.patch.port + k })).join(' + ')) : 'unpatched'}</td><td>${sendOf(o.zone) === 'pre' ? 'Pre' : 'Post'}</td></tr>`).join('');
+  const check = plan.channels.map((c) => `<tr><td class="box"></td><td>${c.ch}</td><td><b>${esc(c.name)}</b></td><td>${esc(portLabel(c.patch))}</td><td>${esc(c.source.note || '')}</td><td></td></tr>`).join('');
+  const strips = plan.channels.map((c) => `<span class="strip"><small>${c.ch}</small>${esc(c.name)}</span>`).join('');
+  const boxes = plan.channels.filter((c) => c.patch).map((c) => `<span class="lbl"><small>${esc(portLabel(c.patch))}</small>${esc(c.name)}</span>`).join('');
+  const css = `.kk-paper{font:12px/1.4 system-ui,sans-serif;color:#16191d;background:#fff}
+.kk-paper h1{font-size:20px;margin:0 0 2px}.kk-paper h2{font-size:15px;margin:22px 0 6px;border-bottom:2px solid #16191d;padding-bottom:3px}
+.kk-paper .meta{color:#5d6670;margin:0 0 8px}.kk-paper table{border-collapse:collapse;width:100%}
+.kk-paper th,.kk-paper td{border:1px solid #c8cdd3;padding:4px 6px;text-align:left;vertical-align:top}.kk-paper th{background:#eef0f2}
+.kk-paper td.box{width:18px}.kk-paper .row{display:flex;flex-wrap:wrap;gap:4px}
+.kk-paper .strip{display:inline-flex;flex-direction:column;justify-content:center;width:62px;height:30px;border:1px solid #16191d;padding:2px 4px;font:700 11px/1.1 'Arial Narrow',sans-serif;overflow:hidden}
+.kk-paper .lbl{display:inline-flex;flex-direction:column;width:110px;border:1px dashed #5d6670;padding:4px 6px;font-weight:700}
+.kk-paper small{font-weight:400;color:#5d6670}.kk-paper .page{page-break-before:always}
+.kk-paper footer{margin-top:24px;color:#5d6670;font-size:10px}`;
+  const body = `<div class="kk-paper">
+<h1>${esc(show.name)}</h1><p class="meta">${esc(model.inputs ? model.label : 'Desk not set')} · ${plan.channels.length} channels · ${plan.outputs.length} outputs</p>
+<h2>Input list</h2><table><thead><tr><th>Ch</th><th>Name</th><th>Plugs into</th><th>Type</th><th>Mic / note</th><th>48V</th><th>HPF</th><th>Group</th><th>Goes to</th></tr></thead><tbody>${inputs}</tbody></table>
+<h2>Outputs</h2><table><thead><tr><th>Bus</th><th>Output</th><th>Comes out of</th><th>Sends</th></tr></thead><tbody>${outputs}</tbody></table>
+<h2 class="page">Line check</h2><table><thead><tr><th>✓</th><th>Ch</th><th>Name</th><th>Plugs into</th><th>Mic / note</th><th>Notes</th></tr></thead><tbody>${check}</tbody></table>
+<h2 class="page">Desk tape</h2><p class="meta">Cut along the lines and stick above the faders.</p><div class="row">${strips}</div>
+<h2>Stage-box labels</h2><div class="row">${boxes}</div>
+<footer>KobiKlang · Show Builder ${esc(version ? 'v' + version : '')}${licence ? ' · Licence ' + esc(licence) : ''}</footer>
+</div>`;
+  return { title: `${show.name} paperwork`, css, body };
+}

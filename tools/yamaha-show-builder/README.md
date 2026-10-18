@@ -183,6 +183,66 @@ The patch sheet now lists the port for every input and output, so it doubles as 
 
 The DM7 Compact figures come from Yamaha's spec page. The others are from memory and need checking against your desk.
 
+## Prep tools
+
+### Paste an input list
+Open **Paste an input list** under the typing box and paste the band's or client's list from a rider, spreadsheet or email: one line per channel.
+- **Names** stay as written.
+- **Channel numbers** at the start of a line are ignored.
+- **Other columns** (mic model, stand) become the channel's note.
+- **48V** or "phantom" on a line switches phantom power on.
+- **Stereo:** neighbouring "Keys L" / "Keys R" lines become one stereo input.
+- **Order:** tick **Keep the list's channel order** (the default) to keep the rider's order; it turns auto order off.
+
+### Your templates
+**Save as template** (top of the page) saves the whole show, routing included, as a chip under **Yours** next to the packages. Click it to add it to any show. Templates are saved in the browser on this computer, and × deletes one.
+
+### Back up, then check
+- **Back up first:** under **Send to desk**, **Back up the desk's current scene to scene N** stores the desk's state before every push. The default is the desk's last scene number (300 on CL/QL, 100 on the others), and it overwrites that scene. If the desk refuses the backup, nothing else is sent.
+- **Check the desk** reads every setting back after a push and lists any that don't match.
+
+### Line check
+Section 6 lists every channel with its socket, mic note, 48V and gain, with a tick box for each.
+- **Solo** (CL/QL, DM3, DM7 and RIVAGE) solos the channel on the desk's cue.
+- **Ticking a soloed channel** moves the solo on to the next unticked one, so you can walk the stage.
+- **Your ticks** are saved with the show.
+
+### DCAs and mute groups
+Made automatically from the input types (Speech, Drums, Band, Vox, Playback, BGM), with only the groups that have channels. The pills under the routing grid show what each holds.
+
+### Only send what's changed
+After the first push to a desk, later pushes send only the lines that changed, so a rename mid-show takes one line. **Send everything next time** forgets the last push.
+
+### Gain and 48V
+Every input type has a starting gain and 48V setting, which you can change per row in the routing grid:
+- **48V on:** lectern goosenecks, overheads, hi-hat and active DIs.
+- **48V off:** radio mic receivers and dynamic mics.
+
+### Monitors
+- **Give each singer their own monitor:** pairs the vocal mics (then speech mics) with the monitor outputs in order, so Vox 1 starts in Wedge 1.
+- **Monitor desk show:** saves a second show file with the same inputs and input patch but only the monitor outputs, ready to open on the monitor desk's laptop.
+
+### Paperwork
+**Paperwork** opens a print-ready page:
+- the input list (socket, mic, 48V, HPF, group, outputs)
+- the outputs and their sockets
+- a line-check sheet with tick boxes
+- desk tape strips to stick above the faders
+- stage-box labels
+
+### What reaches each desk
+From the desks' own parameter lists (see Desk notes):
+
+| | CL / QL | TF | DM3 | DM7 | RIVAGE |
+|---|---|---|---|---|---|
+| Scene backup | ✓ | ✓ | ✓ | ✓ | ✓ |
+| DCA names / assignments | ✓ / ✓ | ✓ / by hand | none | ✓ / ✓ | ✓ / ✓ |
+| Mute group names | ✓ | ✓ | none | by hand | by hand |
+| Gain / 48V | ✓ / by hand | by hand | ✓ / ✓ | ✓ / by hand | ✓ / by hand |
+| Solo for line check | ✓ | by hand | ✓ | ✓ | ✓ |
+
+The scene store commands (`ssupdate_ex` / `ssupdatet_ex`) follow the Companion module. Test the backup on a spare scene before relying on it at a show.
+
 ## Starting over
 
 - **New show:** wipes the page back to empty: no inputs, no outputs, every option back to default. The typing box, preview and push log clear too. Only the desk model and desk IP are kept, since they describe your hardware. It asks first unless the page is already empty.

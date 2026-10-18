@@ -112,6 +112,22 @@ table.patch-table { min-width: 0; }
 .link-dot.lost { background: var(--bad); }
 @keyframes pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .link-dot.connecting { animation: none; } }
+.paste { margin-top: 14px; max-width: 760px; }
+.paste summary { cursor: pointer; font-weight: 600; color: var(--accent-text, var(--accent)); padding: 6px 0; }
+.paste textarea { width: 100%; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; margin-bottom: 8px; }
+.pair-row { margin-top: 12px; }
+.groups-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; font-size: 14px; }
+.group-pill { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; margin: 2px; font-size: 13px; }
+.group-pill b { color: var(--accent-text, var(--accent)); font-variant-numeric: tabular-nums; }
+.send-opts { font-size: 14px; }
+td.gain input { width: 64px; }
+td.lc-tick input { width: 22px; height: 22px; accent-color: var(--accent); }
+tr.lc-done td { opacity: .55; }
+tr.lc-solo td { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.solo { padding: 4px 10px; font-size: 13px; }
+.solo.on { background: var(--accent); border-color: var(--accent); color: var(--accent-fg, #16191d); font-weight: 600; }
+.tpl-chip { display: inline-flex; align-items: center; gap: 2px; }
+.tpl-chip .remove { padding: 2px 6px; }
 .type-help { margin: 0; font-size: 13px; }
 .send-point { display: block; margin: 4px auto 0; padding: 1px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 .send-point.pre { border-color: var(--accent); color: var(--accent-text); }

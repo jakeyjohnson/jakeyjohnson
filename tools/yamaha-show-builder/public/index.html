@@ -20,6 +20,9 @@
       <label class="ghost button">Open<input id="openFile" type="file" accept=".json" hidden></label>
       <button id="saveShow" class="ghost">Save</button>
       <button id="exportCsv" class="ghost">Patch sheet</button>
+      <button id="saveTemplate" class="ghost">Save as template</button>
+      <button id="monitorShow" class="ghost">Monitor desk show</button>
+      <button id="paperworkBtn" class="ghost">Paperwork</button>
     </div>
   </header>
 
@@ -38,6 +41,12 @@
       <button id="newYes" class="primary">Wipe and start</button>
       <button id="newNo" class="ghost">Cancel</button>
     </div>
+    <div id="tplBar" class="confirm" hidden>
+      <label for="tplName">Save this show as a template called</label>
+      <input id="tplName" placeholder="Corporate, 8 radio mics">
+      <button id="tplSave" class="primary">Save template</button>
+      <button id="tplCancel" class="ghost">Cancel</button>
+    </div>
 
     <section>
       <h2><span>1</span>Inputs</h2>
@@ -55,12 +64,19 @@
           <ul id="typeList" class="pills"></ul>
           <div class="type-row"><button id="typeAdd" class="primary">Add to show</button><button id="typeDiscard" class="ghost">Discard</button></div>
         </div>
+      <details class="paste" id="pasteBox">
+        <summary>Paste an input list</summary>
+        <p class="hint">Paste it from a rider, spreadsheet or email, one line per channel. Names stay as you wrote them. It picks up &quot;48V&quot; and mic models, and turns &quot;Keys L&quot; and &quot;Keys R&quot; into one stereo input.</p>
+        <textarea id="pasteText" rows="7" aria-label="Input list" placeholder="1  Kick In  Beta 91&#10;2  Snare Top  SM57&#10;3  OH L  KM184  48V&#10;4  OH R  KM184  48V"></textarea>
+        <div class="type-row"><button id="pasteGo" class="primary">Preview</button><label class="check"><input id="pasteKeepOrder" type="checkbox" checked>Keep the list&#39;s channel order</label></div>
+      </details>
       </div>
     </section>
 
     <section>
       <h2><span>2</span>Outputs</h2>
       <div id="zoneButtons" class="chip-groups"></div>
+      <div class="type-row pair-row"><button id="pairMon" class="ghost">Give each singer their own monitor</button><span id="monStatus" class="status"></span></div>
     </section>
 
     <section class="grid-section">
@@ -68,6 +84,11 @@
       <p class="hint">Tick where each input goes. Click any name to change it; the desk shows the first <span id="maxLen"></span> letters.</p>
       <label class="check order"><input id="autoOrder" type="checkbox">Auto order channels (speech mics, band, playback, background music last)</label>
       <div class="table-wrap"><table id="grid"></table></div>
+      <div class="groups-line">
+        <label class="check"><input id="autoGroups" type="checkbox">DCAs and mute groups</label>
+        <span id="groupsList"></span>
+        <span id="groupsNote" class="status"></span>
+      </div>
       <ul id="warnings" class="warnings"></ul>
     </section>
 
@@ -93,13 +114,32 @@
         <label>Name length<input id="maxNameLength" type="number" min="4" max="32"></label>
         <label class="check"><input id="setLevels" type="checkbox">Reset faders (inputs to -∞, outputs to 0 dB)</label>
       </div>
+      <div class="desk-row send-opts">
+        <label class="check"><input id="setGain" type="checkbox">Set gain and 48V <span id="gainNote" class="status"></span></label>
+        <label class="check"><input id="backupOn" type="checkbox">Back up the desk&#39;s current scene to scene</label>
+        <input id="backupScene" class="port" type="number" min="1" aria-label="Backup scene number">
+        <span id="backupNote" class="status">This overwrites that scene.</span>
+      </div>
+      <div class="desk-row send-opts">
+        <label class="check"><input id="onlyChanges" type="checkbox">Only send what&#39;s changed since the last push</label>
+        <button id="forgetPush" class="ghost">Send everything next time</button>
+        <span id="changesNote" class="status"></span>
+      </div>
       <div class="desk-row">
         <button id="pushDesk" class="primary">Push show to desk</button>
+        <button id="verifyDesk" class="ghost">Check the desk</button>
         <button id="toggleCommands" class="ghost">Show commands</button>
         <span id="status" class="status"></span>
       </div>
       <progress id="progress" value="0" max="1" hidden></progress>
       <pre id="log" class="log" hidden></pre>
+    </section>
+
+    <section>
+      <h2><span>6</span>Line check</h2>
+      <p id="lcNote" class="hint"></p>
+      <div class="desk-row"><span id="lcCount" class="status"></span><button id="lcClear" class="ghost">Clear ticks</button></div>
+      <div class="table-wrap"><table id="lcTable" class="patch-table"></table></div>
     </section>
   </main>
 
