@@ -54,7 +54,7 @@ The app talks to the desk using Yamaha's remote control protocol (TCP port 49280
 | Stereo sources | Use two mono channels (L/R) panned hard left and right |
 | Main L/R zone | The stereo bus. Inputs ticked for Main are assigned to it |
 | Other zones | One mix bus each (front fill = Mix 1, and so on). Named, coloured, master at 0 dB, not routed to the stereo bus |
-| Sends | 0 dB to each ticked zone (-3 dB per side for stereo sources into a mono zone), off and -∞ everywhere else |
+| Sends | 0 dB to each ticked speaker output and -3 dB to each ticked monitor output (a stereo source summed into a mono output drops a further 3 dB per side). Off and -∞ everywhere else |
 | Send point | Pre-fade for monitor outputs (Foldback, Mono IEM, Stereo IEM, or any output with "monitor" in its name). Post-fade for everything else: Main L/R, front fills, delays, ceiling, record. Click Post/Pre under an output's name to override it |
 | Stereo IEM | Takes an odd/even pair of mixes. Stereo inputs are panned hard left/right into it, mono inputs centre. On a TF it goes on the stereo mixes (9/10 up) and mono outputs fill mixes 1–8; on other desks, set the pair as stereo in Bus Setup (the app reminds you) |
 

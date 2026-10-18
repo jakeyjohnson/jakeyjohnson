@@ -93,6 +93,9 @@ const NEG_INF = -32768; // RCP value for -inf; levels are in 1/100 dB
 // on the desk after the first push, and swap these two if they come out reversed.
 const SEND_POINT = { pre: 0, post: 1 };
 
+// Default send level into monitor outputs, in 1/100 dB (-3 dB)
+const MONITOR_SEND = -300;
+
 // Monitor outputs (foldback, IEMs, or anything named "monitor") send pre-fade; every other output
 // (Main L/R, fills, delays, ceiling…) post-fade. A zone's own `send` overrides this when set by hand.
 export function isMonitor(zone) {
@@ -267,8 +270,10 @@ export function buildPlan(show) {
       for (const bus of busIndexes(m)) {
         set('InCh/ToMix/On', i, bus, on ? 1 : 0);
         set('InCh/ToMix/PrePost', i, bus, SEND_POINT[sendOf(m.zone)]);
-        // a stereo pair summed into a mono zone is pulled down 3 dB per side; into a stereo zone it is panned
-        set('InCh/ToMix/Level', i, bus, on ? (c.side && !m.stereo ? -300 : 0) : NEG_INF);
+        // monitor sends start at -3 dB, speaker sends at 0 dB; a stereo pair summed into a mono zone
+        // drops a further 3 dB per side, into a stereo zone it is panned instead
+        const base = isMonitor(m.zone) ? MONITOR_SEND : 0;
+        set('InCh/ToMix/Level', i, bus, on ? base + (c.side && !m.stereo ? -300 : 0) : NEG_INF);
         if (m.stereo) set('InCh/ToMix/Pan', i, bus, c.side === 'L' ? -63 : c.side === 'R' ? 63 : 0);
       }
     }

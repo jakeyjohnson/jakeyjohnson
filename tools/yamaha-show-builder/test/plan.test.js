@@ -201,7 +201,7 @@ test('stereo IEM takes an odd/even mix pair with stereo inputs panned', () => {
   // PB 1 L is ch 7 (index 6): both sides of the IEM, full level, panned left, pre-fade
   for (const bus of [4, 5]) {
     assert.ok(has(`set MIXER:Current/InCh/ToMix/On 6 ${bus} 1`));
-    assert.ok(has(`set MIXER:Current/InCh/ToMix/Level 6 ${bus} 0`));
+    assert.ok(has(`set MIXER:Current/InCh/ToMix/Level 6 ${bus} -300`)); // monitor send at -3 dB
     assert.ok(has(`set MIXER:Current/InCh/ToMix/Pan 6 ${bus} -63`));
     assert.ok(has(`set MIXER:Current/InCh/ToMix/PrePost 6 ${bus} 0`));
     assert.ok(has(`set MIXER:Current/Mix/Label/Name ${bus} 0 "IEM 1"`));
@@ -217,4 +217,19 @@ test('on a TF, stereo IEMs go on the stereo mixes and mono outputs below them', 
   const plan = buildPlan(show);
   assert.deepEqual(plan.mixes.map((m) => `${m.zone.name}:${m.mix}`), ['FrntFil:1', 'Delay 1:2', 'Delay 2:3', 'Ceiling:4', 'Wedge 1:5', 'Wedge 2:6', 'IEM 1:9', 'IEM 2:11']);
   assert.deepEqual(plan.warnings, []);
+});
+
+test('monitor sends default to -3 dB, speaker sends to 0 dB', () => {
+  const show = defaultShow();
+  applySuggestion(show, parseRequest('a wedge and a mono iem', show));
+  const plan = buildPlan(show);
+  const has = (cmd) => plan.commands.includes(cmd);
+  // PB 1 L (index 6): fills (mix 1) and ceiling are speakers; wedge (mix 5) and mono IEM (mix 6) are monitors
+  assert.ok(has('set MIXER:Current/InCh/ToMix/Level 6 0 -300')); // stereo into mono speaker: -3 per side
+  assert.ok(has('set MIXER:Current/InCh/ToMix/Level 6 4 -600')); // monitor -3, plus -3 per side
+  assert.ok(has('set MIXER:Current/InCh/ToMix/Level 6 5 -600'));
+  // MD-style mono talkback into a wedge: just the -3 dB monitor default
+  applySuggestion(show, { sources: [{ type: 'talkback', name: 'MD TB', count: 1 }], zones: [] });
+  const tb = buildPlan(show).channels.find((c) => c.name === 'MD TB').ch - 1;
+  assert.ok(buildPlan(show).commands.includes(`set MIXER:Current/InCh/ToMix/Level ${tb} 4 -300`));
 });
