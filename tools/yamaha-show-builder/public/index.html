@@ -28,14 +28,15 @@
         <input id="addCount" type="number" min="1" max="32" value="1" aria-label="How many">
         <div id="addButtons" class="chip-groups"></div>
       </div>
-      <div class="ai">
-        <label for="aiText">Or describe it and let AI build the inputs</label>
-        <textarea id="aiText" rows="2" placeholder="e.g. full band: drum kit, bass, 2 guitars, keys and 4 vocals, plus 4 wedges"></textarea>
-        <div class="ai-row"><button id="aiGo" class="primary">Build with AI</button><span id="aiStatus" class="status"></span></div>
-        <div id="aiPreview" class="ai-preview" hidden>
-          <p id="aiSummary"></p>
-          <ul id="aiList" class="pills"></ul>
-          <div class="ai-row"><button id="aiAdd" class="primary">Add to show</button><button id="aiDiscard" class="ghost">Discard</button></div>
+      <div class="typein">
+        <label for="typeText">Or type what you need</label>
+        <textarea id="typeText" rows="2" placeholder="e.g. full band, 4 wedges and 2 handhelds"></textarea>
+        <p class="hint type-help">Works offline. Understands numbers (&quot;4 wedges&quot;, &quot;two handhelds&quot;) and: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, wedge, IEM, delay, front fill, ceiling, record.</p>
+        <div class="type-row"><button id="typeGo" class="primary">Preview</button><span id="typeStatus" class="status"></span></div>
+        <div id="typePreview" class="type-preview" hidden>
+          <p id="typeSummary"></p>
+          <ul id="typeList" class="pills"></ul>
+          <div class="type-row"><button id="typeAdd" class="primary">Add to show</button><button id="typeDiscard" class="ghost">Discard</button></div>
         </div>
       </div>
     </section>

@@ -6,12 +6,11 @@ Pick your inputs (lectern mics, handhelds, playback…), pick your speaker zones
 
 ## Run it
 
-Needs Node.js 18 or newer.
+Needs Node.js 18 or newer. Nothing to install, and it works fully offline: no internet connection is needed at any point.
 
 ```bash
 cd tools/yamaha-show-builder
-npm install                              # only needed for the AI builder
-ANTHROPIC_API_KEY=sk-ant-... npm start   # leave the key out if you don't use the AI builder
+npm start
 ```
 
 Open http://localhost:8080. Other devices on the network (an iPad at FOH, say) can use `http://<laptop IP>:8080`.
@@ -74,14 +73,48 @@ Every input type comes with a high-pass filter default, which you can change per
 | Hi-hat | 200 Hz |
 | Keys, other instruments, laptop, playback, background music | off |
 
-## AI builder
+## Packages
 
-Type what else you need in plain English, for example *"full band: drum kit, bass, 2 guitars, keys and 4 vocals, plus 4 wedges"*, and press **Build with AI**. Claude turns it into a list of inputs and zones. Nothing changes until you press **Add to show**, and everything it adds can be edited like any other row.
+One click adds a whole mic list. The packages are defined in `PACKAGES` in `public/plan.js`, so they're easy to change or extend.
 
-- **Local app:** uses the Claude API (Claude Opus 5.5) through the official Anthropic SDK. Start the app with `ANTHROPIC_API_KEY` set, after `npm install`. Requests are billed to that API key, and anyone on your network who can open the app can use it.
-- **Online demo:** uses Claude on the viewer's own claude.ai account. The first use asks for permission.
-- **What gets sent:** your request, the names of inputs already in the show, and the name length. Nothing about the desk or the network is sent.
-- **Checks:** Claude can only pick from the input and zone types the app knows. Unknown types are dropped and counts are capped at 32.
+**Full band (24 channels)**
+
+| Ch | Name | Ch | Name |
+|---|---|---|---|
+| 1 | Kick In | 13–14 | Gtr 1 L / R |
+| 2 | Kick Out | 15–16 | Gtr 2 L / R |
+| 3 | Snare T | 17–18 | Keys 1 L / R |
+| 4 | Snare B | 19–20 | Keys 2 L / R |
+| 5 | Hi Hat | 21 | Vox 1 |
+| 6 | R Tom 1 | 22 | Vox 2 |
+| 7 | R Tom 2 | 23 | Vox 3 |
+| 8 | F Tom | 24 | MD TB |
+| 9–10 | OH L / R | | |
+| 11 | Bass DI | | |
+| 12 | Bass Mic | | |
+
+These channel numbers are for the package on its own. After other inputs it moves down, keeping this order. MD TB (the MD's talkback) goes to the foldback zones only, never the PA.
+
+**Drum kit (10 channels):** the first ten channels above.
+
+## Typing what you need
+
+Type into the box under the input buttons, for example *"full band, 4 wedges and 2 handhelds"*, then press **Preview** (or Enter). It shows what will be added, then **Add to show** adds it. This runs entirely in the browser with no internet. It works on trigger words:
+
+| Kind | Words it understands |
+|---|---|
+| Packages | full band, band, drum kit, drums |
+| Speech | lectern, podium, headset, lapel, lav, handheld, radio mic, HH |
+| Band | kick, snare, hi hat, tom, overhead, OH, bass, guitar, gtr, acoustic, keys, keyboard, piano, synth, vocal, vox, singer, talkback, TB, instrument |
+| Playback | laptop, playback, PB, BGM, background music |
+| Zones | wedge, monitor, foldback, IEM, in-ear, delay, front fill, ceiling, record, stream |
+
+- **Counts:** a number or number word in front sets how many: "4 wedges", "two handhelds", "a kick".
+- **Numbering:** new inputs carry on from ones already in the show (HH 5, HH 6).
+- **Unknown words:** listed under the box, so nothing is silently ignored.
+- **Adding words:** edit `TRIGGERS` in `public/plan.js`.
+
+**Stereo:** tick **St** on any row to make it an L/R pair, like the guitars in the band package.
 
 ## Channel order
 

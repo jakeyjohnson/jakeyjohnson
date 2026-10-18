@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addSources, applySuggestion, buildPlan, defaultShow, makeSource, normalizeSuggestion, patchSheetCsv } from '../public/plan.js';
+import { addSources, applySuggestion, buildPlan, defaultShow, makeSource, packageSuggestion, parseRequest, patchSheetCsv } from '../public/plan.js';
 
 test('default show matches the conference brief', () => {
   const show = defaultShow();
@@ -114,29 +114,51 @@ test('colours use each desk family\'s own names', () => {
   assert.ok(buildPlan(show).commands.includes('set MIXER:Current/InCh/Label/Color 0 0 Blue'));
 });
 
-test('an AI suggestion is checked before it touches the show', () => {
-  const raw = {
-    sources: [
-      { type: 'kick', name: 'Kick', count: 1 },
-      { type: 'tom', name: 'Tom', count: 3 },
-      { type: 'overhead', name: 'OH', count: 1 },
-      { type: 'vocal', name: 'Vox', count: 99 },
-      { type: 'laser', name: 'Pew', count: 1 }, // unknown type: dropped
-    ],
-    zones: [{ type: 'foldback', name: 'Wedge 1' }, { type: 'main', name: 'Main 2' }],
-    summary: 'Drum kit, vocals and a wedge.',
-  };
-  const s = normalizeSuggestion(raw);
-  assert.deepEqual(s.sources.map((x) => `${x.type}x${x.count}`), ['kickx1', 'tomx3', 'overheadx1', 'vocalx32']);
-  assert.deepEqual(s.zones.map((z) => z.name), ['Wedge 1']);
-
+test('full band package gives the exact mic list in order', () => {
   const show = defaultShow();
-  applySuggestion(show, { ...s, sources: s.sources.slice(0, 3) });
-  const names = buildPlan(show).channels.map((c) => c.name);
-  assert.deepEqual(names.slice(6, 12), ['Kick', 'Tom 1', 'Tom 2', 'Tom 3', 'OH L', 'OH R']); // band sits after the speech mics
-  const kick = show.sources.find((x) => x.name === 'Kick');
-  const wedge = show.zones.find((z) => z.name === 'Wedge 1');
-  assert.equal(kick.hpf, 30);
-  assert.ok(kick.zones.includes('main') && !kick.zones.includes(wedge.id));
-  assert.equal(normalizeSuggestion(null).sources.length, 0);
+  show.sources = [];
+  applySuggestion(show, packageSuggestion('band'));
+  const plan = buildPlan(show);
+  assert.deepEqual(plan.channels.map((c) => c.name), [
+    'Kick In', 'Kick Out', 'Snare T', 'Snare B', 'Hi Hat', 'R Tom 1', 'R Tom 2', 'F Tom', 'OH L', 'OH R',
+    'Bass DI', 'Bass Mic', 'Gtr 1 L', 'Gtr 1 R', 'Gtr 2 L', 'Gtr 2 R', 'Keys 1 L', 'Keys 1 R', 'Keys 2 L', 'Keys 2 R',
+    'Vox 1', 'Vox 2', 'Vox 3', 'MD TB',
+  ]);
+  assert.deepEqual(plan.spares, []);
+  // talkback stays out of the PA
+  const tb = show.sources.find((s) => s.name === 'MD TB');
+  assert.equal(tb.zones.length, 0);
+  assert.ok(plan.commands.includes('set MIXER:Current/InCh/HPF/Freq 23 0 1800')); // MD TB
+  assert.ok(plan.commands.includes('set MIXER:Current/InCh/HPF/Freq 20 0 1800')); // Vox 1
+});
+
+test('full band after the conference mics sits after them', () => {
+  const show = defaultShow();
+  applySuggestion(show, packageSuggestion('band'));
+  const names = buildPlan(show).channels.map((c) => `${c.ch}:${c.name}`);
+  assert.deepEqual(names.slice(5, 8), ['6:HH 4', '7:Kick In', '8:Kick Out']);
+  assert.equal(names.find((n) => n.endsWith('MD TB')), '30:MD TB');
+});
+
+test('trigger words: packages, counts, number words and zones', () => {
+  const show = defaultShow();
+  const s = parseRequest('Full band, 4 wedges, two handhelds, an acoustic guitar and 2 IEMs', show);
+  assert.equal(s.sources.filter((x) => x.type === 'kick').length, 2);
+  assert.deepEqual(s.sources.filter((x) => x.type === 'handheld' || x.type === 'acoustic').map((x) => `${x.type}x${x.count}`), ['acousticx1', 'handheldx2']);
+  assert.ok(!s.sources.some((x) => x.type === 'guitar' && x.name === 'Gtr')); // "acoustic guitar" is not also a guitar
+  assert.deepEqual(s.zones.map((z) => z.name), ['Wedge 1', 'Wedge 2', 'Wedge 3', 'Wedge 4', 'IEM 1', 'IEM 2']);
+  assert.deepEqual(s.unknown, []);
+
+  applySuggestion(show, s);
+  const names = show.sources.map((x) => x.name);
+  assert.ok(names.includes('HH 5') && names.includes('HH 6')); // numbering carries on
+  assert.ok(names.includes('AcGtr'));
+  const tb = show.sources.find((x) => x.name === 'MD TB');
+  assert.equal(tb.zones.length, 6); // talkback goes to every wedge and IEM
+});
+
+test('trigger words report what they did not understand', () => {
+  const s = parseRequest('3 vox and a theremin', defaultShow());
+  assert.deepEqual(s.sources, [{ type: 'vocal', name: 'Vox', count: 3 }]);
+  assert.deepEqual(s.unknown, ['theremin']);
 });

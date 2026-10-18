@@ -20,6 +20,7 @@
   --surface: #0c0d0f; --surface-line: #24282d; --strip: #17191c; --lcd-fg: #e9edf1; --lamp-off: #353a40; color-scheme: dark }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { background: var(--bg); color: var(--fg); font: 15px/1.45 var(--f-body); }
 .wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 header { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: end; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
@@ -47,15 +48,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .chip-groups { display: grid; gap: 8px; min-width: 0; }
 .chip-group { display: grid; grid-template-columns: 72px 1fr; gap: 8px; align-items: center; }
 .chip-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
-.ai { display: grid; gap: 8px; margin-top: 16px; max-width: 760px; }
-.ai label { font-size: 14px; color: var(--muted); }
-.ai textarea { resize: vertical; padding: 8px 10px; border-radius: 8px; }
-.ai-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.ai-preview { border: 1px solid var(--accent); border-radius: 10px; padding: 12px; display: grid; gap: 10px; background: var(--panel); }
-.ai-preview p { margin: 0; }
+.typein { display: grid; gap: 8px; margin-top: 16px; max-width: 760px; }
+.typein label { font-size: 14px; color: var(--muted); }
+.typein textarea { resize: vertical; padding: 8px 10px; border-radius: 8px; }
+.type-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.type-preview { border: 1px solid var(--accent); border-radius: 10px; padding: 12px; display: grid; gap: 10px; background: var(--panel); }
+.type-preview p { margin: 0; }
 .pills { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .pill { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 13px; }
 .zone-pill { border-style: dashed; }
+.type-help { margin: 0; font-size: 13px; }
 td.hpf input { width: 72px; }
 .hpf-tag { font: 600 10px/1 var(--f-strip); color: #8a939d; letter-spacing: .04em; }
 .hpf-tag.on { color: #7fc7ff; }
@@ -151,14 +153,15 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
       <input id="addCount" type="number" min="1" max="32" value="1" aria-label="How many to add">
       <div id="addButtons" class="chip-groups"></div>
     </div>
-    <div class="ai">
-      <label for="aiText">Or describe it and let AI build the inputs</label>
-      <textarea id="aiText" rows="2" placeholder="e.g. full band: drum kit, bass, 2 guitars, keys and 4 vocals, plus 4 wedges"></textarea>
-      <div class="ai-row"><button id="aiGo" class="primary">Build with AI</button><button id="aiStop" hidden>Stop</button><span id="aiStatus" class="status"></span></div>
-      <div id="aiPreview" class="ai-preview" hidden>
-        <p id="aiSummary"></p>
-        <ul id="aiList" class="pills"></ul>
-        <div class="ai-row"><button id="aiAdd" class="primary">Add to show</button><button id="aiDiscard">Discard</button></div>
+    <div class="typein">
+      <label for="typeText">Or type what you need</label>
+      <textarea id="typeText" rows="2" placeholder="e.g. full band, 4 wedges and 2 handhelds"></textarea>
+      <p class="hint type-help">Works offline. Understands numbers (&quot;4 wedges&quot;, &quot;two handhelds&quot;) and: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, wedge, IEM, delay, front fill, ceiling, record.</p>
+      <div class="type-row"><button id="typeGo" class="primary">Preview</button><span id="typeStatus" class="status"></span></div>
+      <div id="typePreview" class="type-preview" hidden>
+        <p id="typeSummary"></p>
+        <ul id="typeList" class="pills"></ul>
+        <div class="type-row"><button id="typeAdd" class="primary">Add to show</button><button id="typeDiscard">Discard</button></div>
       </div>
     </div>
   </section>
@@ -170,7 +173,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 
   <section>
     <h2><span class="n">3</span>Routing</h2>
-    <p class="hint">Tick which zones each input feeds. Rename anything; the desk shows the first <span id="maxLen"></span> characters. This example is 2 lecterns, 4 handhelds and 4 stereo playbacks, with playback 3 as background music in the ceiling only. Vocal mics get a 180 Hz high-pass filter; set HPF to blank to switch it off.</p>
+    <p class="hint">Tick which zones each input feeds. Rename anything; the desk shows the first <span id="maxLen"></span> characters. This example is 2 lecterns, 4 handhelds and 4 stereo playbacks, with playback 3 as background music in the ceiling only. Vocal mics get a 180 Hz high-pass filter; set HPF to blank to switch it off. Tick St to make any input a stereo pair.</p>
     <label class="check order"><input id="autoOrder" type="checkbox">Auto order channels (mics, then laptops and playback, background music last)</label>
     <div class="table-wrap"><table id="grid"></table></div>
     <ul id="summary" class="summary"></ul>
@@ -212,7 +215,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 </div>
 
 <script type="module">
-import { COLORS, MODELS, SOURCE_TYPES, ZONE_TYPES, addSources, aiPrompt, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, normalizeSuggestion, orderSources, patchSheetCsv } from './plan.js';
+import { COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 // SkyBlue and Pink are what a TF desk calls Cyan and Magenta
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', SkyBlue: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Pink: '#ff4fd8', Purple: '#9b6bff' };
@@ -258,7 +261,7 @@ function render() {
 
   const busLabel = (zone) => zone.type === 'main' ? 'Stereo' : `Mix ${plan.mixes.find((m) => m.zone === zone).mix}`;
   const head = el('tr', {},
-    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'HPF Hz' }),
+    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }),
     ...show.zones.map((zone) => el('th', { className: 'zone' },
       el('input', { value: zone.name, 'aria-label': 'Zone name', onchange: (e) => update(() => { zone.name = e.target.value; }) }),
       el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: `Remove ${zone.name}`, textContent: '×', onclick: () => update(() => removeZone(zone)) })))),
@@ -271,6 +274,10 @@ function render() {
       el('td', { className: 'name' }, el('input', { value: source.name, 'aria-label': 'Input name', onchange: (e) => update(() => { source.name = e.target.value; }) })),
       el('td', {}, el('select', { 'aria-label': 'Input type', onchange: (e) => update(() => changeType(source, e.target.value)) },
         ...Object.entries(SOURCE_TYPES).map(([k, t]) => el('option', { value: k, textContent: t.label + (t.stereo ? ' (st)' : ''), selected: k === source.type })))),
+      el('td', { className: 'route' }, el('input', {
+        type: 'checkbox', checked: source.stereo, 'aria-label': 'Stereo: uses an L/R pair of channels',
+        onchange: (e) => update(() => { source.stereo = e.target.checked; }),
+      })),
       el('td', { className: 'hpf' }, el('input', {
         type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', 'aria-label': 'High-pass filter in Hz, blank for off',
         onchange: (e) => update(() => { source.hpf = Math.max(0, Math.round(Number(e.target.value) || 0)); }),
@@ -282,7 +289,7 @@ function render() {
       el('td', {}, ...moveButtons(source),
         el('button', { className: 'remove', title: `Remove ${source.name}`, textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
   });
-  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 6, textContent: 'No inputs yet. Add some above.' }));
+  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 7, textContent: 'No inputs yet. Add some above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty));
 
   const of = (n) => (n ? ` of ${n}` : '');
@@ -446,8 +453,11 @@ for (const [name, options] of Object.entries(series)) {
   $('model').append(name ? el('optgroup', { label: name === 'RIVAGE' ? 'RIVAGE PM' : `${name} series` }, ...options) : options[0]);
 }
 $('model').onchange = (e) => { update(() => { show.options.model = e.target.value; }); renderDesk(); };
-const GROUPS = { speech: 'Speech', band: 'Band', program: 'Playback', bgm: 'Playback' };
-const groups = {};
+const GROUPS = { speech: 'Speech', band: 'Band', talkback: 'Band', program: 'Playback', bgm: 'Playback' };
+const groups = { Packages: Object.entries(PACKAGES).map(([key, pkg]) => el('button', {
+  className: 'chip', textContent: `${pkg.label} (${pkg.sources.reduce((n, s) => n + ((s.stereo ?? SOURCE_TYPES[s.type].stereo) ? 2 : 1), 0)} ch)`,
+  onclick: () => update(() => applySuggestion(show, packageSuggestion(key))),
+})) };
 for (const [type, t] of Object.entries(SOURCE_TYPES)) {
   const chip = el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addSources(show, type, Math.max(1, Number($('addCount').value) || 1))) });
   (groups[GROUPS[t.category]] ||= []).push(chip);
@@ -472,57 +482,37 @@ $('toggleCommands').onclick = () => {
 $('pushDesk').onclick = askPush;
 $('confirmYes').onclick = pushDesk;
 $('confirmNo').onclick = () => { $('confirmBox').hidden = true; };
-// ---- AI builder: asks Claude on the viewer's own account (the page's `sample` capability) ----
+// ---- Typed requests: trigger words turn plain text into inputs and zones, offline ----
 let suggestion = null;
-let aiCtl = null;
-function aiStatus(text, kind = '') { $('aiStatus').textContent = text; $('aiStatus').className = `status ${kind}`; }
-function showSuggestion(s) {
-  suggestion = s;
-  if (!s.sources.length && !s.zones.length) return aiStatus('Claude found nothing to add. Try naming the instruments or mics.', 'bad');
-  aiStatus('');
-  $('aiSummary').textContent = s.summary;
-  $('aiList').replaceChildren(
-    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name} · ${SOURCE_TYPES[x.type].label}` })),
-    ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Zone: ${z.name}` })));
-  $('aiPreview').hidden = false;
+function typeStatus(text, kind = '') {
+  $('typeStatus').textContent = text;
+  $('typeStatus').className = `status ${kind}`;
 }
-const AI_ERRORS = {
-  not_granted: 'AI is off for this page. Allow Claude from the page\'s Permissions menu to use it.',
-  sampling_disabled: 'Claude is not available on this account.',
-  rate_limited: 'Too many requests for now. Try again in a minute.',
-  session_expired: 'Sign in to claude.ai again, then retry.',
-  refused: 'Claude declined that request. Try describing the inputs differently.',
-  invalid_json: 'Claude\'s reply could not be read. Press Build with AI to try again.',
-};
-async function askAi() {
-  const request = $('aiText').value.trim();
-  if (!request) return aiStatus('Describe what you want to add first.', 'bad');
-  const sample = await window.claude?.use?.('sample');
-  if (!sample) return aiStatus('AI is only available when this page is open on claude.ai.', 'bad');
-  aiCtl = new AbortController();
-  $('aiGo').disabled = true;
-  $('aiStop').hidden = false;
-  $('aiPreview').hidden = true;
-  aiStatus('Thinking… this can take up to a minute.');
-  try {
-    showSuggestion(normalizeSuggestion(await sample.json(aiPrompt(request, show), { signal: aiCtl.signal })));
-  } catch (e) {
-    aiStatus(e?.code === 'cancelled' ? 'Stopped.' : AI_ERRORS[e?.code] || 'Something went wrong reaching Claude. Try again.', e?.code === 'cancelled' ? '' : 'bad');
-  } finally {
-    $('aiGo').disabled = false;
-    $('aiStop').hidden = true;
+function previewTyped() {
+  const s = parseRequest($('typeText').value, show);
+  const unknown = s.unknown.length ? `Didn't recognise: ${s.unknown.join(', ')}` : '';
+  if (!s.sources.length && !s.zones.length) {
+    $('typePreview').hidden = true;
+    return typeStatus(unknown || 'Type what you need, e.g. "full band and 4 wedges".', 'bad');
   }
+  suggestion = s;
+  typeStatus(unknown, unknown ? 'bad' : '');
+  $('typeSummary').textContent = `Adds: ${s.summary}`;
+  $('typeList').replaceChildren(
+    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name}${(x.stereo ?? SOURCE_TYPES[x.type].stereo) ? ' (L/R)' : ''}` })),
+    ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Zone: ${z.name}` })));
+  $('typePreview').hidden = false;
 }
-$('aiGo').onclick = askAi;
-$('aiStop').onclick = () => aiCtl?.abort();
-$('aiAdd').onclick = () => {
+$('typeGo').onclick = previewTyped;
+$('typeText').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); previewTyped(); } };
+$('typeAdd').onclick = () => {
   update(() => applySuggestion(show, suggestion));
   renderDesk();
-  $('aiPreview').hidden = true;
-  $('aiText').value = '';
-  aiStatus('Added. Check the routing grid, then push to the desk.', 'ok');
+  $('typePreview').hidden = true;
+  $('typeText').value = '';
+  typeStatus('Added. Check the routing grid below.', 'ok');
 };
-$('aiDiscard').onclick = () => { $('aiPreview').hidden = true; aiStatus(''); };
+$('typeDiscard').onclick = () => { $('typePreview').hidden = true; typeStatus(''); };
 $('resetDesk').onclick = () => { wipeDesk(); renderDesk(); setStatus('Simulated desk wiped.'); };
 
 wipeDesk();

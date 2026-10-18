@@ -1,4 +1,4 @@
-import { COLORS, MODELS, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, patchSheetCsv } from './plan.js';
+import { COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
 const $ = (id) => document.getElementById(id);
@@ -40,7 +40,7 @@ function render() {
   // Routing grid
   const busLabel = (zone) => zone.type === 'main' ? 'Stereo' : `Mix ${plan.mixes.find((m) => m.zone === zone).mix}`;
   const head = el('tr', {},
-    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'HPF Hz' }),
+    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }),
     ...show.zones.map((zone) => el('th', { className: 'zone' },
       el('input', { value: zone.name, onchange: (e) => update(() => { zone.name = e.target.value; }) }),
       el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: 'Remove zone', textContent: '×', onclick: () => update(() => removeZone(zone)) })))),
@@ -54,6 +54,10 @@ function render() {
       el('td', { className: 'name' }, el('input', { value: source.name, onchange: (e) => update(() => { source.name = e.target.value; }) })),
       el('td', { className: 'type' }, el('select', { onchange: (e) => update(() => changeType(source, e.target.value)) },
         ...Object.entries(SOURCE_TYPES).map(([k, t]) => el('option', { value: k, textContent: t.label + (t.stereo ? ' (st)' : ''), selected: k === source.type })))),
+      el('td', { className: 'route' }, el('input', {
+        type: 'checkbox', checked: source.stereo, title: 'Stereo: uses an L/R pair of channels',
+        onchange: (e) => update(() => { source.stereo = e.target.checked; }),
+      })),
       el('td', { className: 'hpf' }, el('input', {
         type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', title: 'High-pass filter in Hz (blank = off)',
         onchange: (e) => update(() => { source.hpf = Math.max(0, Math.round(Number(e.target.value) || 0)); }),
@@ -67,7 +71,7 @@ function render() {
       el('td', {}, ...moveButtons(source),
         el('button', { className: 'remove', title: 'Remove input', textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
   });
-  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 6, className: 'type', textContent: 'No inputs yet. Add some above.' }));
+  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 7, className: 'type', textContent: 'No inputs yet. Add some above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty || null));
 
   const of = (n) => (model.inputs ? ` of ${n}` : '');
@@ -196,8 +200,11 @@ async function pushDesk() {
 }
 
 // Static controls
-const GROUPS = { speech: 'Speech', band: 'Band', program: 'Playback', bgm: 'Playback' };
-const groups = {};
+const GROUPS = { speech: 'Speech', band: 'Band', talkback: 'Band', program: 'Playback', bgm: 'Playback' };
+const groups = { Packages: Object.entries(PACKAGES).map(([key, pkg]) => el('button', {
+  className: 'chip', textContent: `${pkg.label} (${pkg.sources.reduce((n, s) => n + ((s.stereo ?? SOURCE_TYPES[s.type].stereo) ? 2 : 1), 0)} ch)`,
+  onclick: () => update(() => applySuggestion(show, packageSuggestion(key))),
+})) };
 for (const [type, t] of Object.entries(SOURCE_TYPES)) {
   const chip = el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addSources(show, type, Math.max(1, Number($('addCount').value) || 1))) });
   (groups[GROUPS[t.category]] ||= []).push(chip);
@@ -240,46 +247,36 @@ $('toggleCommands').onclick = () => {
   render();
 };
 
-// ---- AI builder ----
+// ---- Typed requests: trigger words turn plain text into inputs and zones, offline ----
 let suggestion = null;
-function aiStatus(text, kind = '') {
-  $('aiStatus').textContent = text;
-  $('aiStatus').className = `status ${kind}`;
+function typeStatus(text, kind = '') {
+  $('typeStatus').textContent = text;
+  $('typeStatus').className = `status ${kind}`;
 }
-function showSuggestion(s) {
-  suggestion = s;
-  if (!s.sources.length && !s.zones.length) return aiStatus('Claude found nothing to add. Try naming the instruments or mics.', 'bad');
-  aiStatus('');
-  $('aiSummary').textContent = s.summary;
-  $('aiList').replaceChildren(
-    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name} · ${SOURCE_TYPES[x.type].label}` })),
-    ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Zone: ${z.name}` })));
-  $('aiPreview').hidden = false;
-}
-$('aiAdd').onclick = () => {
-  update(() => applySuggestion(show, suggestion));
-  $('aiPreview').hidden = true;
-  $('aiText').value = '';
-  aiStatus('Added. Check the routing grid below.', 'ok');
-};
-$('aiDiscard').onclick = () => { $('aiPreview').hidden = true; aiStatus(''); };
-$('aiGo').onclick = async () => {
-  const request = $('aiText').value.trim();
-  if (!request) return aiStatus('Describe what you want to add first.', 'bad');
-  $('aiGo').disabled = true;
-  $('aiPreview').hidden = true;
-  aiStatus('Asking Claude… this can take up to a minute.');
-  try {
-    const res = await fetch('/api/suggest', { method: 'POST', body: JSON.stringify({ request, show }) });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    showSuggestion(data);
-  } catch (err) {
-    aiStatus(err.message, 'bad');
-  } finally {
-    $('aiGo').disabled = false;
+function previewTyped() {
+  const s = parseRequest($('typeText').value, show);
+  const unknown = s.unknown.length ? `Didn't recognise: ${s.unknown.join(', ')}` : '';
+  if (!s.sources.length && !s.zones.length) {
+    $('typePreview').hidden = true;
+    return typeStatus(unknown || 'Type what you need, e.g. "full band and 4 wedges".', 'bad');
   }
+  suggestion = s;
+  typeStatus(unknown, unknown ? 'bad' : '');
+  $('typeSummary').textContent = `Adds: ${s.summary}`;
+  $('typeList').replaceChildren(
+    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name}${(x.stereo ?? SOURCE_TYPES[x.type].stereo) ? ' (L/R)' : ''}` })),
+    ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Zone: ${z.name}` })));
+  $('typePreview').hidden = false;
+}
+$('typeGo').onclick = previewTyped;
+$('typeText').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); previewTyped(); } };
+$('typeAdd').onclick = () => {
+  update(() => applySuggestion(show, suggestion));
+  $('typePreview').hidden = true;
+  $('typeText').value = '';
+  typeStatus('Added. Check the routing grid below.', 'ok');
 };
+$('typeDiscard').onclick = () => { $('typePreview').hidden = true; typeStatus(''); };
 $('testDesk').onclick = testDesk;
 $('pushDesk').onclick = pushDesk;
 try { $('host').value = localStorage.getItem(`${STORE}-host`) || ''; } catch { /* ignore */ }
