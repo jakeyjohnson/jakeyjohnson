@@ -139,6 +139,43 @@ Turn auto order off to set the order by hand with the ↑ ↓ arrows on each row
 - **Bus type.** Set the zone mixes as FIXED or post-fader in Bus Setup so the input faders drive every zone.
 - **Speaker processing.** Delay times, EQ and limiting for the fills, delays and ceiling (on the bus or in the amp or DSP).
 
+## Patch
+
+Step 4 plans which socket each input plugs into and which socket each output comes out of. Ports are grouped into banks:
+
+- **Analogue:** the desk's own sockets (Omni on CL/QL)
+- **Card 1, Card 2…:** expansion slots
+- **Dante**
+
+**Auto patch** fills the banks in order, starting from **Inputs start at** and **Outputs start at**:
+- Inputs go in channel order, and a stereo input takes two neighbouring ports.
+- Outputs start with Main L/R (two ports), then each mix; a stereo IEM takes two ports.
+- When a bank is full, the patch moves on to the next one.
+- Any row can be set by hand instead (bank and port number); the auto patch flows around it.
+- Clashes, ports the desk doesn't have, and running out of ports are all flagged.
+
+**What reaches the desk** (from the desks' own parameter lists):
+
+| Desk | Output patch | Input patch |
+|---|---|---|
+| CL / QL | Sent: Omni, Dante and card slot 1–2 outputs (untick **Send the output patch to the desk** to skip) | Read-only over the network: patch by hand |
+| TF, DM3, DM7, RIVAGE | Patch by hand | Patch by hand |
+
+The patch sheet now lists the port for every input and output, so it doubles as the patching list.
+
+**Sockets per desk** (`io` in `MODELS`, `public/plan.js`):
+
+| Desk | Analogue in / out | Cards | Dante |
+|---|---|---|---|
+| TF1 / TF3 / TF5 | 16/8, 24/16, 32/16 | 1 × 32 | via card |
+| DM3 | 16 / 8 | none | 16 |
+| QL1 / QL5 | 16/8, 32/16 | 2 × 16 | 64 |
+| CL1 / CL3 / CL5 | 8 / 8 (Omni) | 3 × 16 | 64 |
+| DM7 Compact / DM7 | 16/16, 32/16 | none | 144 |
+| RIVAGE | none (I/O racks) | none | 144 |
+
+The DM7 Compact figures come from Yamaha's spec page. The others are from memory and need checking against your desk.
+
 ## Starting over
 
 - **New show:** wipes the page back to empty: no inputs, no outputs, every option back to default. The typing box, preview and push log clear too. Only the desk model and desk IP are kept, since they describe your hardware. It asks first unless the page is already empty.

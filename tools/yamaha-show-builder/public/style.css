@@ -95,6 +95,11 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
   .desk-row label input { width: 110px; }
 }
 .confirm { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 16px 0 0; padding: 12px; border: 1px solid var(--warn); border-radius: 10px; font-size: 14px; }
+.patch-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
+table.patch-table { min-width: 0; }
+.patch-cell { display: flex; gap: 6px; align-items: center; }
+.patch-cell select { max-width: 230px; }
+.port { width: 72px; }
 .type-help { margin: 0; font-size: 13px; }
 .send-point { display: block; margin: 4px auto 0; padding: 1px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 .send-point.pre { border-color: var(--accent); color: var(--accent-text); }

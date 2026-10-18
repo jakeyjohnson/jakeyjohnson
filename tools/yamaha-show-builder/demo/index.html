@@ -67,6 +67,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .plate .brand-mark { border-radius: 5px; box-shadow: 0 0 0 1px #3b4047; }
 .send-tag { font: 600 10px/1 var(--f-strip); letter-spacing: .08em; color: #9aa3ad; }
 .send-tag.pre { color: #ffb020; }
+.patch-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
+table.patch-table { min-width: 0; }
+.patch-cell { display: flex; gap: 6px; align-items: center; }
+.patch-cell select { max-width: 230px; }
+.port { width: 72px; }
 .type-help { margin: 0; font-size: 13px; }
 td.hpf input { width: 72px; }
 .hpf-tag { font: 600 10px/1 var(--f-strip); color: #8a939d; letter-spacing: .04em; }
@@ -197,7 +202,21 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
   </section>
 
   <section>
-    <h2><span class="n">4</span>Send to desk</h2>
+    <h2><span class="n">4</span>Patch</h2>
+    <p id="patchNote" class="hint"></p>
+    <div class="desk-row">
+      <label>Inputs start at<span class="patch-cell"><select id="inStartBank" aria-label="Input patch starts at bank"></select><input id="inStartPort" class="port" type="number" min="1" aria-label="Input patch starts at port"></span></label>
+      <label>Outputs start at<span class="patch-cell"><select id="outStartBank" aria-label="Output patch starts at bank"></select><input id="outStartPort" class="port" type="number" min="1" aria-label="Output patch starts at port"></span></label>
+      <label class="check" id="sendPatchRow"><input id="sendPatch" type="checkbox">Send the output patch to the desk</label>
+    </div>
+    <div class="patch-tables">
+      <div class="table-wrap"><table id="patchIn" class="patch-table"></table></div>
+      <div class="table-wrap"><table id="patchOut" class="patch-table"></table></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">5</span>Send to desk</h2>
     <div class="desk-row">
       <label>First channel<input id="firstChannel" type="number" min="1"></label>
       <label>First mix<input id="firstMix" type="number" min="1"></label>
@@ -220,7 +239,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
   </section>
 
   <section>
-    <h2><span class="n">5</span>Desk</h2>
+    <h2><span class="n">6</span>Desk</h2>
     <p class="hint">A simulated desk that reads the same commands a real one would. Lamps show where each channel is sent: ST is Main L/R, numbers are mixes.</p>
     <div class="surface">
       <div class="surface-head"><span>Input channels</span><span id="deskModel"></span></div>
@@ -233,7 +252,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 </div>
 
 <script type="module">
-import { emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
+import { patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 // SkyBlue and Pink are what a TF desk calls Cyan and Magenta
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', SkyBlue: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Pink: '#ff4fd8', Purple: '#9b6bff' };
@@ -326,6 +345,7 @@ function render() {
     ...[...new Set(plan.warnings)].map((w) => el('li', { className: 'warn', textContent: w })));
   if (showCommands && !pushing) { $('log').hidden = false; $('log').textContent = plan.commands.join('\n'); }
   $('deskModel').textContent = model.inputs ? model.label : '';
+  renderPatch(plan, model);
   save();
 }
 function update(fn) { fn(); render(); }
@@ -361,13 +381,18 @@ function setStatus(text, kind = '') { $('status').textContent = text; $('status'
 
 // ---- simulated desk: applies the same RCP lines a real desk receives ----
 let desk;
-function wipeDesk() { desk = { inCh: {}, mix: {}, st: { name: '' }, sendPoint: {} }; }
+function wipeDesk() { desk = { inCh: {}, mix: {}, st: { name: '' }, sendPoint: {}, outPatch: {} }; }
 function applyCommand(line) {
   const m = /^set MIXER:Current\/(\w+)\/(.+?) (\d+) (\d+) (.+)$/.exec(line);
   if (!m) return false;
   const [, kind, param, xs, ys, raw] = m;
   const x = Number(xs), y = Number(ys);
   const v = raw.startsWith('"') ? raw.slice(1, -1) : isNaN(raw) ? raw : Number(raw);
+  if (param === 'Patch') {
+    const port = kind === 'OmniOutPort' ? `Omni ${x + 1}` : kind === 'DanteOutPort' ? `Dante ${x + 1}` : `Card ${kind.replace(/\D/g, '')} ${y + 1}`;
+    (desk.outPatch[v] ||= []).push(port);
+    return true;
+  }
   if (kind === 'St') { if (param === 'Label/Name') desk.st.name = v; return true; }
   const bank = kind === 'InCh' ? desk.inCh : desk.mix;
   const c = (bank[x] ||= { name: '', color: null, level: null, toSt: 0, toMix: {}, hpfOn: 0, hpf: 0 });
@@ -410,16 +435,17 @@ function renderDesk(flashIdx) {
 
   const feeding = (test) => Object.entries(desk.inCh).filter(([, c]) => test(c)).map(([, c]) => c.name).filter(Boolean)
     .map((n) => n.replace(/ [LR]$/, '')).filter((n, i, a) => a.indexOf(n) === i);
-  const outStrip = (label, name, color, level, names, send) => {
+  const outStrip = (label, name, color, level, names, send, patch) => {
     const cap = el('div', { className: 'cap' });
     cap.style.bottom = `${capPos(level)}px`;
     return el('div', { className: 'strip' }, el('span', { className: 'num', textContent: label }), lcd(name, color),
       el('span', { className: `send-tag ${send}`, textContent: send === 'pre' ? 'Pre-fade' : 'Post-fade' }),
+      el('span', { className: 'send-tag', textContent: patch ? `→ ${patch}` : 'not patched' }),
       el('div', { className: 'feeds', textContent: names.length ? names.join(', ') : 'nothing routed' }),
       el('div', { className: 'fader' }, cap), el('span', { className: 'db', textContent: dbText(level) }));
   };
-  const outs = [outStrip('Stereo', desk.st.name, desk.st.name ? 'Red' : null, desk.st.name ? 0 : null, feeding((c) => c.toSt), 'post')];
-  for (const [idx, m] of Object.entries(desk.mix)) outs.push(outStrip(`Mix ${Number(idx) + 1}`, m.name, m.color, m.level, feeding((c) => c.toMix?.[idx]), desk.sendPoint[idx] === 0 ? 'pre' : 'post'));
+  const outs = [outStrip('Stereo', desk.st.name, desk.st.name ? 'Red' : null, desk.st.name ? 0 : null, feeding((c) => c.toSt), 'post', desk.outPatch['ST L'] && [...desk.outPatch['ST L'], ...(desk.outPatch['ST R'] || [])].join(' + '))];
+  for (const [idx, m] of Object.entries(desk.mix)) outs.push(outStrip(`Mix ${Number(idx) + 1}`, m.name, m.color, m.level, feeding((c) => c.toMix?.[idx]), desk.sendPoint[idx] === 0 ? 'pre' : 'post', desk.outPatch[`MIX${Number(idx) + 1}`]?.join(' + ')));
   $('outputs').replaceChildren(...outs);
   if (!Object.keys(desk.inCh).length) $('inputs').prepend(el('p', { className: 'empty-desk', textContent: 'Blank desk. Press "Push show to desk" to load your show.' }));
 }
@@ -547,6 +573,65 @@ $('toggleCommands').onclick = () => {
 $('pushDesk').onclick = askPush;
 $('confirmYes').onclick = pushDesk;
 $('confirmNo').onclick = () => { $('confirmBox').hidden = true; };
+// ---- Patch: inputs and outputs onto Analogue, Card and Dante ports ----
+const range = (p, n) => (p ? (n > 1 ? `${portLabel(p)}–${p.port + n - 1}` : portLabel(p)) : 'unpatched');
+function bankSelect(banks, value, autoText, onChange) {
+  return el('select', { 'aria-label': 'Patch', onchange: (e) => onChange(e.target.value) },
+    ...(autoText ? [el('option', { value: 'auto', textContent: autoText, selected: !value })] : []),
+    ...banks.map((b) => el('option', { value: b.key, textContent: `${b.label} (1–${b.size})`, selected: value === b.key })));
+}
+function patchControl(target, banks, autoText) {
+  const fixed = target.patch;
+  return el('div', { className: 'patch-cell' },
+    bankSelect(banks, fixed?.bank, autoText, (bank) => update(() => { target.patch = bank === 'auto' ? undefined : { bank, port: fixed?.port || 1 }; })),
+    fixed && el('input', {
+      type: 'number', min: 1, value: fixed.port, className: 'port', 'aria-label': 'Port number',
+      onchange: (e) => update(() => { target.patch = { bank: fixed.bank, port: Math.max(1, Math.round(Number(e.target.value) || 1)) }; }),
+    }));
+}
+function startControl(id, banks, opt) {
+  const current = show.options[opt] || { bank: banks[0]?.key, port: 1 };
+  $(`${id}Bank`).replaceChildren(...bankSelect(banks, current.bank, null, () => {}).children);
+  $(`${id}Bank`).value = current.bank;
+  $(`${id}Bank`).onchange = (e) => update(() => { show.options[opt] = { bank: e.target.value, port: 1 }; });
+  $(`${id}Port`).value = current.port || 1;
+  $(`${id}Port`).onchange = (e) => update(() => { show.options[opt] = { bank: $(`${id}Bank`).value, port: Math.max(1, Math.round(Number(e.target.value) || 1)) }; });
+}
+function renderPatch(plan, model) {
+  const inBanks = patchBanks(model, 'in');
+  const outBanks = patchBanks(model, 'out');
+  const sends = plan.patchOnDesk.outputs;
+  $('patchNote').textContent = sends
+    ? `The ${model.label} takes the output patch from this app. Its input patch can't be changed over the network, so patch inputs on the desk from this list or the patch sheet.`
+    : model.inputs
+      ? `The ${model.label} doesn't take patch changes over the network. Patch on the desk from this list or the patch sheet.`
+      : 'Choose your desk model to see its real sockets. The patch goes on the patch sheet.';
+  $('sendPatchRow').hidden = !sends;
+  $('sendPatch').checked = show.options.sendPatch !== false;
+  startControl('inStart', inBanks, 'inPatch');
+  startControl('outStart', outBanks, 'outPatch');
+
+  const inRows = plan.channels.filter((c) => c.side !== 'R').map((c) => {
+    const n = c.side ? 2 : 1;
+    const last = c.ch + n - 1;
+    return el('tr', {},
+      el('td', { className: 'ch', textContent: n > 1 ? `${c.ch}–${last}` : c.ch }),
+      el('td', { textContent: c.source.name }),
+      el('td', {}, patchControl(c.source, inBanks, `Auto · ${range(c.patch, n)}`)));
+  });
+  $('patchIn').replaceChildren(
+    el('thead', {}, el('tr', {}, el('th', { textContent: 'Ch' }), el('th', { textContent: 'Input' }), el('th', { textContent: 'Plugs into' }))),
+    el('tbody', {}, ...inRows));
+  const outRows = plan.outputs.map((o) => el('tr', {},
+    el('td', { className: 'ch', textContent: o.zone.type === 'main' ? 'ST L/R' : o.buses.map((b) => b.replace('MIX', '')).join('/') }),
+    el('td', { textContent: o.name }),
+    el('td', {}, patchControl(o.zone, outBanks, `Auto · ${range(o.patch, o.ports)}`))));
+  $('patchOut').replaceChildren(
+    el('thead', {}, el('tr', {}, el('th', { textContent: 'Bus' }), el('th', { textContent: 'Output' }), el('th', { textContent: 'Comes out of' }))),
+    el('tbody', {}, ...outRows));
+}
+$('sendPatch').onchange = (e) => update(() => { show.options.sendPatch = e.target.checked; });
+
 // ---- Typed requests: trigger words turn plain text into inputs and zones, offline ----
 let suggestion = null;
 function typeStatus(text, kind = '') {

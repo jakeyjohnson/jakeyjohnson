@@ -5,24 +5,84 @@
 // (checked October 2026). Stereo input channels and FX returns are not counted: stereo sources
 // here use pairs of mono channels. stereoMixFrom: mixes from this number up are stereo pairs.
 // RIVAGE capacity depends on the DSP engine, not the control surface, so it is listed by engine.
+// io: the desk's own sockets (analogue in/out; Omni on CL/QL), expansion card slots and their channel
+// count, and Dante channels, for the patch. RIVAGE has no local sockets: its I/O lives in racks on the network.
 export const MODELS = {
-  custom:  { label: 'Other / not sure', inputs: 0, mixes: 0 },
-  TF1:     { label: 'TF1',            series: 'TF',     inputs: 32,  mixes: 20, stereoMixFrom: 9 }, // AUX 1-8 mono, 9/10-19/20 stereo
-  TF3:     { label: 'TF3',            series: 'TF',     inputs: 40,  mixes: 20, stereoMixFrom: 9 },
-  TF5:     { label: 'TF5',            series: 'TF',     inputs: 40,  mixes: 20, stereoMixFrom: 9 },
-  DM3:     { label: 'DM3 / DM3 Standard', series: 'DM3', inputs: 16, mixes: 6 },
-  QL1:     { label: 'QL1',            series: 'QL',     inputs: 32,  mixes: 16 },
-  QL5:     { label: 'QL5',            series: 'QL',     inputs: 64,  mixes: 16 },
-  CL1:     { label: 'CL1',            series: 'CL',     inputs: 48,  mixes: 24 },
-  CL3:     { label: 'CL3',            series: 'CL',     inputs: 64,  mixes: 24 },
-  CL5:     { label: 'CL5',            series: 'CL',     inputs: 72,  mixes: 24 },
-  DM7C:    { label: 'DM7 Compact',    series: 'DM7',    inputs: 72,  mixes: 48 },
-  DM7:     { label: 'DM7',            series: 'DM7',    inputs: 120, mixes: 48 },
-  RX:      { label: 'PM10 / PM5 / PM3 with DSP-RX',    series: 'RIVAGE', inputs: 120, mixes: 48 },
-  RXEX:    { label: 'PM10 / PM5 / PM3 with DSP-RX-EX', series: 'RIVAGE', inputs: 288, mixes: 72 },
-  R10:     { label: 'PM10 with DSP-R10',               series: 'RIVAGE', inputs: 144, mixes: 72 },
-  PM7:     { label: 'PM7 (CSD-R7)',                    series: 'RIVAGE', inputs: 144, mixes: 60 }, // sources disagree on inputs; check yours
+  custom:  { label: 'Other / not sure', inputs: 0, mixes: 0, io: { analogIn: 32, analogOut: 16, cards: 2, cardCh: 16, dante: 64 } },
+  TF1:     { label: 'TF1',            series: 'TF',     inputs: 32,  mixes: 20, stereoMixFrom: 9, io: { analogIn: 16, analogOut: 8, cards: 1, cardCh: 32, dante: 0 } }, // AUX 1-8 mono, 9/10-19/20 stereo
+  TF3:     { label: 'TF3',            series: 'TF',     inputs: 40,  mixes: 20, stereoMixFrom: 9, io: { analogIn: 24, analogOut: 16, cards: 1, cardCh: 32, dante: 0 } },
+  TF5:     { label: 'TF5',            series: 'TF',     inputs: 40,  mixes: 20, stereoMixFrom: 9, io: { analogIn: 32, analogOut: 16, cards: 1, cardCh: 32, dante: 0 } },
+  DM3:     { label: 'DM3 / DM3 Standard', series: 'DM3', inputs: 16, mixes: 6, io: { analogIn: 16, analogOut: 8, cards: 0, cardCh: 0, dante: 16 } },
+  QL1:     { label: 'QL1',            series: 'QL',     inputs: 32,  mixes: 16, io: { analogIn: 16, analogOut: 8, cards: 2, cardCh: 16, dante: 64 } },
+  QL5:     { label: 'QL5',            series: 'QL',     inputs: 64,  mixes: 16, io: { analogIn: 32, analogOut: 16, cards: 2, cardCh: 16, dante: 64 } },
+  CL1:     { label: 'CL1',            series: 'CL',     inputs: 48,  mixes: 24, io: { analogIn: 8, analogOut: 8, cards: 3, cardCh: 16, dante: 64 } },
+  CL3:     { label: 'CL3',            series: 'CL',     inputs: 64,  mixes: 24, io: { analogIn: 8, analogOut: 8, cards: 3, cardCh: 16, dante: 64 } },
+  CL5:     { label: 'CL5',            series: 'CL',     inputs: 72,  mixes: 24, io: { analogIn: 8, analogOut: 8, cards: 3, cardCh: 16, dante: 64 } },
+  DM7C:    { label: 'DM7 Compact',    series: 'DM7',    inputs: 72,  mixes: 48, io: { analogIn: 16, analogOut: 16, cards: 0, cardCh: 0, dante: 144 } },
+  DM7:     { label: 'DM7',            series: 'DM7',    inputs: 120, mixes: 48, io: { analogIn: 32, analogOut: 16, cards: 0, cardCh: 0, dante: 144 } },
+  RX:      { label: 'PM10 / PM5 / PM3 with DSP-RX',    series: 'RIVAGE', inputs: 120, mixes: 48, io: { analogIn: 0, analogOut: 0, cards: 0, cardCh: 0, dante: 144 } },
+  RXEX:    { label: 'PM10 / PM5 / PM3 with DSP-RX-EX', series: 'RIVAGE', inputs: 288, mixes: 72, io: { analogIn: 0, analogOut: 0, cards: 0, cardCh: 0, dante: 144 } },
+  R10:     { label: 'PM10 with DSP-R10',               series: 'RIVAGE', inputs: 144, mixes: 72, io: { analogIn: 0, analogOut: 0, cards: 0, cardCh: 0, dante: 144 } },
+  PM7:     { label: 'PM7 (CSD-R7)',                    series: 'RIVAGE', inputs: 144, mixes: 60, io: { analogIn: 0, analogOut: 0, cards: 0, cardCh: 0, dante: 144 } }, // sources disagree on inputs; check yours
 };
+
+// ---- Patch: which socket feeds each channel, and which socket each output comes out of ----
+
+// The banks of ports on a desk, in the order the auto patch fills them
+export function patchBanks(model, dir) {
+  const io = model.io || MODELS.custom.io;
+  const banks = [{ key: 'analog', label: 'Analogue', size: dir === 'in' ? io.analogIn : io.analogOut }];
+  for (let n = 1; n <= io.cards; n++) banks.push({ key: `card${n}`, label: `Card ${n}`, size: io.cardCh });
+  banks.push({ key: 'dante', label: 'Dante', size: io.dante });
+  return banks.filter((b) => b.size > 0);
+}
+export function portLabel(patch) {
+  if (!patch) return 'unpatched';
+  const name = patch.bank === 'analog' ? 'Analogue' : patch.bank === 'dante' ? 'Dante' : `Card ${patch.bank.slice(4)}`;
+  return `${name} ${patch.port}`;
+}
+
+// Gives each item (needing 1 or 2 consecutive ports) a port: fixed ones where the show says, the rest in order
+// from `start`, moving to the next bank when one is full. Returns per-item patches and any warnings.
+function allocatePorts(items, banks, start, what) {
+  const warnings = [];
+  const used = new Map();
+  const size = (key) => banks.find((b) => b.key === key)?.size || 0;
+  const take = (bank, port, item) => {
+    for (let k = 0; k < item.ports; k++) {
+      const id = `${bank}:${port + k}`;
+      if (used.has(id)) warnings.push(`${item.name} and ${used.get(id)} are both patched to ${portLabel({ bank, port: port + k })}`);
+      used.set(id, item.name);
+    }
+    return { bank, port };
+  };
+  const out = items.map((item) => {
+    if (!item.fixed) return null;
+    const { bank, port } = item.fixed;
+    if (port < 1 || port + item.ports - 1 > size(bank)) warnings.push(`${item.name}: ${portLabel(item.fixed)} doesn't exist on this desk`);
+    return take(bank, port, item);
+  });
+  let b = Math.max(0, banks.findIndex((x) => x.key === start?.bank));
+  let port = start?.bank && banks[b]?.key === start.bank ? Math.max(1, start.port || 1) : 1;
+  items.forEach((item, i) => {
+    if (out[i]) return;
+    for (;;) {
+      const bank = banks[b];
+      if (!bank) {
+        warnings.push(`Out of ${what} ports: ${item.name} is unpatched`);
+        return;
+      }
+      const free = [...Array(item.ports).keys()].every((k) => !used.has(`${bank.key}:${port + k}`));
+      if (port + item.ports - 1 <= bank.size && free) {
+        out[i] = take(bank.key, port, item);
+        port += item.ports;
+        return;
+      }
+      if (port + item.ports - 1 > bank.size) { b++; port = 1; } else port++;
+    }
+  });
+  return { patches: out, warnings };
+}
 
 // Channel colours every desk has. CL/QL/DM/RIVAGE call two of them Cyan and Magenta; TF calls them
 // SkyBlue and Pink (from the desks' own parameter lists). Shows store these names; deskColor() translates.
@@ -142,7 +202,10 @@ export function addSources(show, type, count) {
   return show;
 }
 
-export const DEFAULT_OPTIONS = { model: 'custom', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true };
+export const DEFAULT_OPTIONS = {
+  model: 'custom', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true,
+  inPatch: { bank: 'analog', port: 1 }, outPatch: { bank: 'analog', port: 1 }, sendPatch: true,
+};
 
 // A blank show: no inputs, no outputs, default options. The desk model carries over, since it's the hardware.
 export function emptyShow(model = 'custom') {
@@ -235,6 +298,25 @@ export function buildPlan(show) {
     for (const m of mixes.filter((x) => x.stereo)) warnings.push(`Set Mix ${m.mix}/${m.mix + 1} as a stereo pair in the desk's Bus Setup for ${m.zone.name}`);
   }
 
+  // Patch: inputs in channel order (a stereo source takes two ports), outputs Main L/R first then each mix
+  const inBanks = patchBanks(model, 'in');
+  const outBanks = patchBanks(model, 'out');
+  const inItems = [];
+  for (const c of channels) {
+    if (c.side === 'R') continue;
+    inItems.push({ name: c.side ? c.source.name : c.name, ports: c.side ? 2 : 1, fixed: c.source.patch, chans: channels.filter((x) => x.source === c.source) });
+  }
+  const inAlloc = allocatePorts(inItems, inBanks, show.options?.inPatch || DEFAULT_OPTIONS.inPatch, 'input');
+  inItems.forEach((item, i) => item.chans.forEach((c, k) => { c.patch = inAlloc.patches[i] && { bank: inAlloc.patches[i].bank, port: inAlloc.patches[i].port + k }; }));
+
+  const outputs = [];
+  const mainZone = show.zones.find((z) => z.type === 'main');
+  if (mainZone) outputs.push({ name: mainZone.name, zone: mainZone, ports: 2, buses: ['ST L', 'ST R'], fixed: mainZone.patch });
+  for (const m of mixes) outputs.push({ name: m.zone.name, zone: m.zone, ports: m.stereo ? 2 : 1, buses: m.stereo ? [`MIX${m.mix}`, `MIX${m.mix + 1}`] : [`MIX${m.mix}`], fixed: m.zone.patch });
+  const outAlloc = allocatePorts(outputs, outBanks, show.options?.outPatch || DEFAULT_OPTIONS.outPatch, 'output');
+  outputs.forEach((o, i) => { o.patch = outAlloc.patches[i]; });
+  warnings.push(...new Set([...inAlloc.warnings, ...outAlloc.warnings]));
+
   if (show.sources.some((s) => s.zones.length === 0)) {
     warnings.push(`Not routed anywhere: ${show.sources.filter((s) => !s.zones.length).map((s) => s.name).join(', ')}`);
   }
@@ -286,20 +368,39 @@ export function buildPlan(show) {
     }
   }
 
-  return { channels, mixes, commands, warnings, spares };
+  // Output patch: only CL/QL accept it over the network (Omni, Dante, slot 1-2 outputs). Input patch is
+  // read-only there, and the other desks don't list patch parameters, so those go on the patch sheet.
+  const canPatch = model.series === 'CL' || model.series === 'QL';
+  if (canPatch && show.options?.sendPatch !== false) {
+    for (const o of outputs) {
+      if (!o.patch) continue;
+      o.buses.forEach((bus, k) => {
+        const port = o.patch.port + k - 1;
+        if (o.patch.bank === 'analog') set('OmniOutPort/Patch', port, 0, `"${bus}"`);
+        else if (o.patch.bank === 'dante') set('DanteOutPort/Patch', port, 0, `"${bus}"`);
+        else if (o.patch.bank === 'card1' || o.patch.bank === 'card2') set(`SlotOut${o.patch.bank.slice(4)}Port/Patch`, 0, port, `"${bus}"`);
+      });
+    }
+  }
+  const patchOnDesk = { outputs: canPatch, inputs: false };
+
+  return { channels, mixes, commands, warnings, spares, outputs, patchOnDesk };
 }
 
 // Patch sheet for the engineer: what plugs in where
 export function patchSheetCsv(show, plan) {
   const zoneName = (id) => show.zones.find((z) => z.id === id)?.name ?? id;
-  const rows = [['Kind', 'Number', 'Name', 'Type', 'HPF', 'Routed to']];
+  const rows = [['Kind', 'Number', 'Name', 'Patch', 'Type', 'HPF', 'Routed to']];
   for (const c of plan.channels) {
     const hpf = hpfOf(c.source);
-    rows.push(['Input', `Ch ${c.ch}`, c.name, SOURCE_TYPES[c.source.type].label, hpf ? `${hpf} Hz` : 'off', c.source.zones.map(zoneName).join(' + ')]);
+    rows.push(['Input', `Ch ${c.ch}`, c.name, portLabel(c.patch), SOURCE_TYPES[c.source.type].label, hpf ? `${hpf} Hz` : 'off', c.source.zones.map(zoneName).join(' + ')]);
   }
-  const main = show.zones.find((z) => z.type === 'main');
-  if (main) rows.push(['Output', 'Stereo L/R', main.name, 'Main PA', '', 'Post-fade']);
-  for (const m of plan.mixes) rows.push(['Output', m.stereo ? `Mix ${m.mix}/${m.mix + 1}` : `Mix ${m.mix}`, m.zone.name, ZONE_TYPES[m.zone.type].label, '', sendOf(m.zone) === 'pre' ? 'Pre-fade sends' : 'Post-fade sends']);
+  for (const o of plan.outputs) {
+    const ports = o.patch ? o.buses.map((_, k) => portLabel({ bank: o.patch.bank, port: o.patch.port + k })).join(' + ') : 'unpatched';
+    const bus = o.zone.type === 'main' ? 'Stereo L/R' : o.buses.map((b) => b.replace('MIX', 'Mix ')).join('/');
+    const type = o.zone.type === 'main' ? 'Main PA' : ZONE_TYPES[o.zone.type].label;
+    rows.push(['Output', bus, o.name, ports, type, '', sendOf(o.zone) === 'pre' ? 'Pre-fade sends' : 'Post-fade sends']);
+  }
   return rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
 }
 
