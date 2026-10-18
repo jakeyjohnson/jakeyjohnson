@@ -142,6 +142,13 @@ export function addSources(show, type, count) {
   return show;
 }
 
+export const DEFAULT_OPTIONS = { model: 'custom', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true };
+
+// A blank show: no inputs, no outputs, default options. The desk model carries over, since it's the hardware.
+export function emptyShow(model = 'custom') {
+  return { name: 'New show', options: { ...DEFAULT_OPTIONS, model }, zones: [], sources: [] };
+}
+
 export function defaultShow() {
   const zones = [
     makeZone('main'),
@@ -152,7 +159,7 @@ export function defaultShow() {
   ];
   const show = {
     name: 'New show',
-    options: { model: 'custom', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true },
+    options: { ...DEFAULT_OPTIONS },
     zones,
     sources: [],
   };
@@ -355,6 +362,7 @@ export const TRIGGERS = [
   { words: ['laptop'], source: 'laptop' },
   { words: ['playback', 'pb'], source: 'playback' },
   { words: ['background music', 'bgm'], source: 'bgm' },
+  { words: ['main l/r', 'main lr', 'main pa', 'mains', 'main', 'pa'], zone: 'main' },
   { words: ['front fill'], zone: 'frontfill' },
   { words: ['delay'], zone: 'delay' },
   { words: ['ceiling'], zone: 'ceiling' },
@@ -387,6 +395,11 @@ export function parseRequest(text, show) {
         sources.push({ type: t.source, name: SOURCE_TYPES[t.source].short, count });
         summary.push(`${count} × ${SOURCE_TYPES[t.source].label}`);
       } else {
+        if (t.zone === 'main') {
+          if (!show.zones.some((z) => z.type === 'main') && !zones.some((z) => z.type === 'main')) zones.push({ type: 'main', name: ZONE_TYPES.main.short });
+          summary.push(ZONE_TYPES.main.label);
+          return ' ';
+        }
         for (let i = 1; i <= count; i++) {
           const taken = zones.map((z) => z.name);
           let name = nextZoneName(show, t.zone, taken);
@@ -406,8 +419,9 @@ export function parseRequest(text, show) {
 // Sources with a count above 1 are numbered on from any of the same name already in the show.
 export function applySuggestion(show, suggestion) {
   for (const z of suggestion.zones) {
+    if (z.type === 'main' && show.zones.some((x) => x.type === 'main')) continue;
     const zone = makeZone(z.type, z.name);
-    show.zones.push(zone);
+    if (z.type === 'main') show.zones.unshift(zone); else show.zones.push(zone);
     for (const s of show.sources) {
       if (ZONE_TYPES[z.type].takes.includes(SOURCE_TYPES[s.type].category)) s.zones.push(zone.id);
     }

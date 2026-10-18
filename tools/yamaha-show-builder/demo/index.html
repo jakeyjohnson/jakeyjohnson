@@ -103,6 +103,7 @@ td.name input { width: 120px; }
 .status { font-size: 14px; color: var(--muted); }
 .status.ok { color: var(--ok); }
 .status.bad { color: var(--bad); }
+#newConfirm { margin-top: 16px; }
 .confirm { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px; border: 1px solid var(--warn); border-radius: 10px; margin-bottom: 12px; font-size: 14px; }
 progress { width: 100%; height: 6px; accent-color: var(--accent); }
 .log { background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 12px; max-height: 220px; overflow: auto; font: 12px/1.55 var(--f-mono); color: var(--muted); margin: 10px 0 0; white-space: pre; }
@@ -143,10 +144,16 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
     </div>
     <div class="actions">
       <button id="newShow">New show</button>
+      <button id="exampleShow">Example</button>
       <button id="exportJson">Show file</button>
       <button id="exportCsv">Patch sheet</button>
     </div>
   </header>
+  <div id="newConfirm" class="confirm" hidden>
+    <span id="newText"></span>
+    <button id="newYes" class="primary">Wipe and start</button>
+    <button id="newNo">Cancel</button>
+  </div>
 
   <div id="sheetPanel" class="sheet" hidden>
     <section>
@@ -166,7 +173,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
     <div class="typein">
       <label for="typeText">Or type what you need</label>
       <textarea id="typeText" rows="2" placeholder="e.g. full band, 4 wedges and 2 handhelds"></textarea>
-      <p class="hint type-help">Works offline. Understands numbers (&quot;4 wedges&quot;, &quot;two handhelds&quot;) and: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, wedge, mono IEM, stereo IEM, delay, front fill, ceiling, record.</p>
+      <p class="hint type-help">Works offline. Understands numbers (&quot;4 wedges&quot;, &quot;two handhelds&quot;) and: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, main, PA, wedge, mono IEM, stereo IEM, delay, front fill, ceiling, record.</p>
       <div class="type-row"><button id="typeGo" class="primary">Preview</button><span id="typeStatus" class="status"></span></div>
       <div id="typePreview" class="type-preview" hidden>
         <p id="typeSummary"></p>
@@ -226,7 +233,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 </div>
 
 <script type="module">
-import { sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
+import { emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 // SkyBlue and Pink are what a TF desk calls Cyan and Magenta
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', SkyBlue: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Pink: '#ff4fd8', Purple: '#9b6bff' };
@@ -419,6 +426,7 @@ function renderDesk(flashIdx) {
 
 function askPush() {
   const plan = buildPlan(show);
+  if (!plan.commands.length) return setStatus('Nothing to send yet. Add some inputs or outputs first.', 'bad');
   $('confirmText').textContent = `Send ${plan.commands.length} commands to the desk? On a real desk this renames and re-routes the current scene, so store a backup scene first.`;
   $('confirmBox').hidden = false;
 }
@@ -497,7 +505,39 @@ $('showName').onchange = (e) => update(() => { show.name = e.target.value; });
 for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) $(k).onchange = (e) => update(() => { show.options[k] = Math.max(1, Number(e.target.value) || 1); });
 $('autoOrder').onchange = (e) => update(() => { show.options.autoOrder = e.target.checked; });
 $('setLevels').onchange = (e) => update(() => { show.options.setLevels = e.target.checked; });
-$('newShow').onclick = () => { update(() => { show = exampleShow(); }); setStatus('Started over with the example show.'); };
+// New show wipes the page back to empty; Example loads the conference example. Both ask first unless the page is already empty.
+let pendingShow = null;
+function resetPage() {
+  $('typeText').value = '';
+  $('typePreview').hidden = true;
+  typeStatus('');
+  $('addCount').value = 1;
+  $('log').textContent = '';
+  $('log').hidden = true;
+  $('progress').hidden = true;
+  showCommands = false;
+  $('toggleCommands').textContent = 'Show commands';
+  $('sheetPanel').hidden = true;
+  $('confirmBox').hidden = true;
+  setStatus('In the real app this goes to the desk\'s IP over the network.');
+  wipeDesk();
+  renderDesk();
+}
+function startShow(next) {
+  update(() => { show = next; });
+  resetPage();
+}
+function askToReplace(next, text) {
+  if (!show.sources.length && !show.zones.length) return startShow(next);
+  pendingShow = next;
+  $('newText').textContent = text;
+  $('newConfirm').hidden = false;
+  $('newYes').focus();
+}
+$('newShow').onclick = () => askToReplace(emptyShow(show.options.model), 'Start a new, empty show? This clears every input, output and setting on the page.');
+$('exampleShow').onclick = () => askToReplace({ ...exampleShow(), options: { ...exampleShow().options, model: show.options.model } }, 'Load the example show? This replaces everything on the page.');
+$('newYes').onclick = () => { $('newConfirm').hidden = true; startShow(pendingShow); };
+$('newNo').onclick = () => { $('newConfirm').hidden = true; pendingShow = null; };
 $('toggleCommands').onclick = () => {
   showCommands = !showCommands;
   $('toggleCommands').textContent = showCommands ? 'Hide commands' : 'Show commands';
