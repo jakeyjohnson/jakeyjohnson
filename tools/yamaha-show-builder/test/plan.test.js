@@ -50,3 +50,15 @@ test('patch sheet lists every channel and output', () => {
   assert.equal(csv.length, 1 + 14 + 1 + 4);
   assert.match(csv[11], /"Ch 11","BGM L","Background music","Ceiling"/);
 });
+
+test('model limits are checked', () => {
+  const show = defaultShow();
+  show.options.model = 'DM3';
+  assert.deepEqual(buildPlan(show).warnings, []); // 14 channels, 4 mixes fits a DM3
+  addSources(show, 'handheld', 4);
+  assert.match(buildPlan(show).warnings.join('\n'), /up to 18 but the DM3 \/ DM3 Standard has 16/);
+
+  show.options.model = 'TF5';
+  show.options.firstMix = 7;
+  assert.match(buildPlan(show).warnings.join('\n'), /mixes 9 and up are stereo pairs: Delay 2 \(Mix 9\), Ceiling \(Mix 10\)/);
+});
