@@ -1,3 +1,4 @@
+import { LICENCE, PRODUCT, VERSION } from './about.js';
 import { patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
@@ -50,7 +51,7 @@ function render() {
       el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: 'Remove zone', textContent: '×', onclick: () => update(() => removeZone(zone)) })),
       zone.type === 'main' ? el('small', { textContent: 'Post' }) : el('button', {
         className: `send-point ${sendOf(zone)}`, textContent: sendOf(zone) === 'pre' ? 'Pre' : 'Post',
-        title: 'Send point for every input to this zone. Click to switch pre/post fade.',
+        title: 'Click to switch every send to this output between pre and post fade.',
         onclick: () => update(() => { zone.send = sendOf(zone) === 'pre' ? 'post' : 'pre'; }),
       }))),
     el('th'));
@@ -64,11 +65,11 @@ function render() {
       el('td', { className: 'type' }, el('select', { onchange: (e) => update(() => changeType(source, e.target.value)) },
         ...Object.entries(SOURCE_TYPES).map(([k, t]) => el('option', { value: k, textContent: t.label + (t.stereo ? ' (st)' : ''), selected: k === source.type })))),
       el('td', { className: 'route' }, el('input', {
-        type: 'checkbox', checked: source.stereo, title: 'Stereo: uses an L/R pair of channels',
+        type: 'checkbox', checked: source.stereo, title: 'Stereo: takes two channels, L and R',
         onchange: (e) => update(() => { source.stereo = e.target.checked; }),
       })),
       el('td', { className: 'hpf' }, el('input', {
-        type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', title: 'High-pass filter in Hz (blank = off)',
+        type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', title: 'High-pass filter in Hz. Leave it blank for off.',
         onchange: (e) => update(() => { source.hpf = Math.max(0, Math.round(Number(e.target.value) || 0)); }),
       })),
       ...show.zones.map((zone) => el('td', { className: 'route' }, el('input', {
@@ -80,11 +81,11 @@ function render() {
       el('td', {}, ...moveButtons(source),
         el('button', { className: 'remove', title: 'Remove input', textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
   });
-  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 7, className: 'type', textContent: 'No inputs yet. Add some above.' }));
+  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 7, className: 'type', textContent: 'Nothing here yet. Add some inputs above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty || null));
 
   const of = (n) => (model.inputs ? ` of ${n}` : '');
-  const spares = plan.spares.length ? `, ch ${plan.spares.join(', ')} left spare so stereo pairs start on odd channels` : '';
+  const spares = plan.spares.length ? `, ch ${plan.spares.join(', ')} left empty so stereo pairs start on an odd channel` : '';
   const totals = `${plan.channels.length}${of(model.inputs)} input channels, ${plan.mixes.length}${of(model.mixes)} mixes, ${plan.commands.length} commands${spares}`;
   $('warnings').replaceChildren(el('li', { style: 'color: var(--muted); list-style: none; margin-left: -18px', textContent: totals }),
     ...[...new Set(plan.warnings)].map((w) => el('li', { textContent: w })));
@@ -127,7 +128,7 @@ function changeType(source, type) {
 }
 
 function addZone(type) {
-  if (type === 'main' && show.zones.some((z) => z.type === 'main')) return alert('There is already a Main L/R zone.');
+  if (type === 'main' && show.zones.some((z) => z.type === 'main')) return alert("You've already got a Main L/R.");
   const zone = makeZone(type, nextZoneName(show, type));
   if (type === 'main') show.zones.unshift(zone); else show.zones.push(zone);
   // route existing inputs that this kind of zone would normally take
@@ -159,7 +160,7 @@ async function testDesk() {
     const res = await fetch('/api/test', { method: 'POST', body: JSON.stringify(deskTarget()) });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    setStatus(data.ok ? `Connected: ${data.reply.replace(/^OK devinfo productname\s*/, '')}` : `Desk replied: ${data.reply}`, data.ok ? 'ok' : 'bad');
+    setStatus(data.ok ? `Connected: ${data.reply.replace(/^OK devinfo productname\s*/, '')}` : `The desk answered: ${data.reply}`, data.ok ? 'ok' : 'bad');
   } catch (err) {
     setStatus(err.message, 'bad');
   }
@@ -167,10 +168,10 @@ async function testDesk() {
 
 async function pushDesk() {
   const plan = buildPlan(show);
-  if (!plan.commands.length) return setStatus('Nothing to send yet. Add some inputs or outputs first.', 'bad');
+  if (!plan.commands.length) return setStatus('Add some inputs or outputs first.', 'bad');
   const target = deskTarget();
-  if (!target.host) return setStatus('Enter the desk IP first', 'bad');
-  if (!confirm(`Send ${plan.commands.length} commands to the desk at ${target.host}?\n\nThis renames and re-routes the current scene. Store a backup scene on the desk first.`)) return;
+  if (!target.host) return setStatus('Put the desk IP in first.', 'bad');
+  if (!confirm(`Send this show to the desk at ${target.host}?\n\nIt renames and re-routes the current scene, so store a backup scene first.`)) return;
 
   const log = $('log');
   const progress = $('progress');
@@ -195,7 +196,7 @@ async function pushDesk() {
         const msg = JSON.parse(line);
         if (msg.error) throw new Error(msg.error);
         if (msg.done) {
-          setStatus(msg.errors ? `Done with ${msg.errors} rejected commands (see log)` : `Done: ${msg.total} commands accepted`, msg.errors ? 'bad' : 'ok');
+          setStatus(msg.errors ? `Sent, but the desk refused ${msg.errors} lines. They're in red in the log.` : `Sent. The desk took all ${msg.total} lines.`, msg.errors ? 'bad' : 'ok');
           continue;
         }
         progress.value = (msg.i + 1) / msg.total;
@@ -266,8 +267,8 @@ function askToReplace(next, text) {
   $('newConfirm').hidden = false;
   $('newYes').focus();
 }
-$('newShow').onclick = () => askToReplace(emptyShow(show.options.model), 'Start a new, empty show? This clears every input, output and setting on the page.');
-$('exampleShow').onclick = () => askToReplace({ ...defaultShow(), options: { ...defaultShow().options, model: show.options.model } }, 'Load the example show? This replaces everything on the page.');
+$('newShow').onclick = () => askToReplace(emptyShow(show.options.model), "Start again with an empty show? You'll lose everything on this page.");
+$('exampleShow').onclick = () => askToReplace({ ...defaultShow(), options: { ...defaultShow().options, model: show.options.model } }, 'Load the example? It replaces everything on this page.');
 $('newYes').onclick = () => { $('newConfirm').hidden = true; startShow(pendingShow); };
 $('newNo').onclick = () => { $('newConfirm').hidden = true; pendingShow = null; };
 $('saveShow').onclick = () => download(`${fileBase()}.show.json`, JSON.stringify(show, null, 2), 'application/json');
@@ -279,7 +280,7 @@ $('openFile').onchange = async (e) => {
     const data = JSON.parse(await file.text());
     if (!Array.isArray(data.sources) || !Array.isArray(data.zones)) throw new Error('Not a show file');
     update(() => { show = data; });
-  } catch (err) { alert(`Could not open: ${err.message}`); }
+  } catch (err) { alert(`Couldn't open that file: ${err.message}`); }
   e.target.value = '';
 };
 $('toggleCommands').onclick = () => {
@@ -318,10 +319,10 @@ function renderPatch(plan, model) {
   const outBanks = patchBanks(model, 'out');
   const sends = plan.patchOnDesk.outputs;
   $('patchNote').textContent = sends
-    ? `The ${model.label} takes the output patch from this app. Its input patch can't be changed over the network, so patch inputs on the desk from this list or the patch sheet.`
+    ? `The app patches your outputs on the ${model.label}. The desk won't let it touch the input patch, so plug inputs in from this list or the patch sheet.`
     : model.inputs
-      ? `The ${model.label} doesn't take patch changes over the network. Patch on the desk from this list or the patch sheet.`
-      : 'Choose your desk model to see its real sockets. The patch goes on the patch sheet.';
+      ? `The ${model.label} won't take patch changes from the app. Patch it on the desk from this list or the patch sheet.`
+      : 'Pick your desk at the top to see its real sockets.';
   $('sendPatchRow').hidden = !sends;
   $('sendPatch').checked = show.options.sendPatch !== false;
   startControl('inStart', inBanks, 'inPatch');
@@ -356,14 +357,14 @@ function typeStatus(text, kind = '') {
 }
 function previewTyped() {
   const s = parseRequest($('typeText').value, show);
-  const unknown = s.unknown.length ? `Didn't recognise: ${s.unknown.join(', ')}` : '';
+  const unknown = s.unknown.length ? `Not sure what these are: ${s.unknown.join(', ')}` : '';
   if (!s.sources.length && !s.zones.length) {
     $('typePreview').hidden = true;
-    return typeStatus(unknown || 'Type what you need, e.g. "full band and 4 wedges".', 'bad');
+    return typeStatus(unknown || 'Try something like "full band and 4 wedges".', 'bad');
   }
   suggestion = s;
   typeStatus(unknown, unknown ? 'bad' : '');
-  $('typeSummary').textContent = `Adds: ${s.summary}`;
+  $('typeSummary').textContent = `This adds ${s.summary}`;
   $('typeList').replaceChildren(
     ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name}${(x.stereo ?? SOURCE_TYPES[x.type].stereo) ? ' (L/R)' : ''}` })),
     ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Zone: ${z.name}` })));
@@ -375,11 +376,15 @@ $('typeAdd').onclick = () => {
   update(() => applySuggestion(show, suggestion));
   $('typePreview').hidden = true;
   $('typeText').value = '';
-  typeStatus('Added. Check the routing grid below.', 'ok');
+  typeStatus('Added. Check the routing below.', 'ok');
 };
 $('typeDiscard').onclick = () => { $('typePreview').hidden = true; typeStatus(''); };
 $('testDesk').onclick = testDesk;
 $('pushDesk').onclick = pushDesk;
 try { $('host').value = localStorage.getItem(`${STORE}-host`) || ''; } catch { /* ignore */ }
+
+// Footer: version and licence number, from about.js
+$('footProduct').textContent = `${PRODUCT} v${VERSION}`;
+$('footLicence').textContent = `Licence ${LICENCE}`;
 
 render();

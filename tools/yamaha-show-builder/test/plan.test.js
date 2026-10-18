@@ -58,11 +58,11 @@ test('model limits are checked', () => {
   show.options.model = 'DM3';
   assert.deepEqual(buildPlan(show).warnings, []); // 14 channels, 4 mixes fits a DM3
   addSources(show, 'handheld', 4);
-  assert.match(buildPlan(show).warnings.join('\n'), /up to 18 but the DM3 \/ DM3 Standard has 16/);
+  assert.match(buildPlan(show).warnings.join('\n'), /needs 18 channels. The DM3 \/ DM3 Standard has 16/);
 
   show.options.model = 'TF5';
   show.options.firstMix = 7;
-  assert.match(buildPlan(show).warnings.join('\n'), /mixes 9 and up are stereo pairs: Delay 2 \(Mix 9\), Ceiling \(Mix 10\)/);
+  assert.match(buildPlan(show).warnings.join('\n'), /mixes 9 and up are stereo, so these mono outputs land on stereo mixes: Delay 2 \(Mix 9\), Ceiling \(Mix 10\)/);
 });
 
 test('auto order groups by type and starts stereo pairs on odd channels', () => {
@@ -208,7 +208,7 @@ test('stereo IEM takes an odd/even mix pair with stereo inputs panned', () => {
     assert.ok(has(`set MIXER:Current/Mix/Label/Name ${bus} 0 "IEM 1"`));
   }
   assert.ok(has('set MIXER:Current/InCh/ToMix/Pan 7 5 63')); // PB 1 R
-  assert.ok(plan.warnings.includes("Set Mix 5/6 as a stereo pair in the desk's Bus Setup for IEM 1"));
+  assert.ok(plan.warnings.includes("For IEM 1, pair Mix 5/6 as stereo in the desk's Bus Setup"));
 });
 
 test('on a TF, stereo IEMs go on the stereo mixes and mono outputs below them', () => {
@@ -284,16 +284,16 @@ test('patch can start elsewhere and be set by hand, with clashes reported', () =
   assert.equal(at('HH 1'), 'Dante 34');
   show.sources[2].patch = { bank: 'analog', port: 5 };
   plan = buildPlan(show);
-  assert.ok(plan.warnings.some((w) => /both patched to Analogue 5/.test(w)));
+  assert.ok(plan.warnings.some((w) => /both on Analogue 5/.test(w)));
   show.sources[2].patch = { bank: 'analog', port: 99 };
-  assert.ok(buildPlan(show).warnings.some((w) => /Analogue 99 doesn't exist/.test(w)));
+  assert.ok(buildPlan(show).warnings.some((w) => /Analogue 99, which this desk doesn't have/.test(w)));
 });
 
 test('running out of ports is reported', () => {
   const show = defaultShow();
   show.options.model = 'DM3'; // 16 analogue + 16 Dante
   addSources(show, 'vocal', 20);
-  assert.ok(buildPlan(show).warnings.some((w) => /Out of input ports/.test(w)));
+  assert.ok(buildPlan(show).warnings.some((w) => /No input sockets left/.test(w)));
 });
 
 test('CL/QL get the output patch sent; other desks keep it on the sheet', () => {
@@ -317,4 +317,12 @@ test('CL/QL get the output patch sent; other desks keep it on the sheet', () => 
   plan = buildPlan(show);
   assert.ok(!plan.commands.some((c) => c.includes('Patch')));
   assert.equal(plan.patchOnDesk.outputs, false);
+});
+
+test('the footer version matches package.json', async () => {
+  const { VERSION, LICENCE } = await import('../public/about.js');
+  const { readFile } = await import('node:fs/promises');
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
+  assert.equal(VERSION, pkg.version);
+  assert.match(LICENCE, /^SL-SB-\d{4}$/);
 });

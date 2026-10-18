@@ -38,8 +38,8 @@
       </div>
       <div class="typein">
         <label for="typeText">Or type what you need</label>
-        <textarea id="typeText" rows="2" placeholder="e.g. full band, 4 wedges and 2 handhelds"></textarea>
-        <p class="hint type-help">Works offline. Understands numbers (&quot;4 wedges&quot;, &quot;two handhelds&quot;) and: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, main, PA, wedge, mono IEM, stereo IEM, delay, front fill, ceiling, record.</p>
+        <textarea id="typeText" rows="2" placeholder="full band, 4 wedges and 2 handhelds"></textarea>
+        <p class="hint type-help">No internet needed. Write it how you&#39;d say it, like &quot;4 wedges&quot; or &quot;two handhelds&quot;. Words it knows: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, main, PA, wedge, mono IEM, stereo IEM, delay, front fill, ceiling, record.</p>
         <div class="type-row"><button id="typeGo" class="primary">Preview</button><span id="typeStatus" class="status"></span></div>
         <div id="typePreview" class="type-preview" hidden>
           <p id="typeSummary"></p>
@@ -56,8 +56,8 @@
 
     <section class="grid-section">
       <h2><span>3</span>Routing</h2>
-      <p class="hint">Tick which zones each input feeds. Rename anything; the desk shows the first <span id="maxLen"></span> characters.</p>
-      <label class="check order"><input id="autoOrder" type="checkbox">Auto order channels (mics, then laptops and playback, background music last)</label>
+      <p class="hint">Tick where each input goes. Click any name to change it; the desk shows the first <span id="maxLen"></span> letters.</p>
+      <label class="check order"><input id="autoOrder" type="checkbox">Auto order channels (speech mics, band, playback, background music last)</label>
       <div class="table-wrap"><table id="grid"></table></div>
       <ul id="warnings" class="warnings"></ul>
     </section>
@@ -97,7 +97,7 @@
     </section>
   </main>
 
-  <footer class="maker"><svg class="brand-mark" width="18" height="18" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#16191D"/><rect x="11" y="11" width="42" height="12" rx="3" fill="#FFB020"/><path d="M16 17.5c2.2-3.6 4.4-3.6 6.6 0s4.4 3.6 6.6 0 4.4-3.6 6.6 0 4.4 3.6 6.6 0 2.2-1.8 3.6-1.8" fill="none" stroke="#16191D" stroke-width="2" stroke-linecap="round"/><rect x="17" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="31" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="45" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="12" y="44" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="26" y="31" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="40" y="38" width="12" height="7" rx="1.5" fill="#E9EDF1"/></svg><span>Scribble Labs</span></footer>
+  <footer class="maker"><svg class="brand-mark" width="18" height="18" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#16191D"/><rect x="11" y="11" width="42" height="12" rx="3" fill="#FFB020"/><path d="M16 17.5c2.2-3.6 4.4-3.6 6.6 0s4.4 3.6 6.6 0 4.4-3.6 6.6 0 4.4 3.6 6.6 0 2.2-1.8 3.6-1.8" fill="none" stroke="#16191D" stroke-width="2" stroke-linecap="round"/><rect x="17" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="31" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="45" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="12" y="44" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="26" y="31" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="40" y="38" width="12" height="7" rx="1.5" fill="#E9EDF1"/></svg><span>Scribble Labs</span><span class="foot-sep">·</span><span id="footProduct"></span><span class="foot-sep">·</span><span id="footLicence"></span></footer>
 
   <script type="module" src="app.js"></script>
 </body>

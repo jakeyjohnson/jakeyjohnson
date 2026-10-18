@@ -100,6 +100,8 @@ table.patch-table { min-width: 0; }
 .patch-cell { display: flex; gap: 6px; align-items: center; }
 .patch-cell select { max-width: 230px; }
 .port { width: 72px; }
+.foot-sep { color: var(--line); }
+#footProduct, #footLicence { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; text-transform: none; }
 .type-help { margin: 0; font-size: 13px; }
 .send-point { display: block; margin: 4px auto 0; padding: 1px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 .send-point.pre { border-color: var(--accent); color: var(--accent-text); }

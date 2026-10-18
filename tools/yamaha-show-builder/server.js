@@ -5,6 +5,7 @@ import net from 'node:net';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { LICENCE, PRODUCT, VERSION } from './public/about.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const PUBLIC = fileURLToPath(new URL('./public/', import.meta.url));
@@ -118,6 +119,6 @@ http.createServer(async (req, res) => {
     res.end(JSON.stringify({ error: err.message }));
   }
 }).listen(PORT, () => {
-  console.log(`Scribble Labs Show Builder running: open http://localhost:${PORT}`);
+  console.log(`Scribble Labs ${PRODUCT} v${VERSION} (licence ${LICENCE}) running: open http://localhost:${PORT}`);
   console.log('Other devices on this network can use http://<this computer\'s IP>:' + PORT);
 });
