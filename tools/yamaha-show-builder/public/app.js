@@ -1,4 +1,4 @@
-import { emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
+import { patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
 const $ = (id) => document.getElementById(id);
@@ -93,6 +93,7 @@ function render() {
     $('log').hidden = false;
     $('log').textContent = plan.commands.join('\n');
   }
+  renderPatch(plan, model);
   save();
   return plan;
 }
@@ -287,6 +288,65 @@ $('toggleCommands').onclick = () => {
   if (!showCommands) $('log').hidden = true;
   render();
 };
+
+// ---- Patch: inputs and outputs onto Analogue, Card and Dante ports ----
+const range = (p, n) => (p ? (n > 1 ? `${portLabel(p)}–${p.port + n - 1}` : portLabel(p)) : 'unpatched');
+function bankSelect(banks, value, autoText, onChange) {
+  return el('select', { 'aria-label': 'Patch', onchange: (e) => onChange(e.target.value) },
+    ...(autoText ? [el('option', { value: 'auto', textContent: autoText, selected: !value })] : []),
+    ...banks.map((b) => el('option', { value: b.key, textContent: `${b.label} (1–${b.size})`, selected: value === b.key })));
+}
+function patchControl(target, banks, autoText) {
+  const fixed = target.patch;
+  return el('div', { className: 'patch-cell' },
+    bankSelect(banks, fixed?.bank, autoText, (bank) => update(() => { target.patch = bank === 'auto' ? undefined : { bank, port: fixed?.port || 1 }; })),
+    fixed && el('input', {
+      type: 'number', min: 1, value: fixed.port, className: 'port', 'aria-label': 'Port number',
+      onchange: (e) => update(() => { target.patch = { bank: fixed.bank, port: Math.max(1, Math.round(Number(e.target.value) || 1)) }; }),
+    }));
+}
+function startControl(id, banks, opt) {
+  const current = show.options[opt] || { bank: banks[0]?.key, port: 1 };
+  $(`${id}Bank`).replaceChildren(...bankSelect(banks, current.bank, null, () => {}).children);
+  $(`${id}Bank`).value = current.bank;
+  $(`${id}Bank`).onchange = (e) => update(() => { show.options[opt] = { bank: e.target.value, port: 1 }; });
+  $(`${id}Port`).value = current.port || 1;
+  $(`${id}Port`).onchange = (e) => update(() => { show.options[opt] = { bank: $(`${id}Bank`).value, port: Math.max(1, Math.round(Number(e.target.value) || 1)) }; });
+}
+function renderPatch(plan, model) {
+  const inBanks = patchBanks(model, 'in');
+  const outBanks = patchBanks(model, 'out');
+  const sends = plan.patchOnDesk.outputs;
+  $('patchNote').textContent = sends
+    ? `The ${model.label} takes the output patch from this app. Its input patch can't be changed over the network, so patch inputs on the desk from this list or the patch sheet.`
+    : model.inputs
+      ? `The ${model.label} doesn't take patch changes over the network. Patch on the desk from this list or the patch sheet.`
+      : 'Choose your desk model to see its real sockets. The patch goes on the patch sheet.';
+  $('sendPatchRow').hidden = !sends;
+  $('sendPatch').checked = show.options.sendPatch !== false;
+  startControl('inStart', inBanks, 'inPatch');
+  startControl('outStart', outBanks, 'outPatch');
+
+  const inRows = plan.channels.filter((c) => c.side !== 'R').map((c) => {
+    const n = c.side ? 2 : 1;
+    const last = c.ch + n - 1;
+    return el('tr', {},
+      el('td', { className: 'ch', textContent: n > 1 ? `${c.ch}–${last}` : c.ch }),
+      el('td', { textContent: c.source.name }),
+      el('td', {}, patchControl(c.source, inBanks, `Auto · ${range(c.patch, n)}`)));
+  });
+  $('patchIn').replaceChildren(
+    el('thead', {}, el('tr', {}, el('th', { textContent: 'Ch' }), el('th', { textContent: 'Input' }), el('th', { textContent: 'Plugs into' }))),
+    el('tbody', {}, ...inRows));
+  const outRows = plan.outputs.map((o) => el('tr', {},
+    el('td', { className: 'ch', textContent: o.zone.type === 'main' ? 'ST L/R' : o.buses.map((b) => b.replace('MIX', '')).join('/') }),
+    el('td', { textContent: o.name }),
+    el('td', {}, patchControl(o.zone, outBanks, `Auto · ${range(o.patch, o.ports)}`))));
+  $('patchOut').replaceChildren(
+    el('thead', {}, el('tr', {}, el('th', { textContent: 'Bus' }), el('th', { textContent: 'Output' }), el('th', { textContent: 'Comes out of' }))),
+    el('tbody', {}, ...outRows));
+}
+$('sendPatch').onchange = (e) => update(() => { show.options.sendPatch = e.target.checked; });
 
 // ---- Typed requests: trigger words turn plain text into inputs and zones, offline ----
 let suggestion = null;

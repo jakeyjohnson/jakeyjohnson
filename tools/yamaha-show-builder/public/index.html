@@ -63,7 +63,21 @@
     </section>
 
     <section>
-      <h2><span>4</span>Send to desk</h2>
+      <h2><span>4</span>Patch</h2>
+      <p id="patchNote" class="hint"></p>
+      <div class="desk-row">
+        <label>Inputs start at<span class="patch-cell"><select id="inStartBank" aria-label="Input patch starts at bank"></select><input id="inStartPort" class="port" type="number" min="1" aria-label="Input patch starts at port"></span></label>
+        <label>Outputs start at<span class="patch-cell"><select id="outStartBank" aria-label="Output patch starts at bank"></select><input id="outStartPort" class="port" type="number" min="1" aria-label="Output patch starts at port"></span></label>
+        <label class="check" id="sendPatchRow"><input id="sendPatch" type="checkbox">Send the output patch to the desk</label>
+      </div>
+      <div class="patch-tables">
+        <div class="table-wrap"><table id="patchIn" class="patch-table"></table></div>
+        <div class="table-wrap"><table id="patchOut" class="patch-table"></table></div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span>5</span>Send to desk</h2>
       <div class="desk-row">
         <label>Desk IP<input id="host" placeholder="192.168.0.128"></label>
         <label>Port<input id="port" type="number" value="49280"></label>

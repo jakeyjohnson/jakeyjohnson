@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyShow, sendOf, makeZone, addSources, applySuggestion, buildPlan, defaultShow, makeSource, packageSuggestion, parseRequest, patchSheetCsv } from '../public/plan.js';
+import { portLabel, emptyShow, sendOf, makeZone, addSources, applySuggestion, buildPlan, defaultShow, makeSource, packageSuggestion, parseRequest, patchSheetCsv } from '../public/plan.js';
 
 test('default show matches the conference brief', () => {
   const show = defaultShow();
@@ -48,8 +48,9 @@ test('patch sheet lists every channel and output', () => {
   const show = defaultShow();
   const csv = patchSheetCsv(show, buildPlan(show)).split('\n');
   assert.equal(csv.length, 1 + 14 + 1 + 4);
-  assert.match(csv[13], /"Ch 13","BGM L","Background music","off","Ceiling"/);
-  assert.match(csv[1], /"Ch 1","Lect 1","Lectern mic","180 Hz",/);
+  assert.match(csv[13], /"Ch 13","BGM L","Analogue 13","Background music","off","Ceiling"/);
+  assert.match(csv[1], /"Ch 1","Lect 1","Analogue 1","Lectern mic","180 Hz",/);
+  assert.match(csv[15], /"Output","Stereo L\/R","Main LR","Analogue 1 \+ Analogue 2","Main PA"/);
 });
 
 test('model limits are checked', () => {
@@ -238,7 +239,10 @@ test('a new show is completely empty and keeps only the desk model', () => {
   const show = emptyShow('TF5');
   assert.deepEqual(show, {
     name: 'New show',
-    options: { model: 'TF5', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true },
+    options: {
+      model: 'TF5', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true,
+      inPatch: { bank: 'analog', port: 1 }, outPatch: { bank: 'analog', port: 1 }, sendPatch: true,
+    },
     zones: [],
     sources: [],
   });
@@ -252,4 +256,65 @@ test('a new show is completely empty and keeps only the desk model', () => {
   assert.equal(buildPlan(show).channels.length, 2);
   applySuggestion(show, parseRequest('pa', show)); // never a second main
   assert.equal(show.zones.filter((z) => z.type === 'main').length, 1);
+});
+
+test('auto patch fills the analogue inputs, then the cards, then Dante', () => {
+  const show = defaultShow();
+  show.options.model = 'CL5'; // 8 Omni in, 3 cards of 16, Dante 64
+  const plan = buildPlan(show);
+  const at = (name) => portLabel(plan.channels.find((c) => c.name === name).patch);
+  assert.equal(at('Lect 1'), 'Analogue 1');
+  assert.equal(at('HH 4'), 'Analogue 6');
+  assert.equal(at('PB 1 L'), 'Analogue 7');
+  assert.equal(at('PB 1 R'), 'Analogue 8');
+  assert.equal(at('PB 2 L'), 'Card 1 1'); // analogue full, so the next bank
+  assert.equal(at('BGM R'), 'Card 1 6');
+  // outputs: Main L/R on Omni 1-2, then each mix
+  assert.deepEqual(plan.outputs.map((o) => `${o.name}:${portLabel(o.patch)}`), ['Main LR:Analogue 1', 'FrntFil:Analogue 3', 'Delay 1:Analogue 4', 'Delay 2:Analogue 5', 'Ceiling:Analogue 6']);
+});
+
+test('patch can start elsewhere and be set by hand, with clashes reported', () => {
+  const show = defaultShow();
+  show.options.inPatch = { bank: 'dante', port: 33 };
+  show.sources[1].patch = { bank: 'analog', port: 5 }; // Lect 2 fixed on Analogue 5
+  let plan = buildPlan(show);
+  const at = (name) => portLabel(plan.channels.find((c) => c.name === name).patch);
+  assert.equal(at('Lect 1'), 'Dante 33');
+  assert.equal(at('Lect 2'), 'Analogue 5');
+  assert.equal(at('HH 1'), 'Dante 34');
+  show.sources[2].patch = { bank: 'analog', port: 5 };
+  plan = buildPlan(show);
+  assert.ok(plan.warnings.some((w) => /both patched to Analogue 5/.test(w)));
+  show.sources[2].patch = { bank: 'analog', port: 99 };
+  assert.ok(buildPlan(show).warnings.some((w) => /Analogue 99 doesn't exist/.test(w)));
+});
+
+test('running out of ports is reported', () => {
+  const show = defaultShow();
+  show.options.model = 'DM3'; // 16 analogue + 16 Dante
+  addSources(show, 'vocal', 20);
+  assert.ok(buildPlan(show).warnings.some((w) => /Out of input ports/.test(w)));
+});
+
+test('CL/QL get the output patch sent; other desks keep it on the sheet', () => {
+  const show = defaultShow();
+  applySuggestion(show, parseRequest('a stereo iem', show));
+  show.options.model = 'QL5';
+  show.zones.find((z) => z.name === 'Ceiling').patch = { bank: 'dante', port: 10 };
+  let plan = buildPlan(show);
+  const has = (cmd) => plan.commands.includes(cmd);
+  assert.ok(has('set MIXER:Current/OmniOutPort/Patch 0 0 "ST L"'));
+  assert.ok(has('set MIXER:Current/OmniOutPort/Patch 1 0 "ST R"'));
+  assert.ok(has('set MIXER:Current/OmniOutPort/Patch 2 0 "MIX1"')); // front fills on Omni 3
+  assert.ok(has('set MIXER:Current/DanteOutPort/Patch 9 0 "MIX4"')); // ceiling moved to Dante 10
+  assert.ok(has('set MIXER:Current/OmniOutPort/Patch 5 0 "MIX5"') && has('set MIXER:Current/OmniOutPort/Patch 6 0 "MIX6"')); // stereo IEM
+  assert.equal(plan.patchOnDesk.outputs, true);
+  assert.ok(!plan.commands.some((c) => c.includes('InCh/Patch'))); // input patch is read-only on CL/QL
+  show.options.sendPatch = false;
+  assert.ok(!buildPlan(show).commands.some((c) => c.includes('Port/Patch')));
+  show.options.sendPatch = true;
+  show.options.model = 'TF5';
+  plan = buildPlan(show);
+  assert.ok(!plan.commands.some((c) => c.includes('Patch')));
+  assert.equal(plan.patchOnDesk.outputs, false);
 });
