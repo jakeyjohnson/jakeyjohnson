@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sendOf, addSources, applySuggestion, buildPlan, defaultShow, makeSource, packageSuggestion, parseRequest, patchSheetCsv } from '../public/plan.js';
+import { sendOf, makeZone, addSources, applySuggestion, buildPlan, defaultShow, makeSource, packageSuggestion, parseRequest, patchSheetCsv } from '../public/plan.js';
 
 test('default show matches the conference brief', () => {
   const show = defaultShow();
@@ -177,4 +177,44 @@ test('speaker zones are post-fade, monitor zones pre-fade', () => {
   assert.ok(buildPlan(show).commands.includes('set MIXER:Current/InCh/ToMix/PrePost 0 0 0'));
   delete fills.send;
   assert.equal(sendOf(fills), 'post');
+});
+
+test('outputs: monitors are pre-fade, everything else post-fade', () => {
+  const show = defaultShow();
+  show.zones.push(makeZone('foldback', 'Wedge 1'), makeZone('iemMono', 'IEM 1'), makeZone('iemStereo', 'IEM 2'), makeZone('record', 'Record'));
+  const send = Object.fromEntries(show.zones.map((z) => [z.name, sendOf(z)]));
+  assert.deepEqual(send, {
+    'Main LR': 'post', FrntFil: 'post', 'Delay 1': 'post', 'Delay 2': 'post', Ceiling: 'post', 'Wedge 1': 'pre', 'IEM 1': 'pre', 'IEM 2': 'pre', Record: 'post',
+  });
+  // any output named "monitor" is a monitor
+  show.zones.find((z) => z.name === 'Record').name = 'Monitor desk';
+  assert.equal(sendOf(show.zones.at(-1)), 'pre');
+});
+
+test('stereo IEM takes an odd/even mix pair with stereo inputs panned', () => {
+  const show = defaultShow(); // mixes 1-4: fills, delays, ceiling
+  applySuggestion(show, parseRequest('a stereo iem, a mono iem and a wedge', show));
+  const plan = buildPlan(show);
+  assert.deepEqual(plan.mixes.map((m) => `${m.zone.name}:${m.mix}${m.stereo ? '/' + (m.mix + 1) : ''}`),
+    ['FrntFil:1', 'Delay 1:2', 'Delay 2:3', 'Ceiling:4', 'IEM 1:5/6', 'IEM 2:7', 'Wedge 1:8']);
+  const has = (cmd) => plan.commands.includes(cmd);
+  // PB 1 L is ch 7 (index 6): both sides of the IEM, full level, panned left, pre-fade
+  for (const bus of [4, 5]) {
+    assert.ok(has(`set MIXER:Current/InCh/ToMix/On 6 ${bus} 1`));
+    assert.ok(has(`set MIXER:Current/InCh/ToMix/Level 6 ${bus} 0`));
+    assert.ok(has(`set MIXER:Current/InCh/ToMix/Pan 6 ${bus} -63`));
+    assert.ok(has(`set MIXER:Current/InCh/ToMix/PrePost 6 ${bus} 0`));
+    assert.ok(has(`set MIXER:Current/Mix/Label/Name ${bus} 0 "IEM 1"`));
+  }
+  assert.ok(has('set MIXER:Current/InCh/ToMix/Pan 7 5 63')); // PB 1 R
+  assert.ok(plan.warnings.includes("Set Mix 5/6 as a stereo pair in the desk's Bus Setup for IEM 1"));
+});
+
+test('on a TF, stereo IEMs go on the stereo mixes and mono outputs below them', () => {
+  const show = defaultShow();
+  show.options.model = 'TF5';
+  applySuggestion(show, parseRequest('2 stereo iems and 2 wedges', show));
+  const plan = buildPlan(show);
+  assert.deepEqual(plan.mixes.map((m) => `${m.zone.name}:${m.mix}`), ['FrntFil:1', 'Delay 1:2', 'Delay 2:3', 'Ceiling:4', 'Wedge 1:5', 'Wedge 2:6', 'IEM 1:9', 'IEM 2:11']);
+  assert.deepEqual(plan.warnings, []);
 });

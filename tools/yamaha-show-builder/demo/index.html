@@ -47,6 +47,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .quick-add { display: flex; gap: 10px; align-items: start; }
 .chip-groups { display: grid; gap: 8px; min-width: 0; }
 .chip-group { display: grid; grid-template-columns: 72px 1fr; gap: 8px; align-items: center; }
+.zone-group { grid-template-columns: 150px 1fr; }
 .chip-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
 .typein { display: grid; gap: 8px; margin-top: 16px; max-width: 760px; }
 .typein label { font-size: 14px; color: var(--muted); }
@@ -164,7 +165,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
     <div class="typein">
       <label for="typeText">Or type what you need</label>
       <textarea id="typeText" rows="2" placeholder="e.g. full band, 4 wedges and 2 handhelds"></textarea>
-      <p class="hint type-help">Works offline. Understands numbers (&quot;4 wedges&quot;, &quot;two handhelds&quot;) and: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, wedge, IEM, delay, front fill, ceiling, record.</p>
+      <p class="hint type-help">Works offline. Understands numbers (&quot;4 wedges&quot;, &quot;two handhelds&quot;) and: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, wedge, mono IEM, stereo IEM, delay, front fill, ceiling, record.</p>
       <div class="type-row"><button id="typeGo" class="primary">Preview</button><span id="typeStatus" class="status"></span></div>
       <div id="typePreview" class="type-preview" hidden>
         <p id="typeSummary"></p>
@@ -176,7 +177,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 
   <section>
     <h2><span class="n">2</span>Speaker zones</h2>
-    <div id="zoneButtons" class="chips"></div>
+    <div id="zoneButtons" class="chip-groups"></div>
   </section>
 
   <section>
@@ -224,7 +225,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 </div>
 
 <script type="module">
-import { sendOf, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
+import { sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 // SkyBlue and Pink are what a TF desk calls Cyan and Magenta
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', SkyBlue: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Pink: '#ff4fd8', Purple: '#9b6bff' };
@@ -268,7 +269,11 @@ function render() {
   $('setLevels').checked = show.options.setLevels;
   $('autoOrder').checked = show.options.autoOrder !== false;
 
-  const busLabel = (zone) => zone.type === 'main' ? 'Stereo' : `Mix ${plan.mixes.find((m) => m.zone === zone).mix}`;
+  const busLabel = (zone) => {
+    if (zone.type === 'main') return 'Stereo';
+    const m = plan.mixes.find((x) => x.zone === zone);
+    return m.stereo ? `Mix ${m.mix}/${m.mix + 1}` : `Mix ${m.mix}`;
+  };
   const head = el('tr', {},
     el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }),
     ...show.zones.map((zone) => el('th', { className: 'zone' },
@@ -340,8 +345,7 @@ function changeType(source, type) {
 }
 function addZone(type) {
   if (type === 'main' && show.zones.some((z) => z.type === 'main')) return setStatus('There is already a Main L/R zone.', 'bad');
-  const same = show.zones.filter((z) => z.type === type).length;
-  const zone = makeZone(type, type === 'delay' ? `Delay ${same + 1}` : same ? `${ZONE_TYPES[type].short.slice(0, 6)} ${same + 1}` : undefined);
+  const zone = makeZone(type, nextZoneName(show, type));
   if (type === 'main') show.zones.unshift(zone); else show.zones.push(zone);
   for (const s of show.sources) if (ZONE_TYPES[type].takes.includes(SOURCE_TYPES[s.type].category)) s.zones.push(zone.id);
 }
@@ -481,8 +485,12 @@ for (const [type, t] of Object.entries(SOURCE_TYPES)) {
 for (const [name, chips] of Object.entries(groups)) {
   $('addButtons').append(el('div', { className: 'chip-group' }, el('span', { className: 'chip-label', textContent: name }), el('div', { className: 'chips' }, ...chips)));
 }
+const zoneGroups = { 'Speakers · post-fade': [], 'Monitors · pre-fade': [] };
 for (const [type, t] of Object.entries(ZONE_TYPES)) {
-  $('zoneButtons').append(el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addZone(type)) }));
+  zoneGroups[t.monitor ? 'Monitors · pre-fade' : 'Speakers · post-fade'].push(el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addZone(type)) }));
+}
+for (const [name, chips] of Object.entries(zoneGroups)) {
+  $('zoneButtons').append(el('div', { className: 'chip-group zone-group' }, el('span', { className: 'chip-label', textContent: name }), el('div', { className: 'chips' }, ...chips)));
 }
 $('showName').onchange = (e) => update(() => { show.name = e.target.value; });
 for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) $(k).onchange = (e) => update(() => { show.options[k] = Math.max(1, Number(e.target.value) || 1); });
