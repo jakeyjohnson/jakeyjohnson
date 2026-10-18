@@ -1,16 +1,15 @@
 // Serves the web app and relays commands to the desk over Yamaha's TCP remote protocol.
 // Browsers cannot open raw TCP sockets, which is why this bridge exists.
 import http from 'node:http';
-import net from 'node:net';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LICENCE, PRODUCT, VERSION } from './public/about.js';
+import { DeskLink } from './desk-link.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const PUBLIC = fileURLToPath(new URL('./public/', import.meta.url));
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
-const REPLY_TIMEOUT_MS = 3000;
 
 // Only talk to devices on the local network, so the bridge can't be used as an open proxy
 function isLocalHost(host) {
@@ -21,43 +20,12 @@ function isLocalHost(host) {
   return a === 10 || a === 127 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31) || (a === 169 && b === 254);
 }
 
-// Opens a connection and returns send(cmd) -> Promise<reply line>. NOTIFY lines from the desk are ignored.
-function connect(host, port) {
-  return new Promise((resolve, reject) => {
-    const socket = net.createConnection({ host, port, timeout: 4000 });
-    let buffer = '';
-    let waiting = null;
-    socket.setEncoding('utf8');
-    socket.on('data', (chunk) => {
-      buffer += chunk;
-      let nl;
-      while ((nl = buffer.indexOf('\n')) >= 0) {
-        const line = buffer.slice(0, nl).trim();
-        buffer = buffer.slice(nl + 1);
-        if (waiting && /^(OK|OKm|ERROR)\b/.test(line)) {
-          const w = waiting;
-          waiting = null;
-          w(line);
-        }
-      }
-    });
-    socket.once('connect', () => {
-      socket.setTimeout(0);
-      resolve({
-        send(cmd) {
-          return new Promise((done) => {
-            const timer = setTimeout(() => { waiting = null; done('TIMEOUT'); }, REPLY_TIMEOUT_MS);
-            waiting = (line) => { clearTimeout(timer); done(line); };
-            socket.write(cmd + '\n');
-          });
-        },
-        close: () => socket.end(),
-      });
-    });
-    socket.once('timeout', () => { socket.destroy(); reject(new Error(`No answer from ${host}:${port}`)); });
-    socket.once('error', reject);
-  });
-}
+// The one desk this app is connected to. Every open page hears its status over /api/events.
+const link = new DeskLink();
+const listeners = new Set();
+link.on('status', (status) => {
+  for (const res of listeners) res.write(`data: ${JSON.stringify(status)}\n\n`);
+});
 
 async function readJson(req) {
   let body = '';
@@ -68,35 +36,51 @@ async function readJson(req) {
 function target(body) {
   const host = String(body.host || '').trim();
   const port = Number(body.port || 49280);
-  if (!isLocalHost(host)) throw new Error('Desk address must be a local network IP, e.g. 192.168.0.128');
+  if (!isLocalHost(host)) throw new Error("That isn't a local network address. Use the desk's IP, like 192.168.0.128.");
   return { host, port };
 }
 
-async function handleApi(req, res, path) {
-  const body = await readJson(req);
-  const { host, port } = target(body);
+const json = (res, data, status = 200) => {
+  res.writeHead(status, { 'content-type': 'application/json' });
+  res.end(JSON.stringify(data));
+};
 
-  if (path === '/api/test') {
-    const desk = await connect(host, port);
-    const reply = await desk.send('devinfo productname');
-    desk.close();
-    res.writeHead(200, { 'content-type': 'application/json' });
-    return res.end(JSON.stringify({ ok: !reply.startsWith('ERROR') && reply !== 'TIMEOUT', reply }));
+async function handleApi(req, res, path) {
+  if (req.method === 'GET' && path === '/api/events') {
+    res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
+    res.write(`data: ${JSON.stringify(link.status())}\n\n`);
+    listeners.add(res);
+    req.on('close', () => listeners.delete(res));
+    return;
+  }
+  if (req.method !== 'POST') return res.writeHead(404).end();
+  const body = await readJson(req);
+
+  if (path === '/api/connect') {
+    const { host, port } = target(body);
+    return json(res, await link.connect(host, port));
+  }
+
+  if (path === '/api/disconnect') {
+    link.disconnect();
+    return json(res, link.status());
   }
 
   if (path === '/api/push') {
+    if (link.state !== 'connected') throw new Error('Connect to the desk first, at the top of the page.');
     const commands = Array.isArray(body.commands) ? body.commands.filter((c) => /^set MIXER:Current\//.test(c)) : [];
-    const desk = await connect(host, port);
-    // Stream one JSON line per command so the UI can show progress
+    // Stream one JSON line per command so the page can show progress
     res.writeHead(200, { 'content-type': 'application/x-ndjson' });
     let errors = 0;
     for (const [i, cmd] of commands.entries()) {
-      const reply = await desk.send(cmd);
+      const reply = await link.send(cmd);
+      if (reply === 'NOT CONNECTED') {
+        return res.end(JSON.stringify({ error: `Lost the desk after ${i} of ${commands.length} lines. Reconnect and push again.` }) + '\n');
+      }
       const ok = reply.startsWith('OK');
       if (!ok) errors++;
       res.write(JSON.stringify({ i, total: commands.length, cmd, reply, ok }) + '\n');
     }
-    desk.close();
     return res.end(JSON.stringify({ done: true, total: commands.length, errors }) + '\n');
   }
 
@@ -106,7 +90,7 @@ async function handleApi(req, res, path) {
 http.createServer(async (req, res) => {
   const path = new URL(req.url, 'http://x').pathname;
   try {
-    if (req.method === 'POST' && path.startsWith('/api/')) return await handleApi(req, res, path);
+    if (path.startsWith('/api/')) return await handleApi(req, res, path);
     const file = normalize(join(PUBLIC, path === '/' ? 'index.html' : path));
     if (!file.startsWith(PUBLIC)) return res.writeHead(403).end();
     const data = await readFile(file);

@@ -26,6 +26,14 @@ export const MODELS = {
   PM7:     { label: 'PM7 (CSD-R7)',                    series: 'RIVAGE', inputs: 144, mixes: 60, io: { analogIn: 0, analogOut: 0, cards: 0, cardCh: 0, dante: 144 } }, // sources disagree on inputs; check yours
 };
 
+// Matches the name a desk reports ("QL5", "DM7 Compact"…) to a model above. RIVAGE returns null:
+// its size depends on the DSP engine, so the engineer picks that by hand.
+export function modelFromProduct(name) {
+  const n = String(name || '').toUpperCase().replace(/[\s-]+/g, '');
+  if (/DM7C/.test(n)) return 'DM7C';
+  return ['TF1', 'TF3', 'TF5', 'QL1', 'QL5', 'CL1', 'CL3', 'CL5', 'DM3', 'DM7'].find((id) => n.includes(id)) || null;
+}
+
 // ---- Patch: which socket feeds each channel, and which socket each output comes out of ----
 
 // The banks of ports on a desk, in the order the auto patch fills them

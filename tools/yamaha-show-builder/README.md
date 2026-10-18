@@ -38,12 +38,19 @@ These figures come from Yamaha's spec tables and reference manuals (checked Octo
 
 ## Desk setup
 
-1. Connect the desk's network port to the same network as the laptop and give it a fixed IP (Setup → Network on the desk).
-2. Enter that IP in **Send to desk** and press **Test connection**. It should show the desk's model name.
-3. **Store a backup scene first.** The push changes the current scene's names, colours, sends and faders.
-4. Press **Push show to desk**, then store the result as a new scene.
+1. Connect the desk's network port to the same network as the laptop, and give the desk a fixed IP (Setup → Network on the desk).
+2. At the top of the app, type the desk's IP into **Desk** and press **Connect** (or Enter). The port is 49280 unless you've changed it on the desk.
+3. When the light goes green, it says which desk it found, and the **Desk model** dropdown switches to match. RIVAGE desks need you to pick the DSP engine yourself.
+4. **Store a backup scene first.** Pushing changes the current scene's names, colours, sends and faders.
+5. Press **Push show to desk**, then store the result as a new scene.
 
-The app talks to the desk using Yamaha's remote control protocol (TCP port 49280), which CL, QL, TF, DM3, DM7 and RIVAGE PM desks all support.
+**The connection light:**
+- **Grey:** not connected.
+- **Amber, pulsing:** connecting.
+- **Green:** connected.
+- **Red:** the desk has gone. The app checks every 5 seconds, so a pulled cable shows up within a few seconds. Press **Reconnect** once it's back.
+
+The app talks to the desk using Yamaha's remote control protocol (TCP port 49280), which CL, QL, TF, DM3, DM7 and RIVAGE PM desks all support. It only connects to local network addresses (192.168.x.x, 10.x.x.x, 172.16–31.x.x).
 
 ## What gets set
 
@@ -195,6 +202,7 @@ The footer shows the version and licence number. Both live in `public/about.js`:
 
 ```bash
 npm run mock    # pretend desk on 127.0.0.1:49280, prints every command
+                # (DESK_MODEL=QL5 npm run mock to pretend to be a QL5)
 npm start       # in another terminal; use 127.0.0.1 as the desk IP
 npm test        # unit tests for the routing logic
 ```
