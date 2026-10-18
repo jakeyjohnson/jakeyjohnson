@@ -1,4 +1,4 @@
-# Show Builder for Yamaha · KobiKlang
+# Show Builder for Yamaha · KobiKraken
 
 Build a labelled, colour-coded, routed show on a Yamaha digital desk in a couple of minutes, from a laptop or tablet on the same network.
 
@@ -46,7 +46,7 @@ These figures come from Yamaha's spec tables and reference manuals (checked Octo
 
 **The connection light:**
 - **Grey:** not connected.
-- **Amber, pulsing:** connecting.
+- **Blue, pulsing:** connecting.
 - **Green:** connected.
 - **Red:** the desk has gone. The app checks every 5 seconds, so a pulled cable shows up within a few seconds. Press **Reconnect** once it's back.
 

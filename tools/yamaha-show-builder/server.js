@@ -11,7 +11,7 @@ import { matchesReadback, readbackCommand } from './public/plan.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const PUBLIC = fileURLToPath(new URL('./public/', import.meta.url));
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.txt': 'text/plain' };
 
 // Only talk to devices on the local network, so the bridge can't be used as an open proxy
 function isLocalHost(host) {
@@ -149,6 +149,6 @@ http.createServer(async (req, res) => {
     res.end(JSON.stringify({ error: err.message }));
   }
 }).listen(PORT, () => {
-  console.log(`KobiKlang ${PRODUCT} v${VERSION} (licence ${LICENCE}) running: open http://localhost:${PORT}`);
+  console.log(`KobiKraken ${PRODUCT} v${VERSION} (licence ${LICENCE}) running: open http://localhost:${PORT}`);
   console.log('Other devices on this network can use http://<this computer\'s IP>:' + PORT);
 });

@@ -1,0 +1,44 @@
+/* KobiKraken GUI tokens. Copy into every KobiKraken tool and build its colours from these.
+   The brand is almost monochrome: ink, shell and grey do the work. Each product gets ONE accent,
+   used only for interaction and signal (buttons, selection, focus, toggles, meters, curves). */
+@font-face { font-family: "Inter"; font-weight: 400; font-display: swap; src: url("fonts/Inter-Regular.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 500; font-display: swap; src: url("fonts/Inter-Medium.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 600; font-display: swap; src: url("fonts/Inter-SemiBold.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 700; font-display: swap; src: url("fonts/Inter-Bold.woff2") format("woff2"); }
+:root {
+  /* Core */
+  --kk-ink: #11151a;          /* Kraken Ink */
+  --kk-shell: #f5f4f0;        /* Shell White */
+  --kk-grey: #7a8087;         /* Control Grey */
+  --kk-context: #1e242c;      /* raised dark surfaces, header bars */
+  /* Product accents: pick one per tool, never as a logo fill */
+  --kk-spectral: #63cbe8;     /* EQ, analysis, routing */
+  --kk-space: #9687ef;        /* reverb, space */
+  --kk-drive: #f4b36a;        /* saturation, drive */
+  --kk-motion: #9ad4b8;       /* dynamics, motion */
+  --kk-accent: var(--kk-spectral);
+  --kk-on-accent: var(--kk-ink);   /* text on an accent fill */
+  --kk-accent-text: #1a6f87;       /* accent as text or focus ring on light backgrounds (5.3:1 on shell) */
+  /* Light surfaces */
+  --kk-bg: var(--kk-shell);
+  --kk-panel: #ffffff;
+  --kk-line: #dcdad3;
+  --kk-fg: var(--kk-ink);
+  --kk-muted: #5f656c;             /* 5.3:1 on shell; Control Grey itself is too faint for text here */
+  --kk-font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --kk-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --kk-accent-text: var(--kk-accent);
+    --kk-bg: var(--kk-ink); --kk-panel: #1a1f25; --kk-line: #2a3039; --kk-fg: var(--kk-shell); --kk-muted: #8e949b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --kk-accent-text: var(--kk-accent);
+  --kk-bg: var(--kk-ink); --kk-panel: #1a1f25; --kk-line: #2a3039; --kk-fg: var(--kk-shell); --kk-muted: #8e949b;
+  color-scheme: dark;
+}
+/* Values and meters always use tabular numerals */
+.kk-value, input[type="number"], td { font-variant-numeric: tabular-nums; }
