@@ -1,4 +1,4 @@
-<title>Yamaha Show Builder</title>
+<title>Scribble Labs Show Builder</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -57,6 +57,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .pills { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .pill { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 13px; }
 .zone-pill { border-style: dashed; }
+.send-point { display: block; margin: 4px auto 0; padding: 1px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.send-point.pre { border-color: var(--accent); color: var(--accent); }
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand-mark { flex: none; border-radius: 6px; box-shadow: 0 0 0 1px var(--line); }
+.plate { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; font: 600 12px var(--f-strip); letter-spacing: .18em; text-transform: uppercase; color: #9aa3ad; }
+.plate .brand-mark { border-radius: 5px; box-shadow: 0 0 0 1px #3b4047; }
+.send-tag { font: 600 10px/1 var(--f-strip); letter-spacing: .08em; color: #9aa3ad; }
+.send-tag.pre { color: #7fc7ff; }
 .type-help { margin: 0; font-size: 13px; }
 td.hpf input { width: 72px; }
 .hpf-tag { font: 600 10px/1 var(--f-strip); color: #8a939d; letter-spacing: .04em; }
@@ -127,7 +135,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 <div class="wrap">
   <header>
     <div>
-      <p class="eyebrow">Yamaha show builder <span class="demo-tag">Demo · simulated desk</span></p>
+      <p class="eyebrow brand"><svg class="brand-mark" width="28" height="28" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#16191D"/><rect x="11" y="11" width="42" height="12" rx="3" fill="#FFB020"/><path d="M16 17.5c2.2-3.6 4.4-3.6 6.6 0s4.4 3.6 6.6 0 4.4-3.6 6.6 0 4.4 3.6 6.6 0 2.2-1.8 3.6-1.8" fill="none" stroke="#16191D" stroke-width="2" stroke-linecap="round"/><rect x="17" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="31" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="45" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="12" y="44" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="26" y="31" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="40" y="38" width="12" height="7" rx="1.5" fill="#E9EDF1"/></svg><span>Scribble Labs · Show Builder for Yamaha</span> <span class="demo-tag">Demo · simulated desk</span></p>
       <input id="showName" class="show-name" aria-label="Show name">
       <label class="model">Desk model <select id="model"></select></label>
     </div>
@@ -210,12 +218,13 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
       <div id="inputs" class="bank"></div>
       <div class="surface-head"><span>Outputs</span></div>
       <div id="outputs" class="bank outs"></div>
+      <div class="plate"><svg class="brand-mark" width="20" height="20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#16191D"/><rect x="11" y="11" width="42" height="12" rx="3" fill="#FFB020"/><path d="M16 17.5c2.2-3.6 4.4-3.6 6.6 0s4.4 3.6 6.6 0 4.4-3.6 6.6 0 4.4 3.6 6.6 0 2.2-1.8 3.6-1.8" fill="none" stroke="#16191D" stroke-width="2" stroke-linecap="round"/><rect x="17" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="31" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="45" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="12" y="44" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="26" y="31" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="40" y="38" width="12" height="7" rx="1.5" fill="#E9EDF1"/></svg><span>Scribble Labs</span></div>
     </div>
   </section>
 </div>
 
 <script type="module">
-import { COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
+import { sendOf, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 // SkyBlue and Pink are what a TF desk calls Cyan and Magenta
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', SkyBlue: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Pink: '#ff4fd8', Purple: '#9b6bff' };
@@ -264,7 +273,12 @@ function render() {
     el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }),
     ...show.zones.map((zone) => el('th', { className: 'zone' },
       el('input', { value: zone.name, 'aria-label': 'Zone name', onchange: (e) => update(() => { zone.name = e.target.value; }) }),
-      el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: `Remove ${zone.name}`, textContent: '×', onclick: () => update(() => removeZone(zone)) })))),
+      el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: `Remove ${zone.name}`, textContent: '×', onclick: () => update(() => removeZone(zone)) })),
+      zone.type === 'main' ? el('small', { textContent: 'Post' }) : el('button', {
+        className: `send-point ${sendOf(zone)}`, textContent: sendOf(zone) === 'pre' ? 'Pre' : 'Post',
+        title: 'Send point for every input to this zone. Click to switch pre/post fade.',
+        onclick: () => update(() => { zone.send = sendOf(zone) === 'pre' ? 'post' : 'pre'; }),
+      }))),
     el('th'));
   const rows = show.sources.map((source) => {
     const chs = plan.channels.filter((c) => c.source === source).map((c) => c.ch);
@@ -335,7 +349,7 @@ function setStatus(text, kind = '') { $('status').textContent = text; $('status'
 
 // ---- simulated desk: applies the same RCP lines a real desk receives ----
 let desk;
-function wipeDesk() { desk = { inCh: {}, mix: {}, st: { name: '' } }; }
+function wipeDesk() { desk = { inCh: {}, mix: {}, st: { name: '' }, sendPoint: {} }; }
 function applyCommand(line) {
   const m = /^set MIXER:Current\/(\w+)\/(.+?) (\d+) (\d+) (.+)$/.exec(line);
   if (!m) return false;
@@ -352,6 +366,7 @@ function applyCommand(line) {
   else if (param === 'HPF/On') c.hpfOn = v;
   else if (param === 'HPF/Freq') c.hpf = v / 10;
   else if (param === 'ToMix/On') c.toMix[y] = v;
+  else if (param === 'ToMix/PrePost') desk.sendPoint[y] = v;
   return x;
 }
 const dbText = (v) => v == null ? '' : v <= -32768 ? '-∞' : `${(v / 100).toFixed(1)} dB`;
@@ -383,15 +398,16 @@ function renderDesk(flashIdx) {
 
   const feeding = (test) => Object.entries(desk.inCh).filter(([, c]) => test(c)).map(([, c]) => c.name).filter(Boolean)
     .map((n) => n.replace(/ [LR]$/, '')).filter((n, i, a) => a.indexOf(n) === i);
-  const outStrip = (label, name, color, level, names) => {
+  const outStrip = (label, name, color, level, names, send) => {
     const cap = el('div', { className: 'cap' });
     cap.style.bottom = `${capPos(level)}px`;
     return el('div', { className: 'strip' }, el('span', { className: 'num', textContent: label }), lcd(name, color),
+      el('span', { className: `send-tag ${send}`, textContent: send === 'pre' ? 'Pre-fade' : 'Post-fade' }),
       el('div', { className: 'feeds', textContent: names.length ? names.join(', ') : 'nothing routed' }),
       el('div', { className: 'fader' }, cap), el('span', { className: 'db', textContent: dbText(level) }));
   };
-  const outs = [outStrip('Stereo', desk.st.name, desk.st.name ? 'Red' : null, desk.st.name ? 0 : null, feeding((c) => c.toSt))];
-  for (const [idx, m] of Object.entries(desk.mix)) outs.push(outStrip(`Mix ${Number(idx) + 1}`, m.name, m.color, m.level, feeding((c) => c.toMix?.[idx])));
+  const outs = [outStrip('Stereo', desk.st.name, desk.st.name ? 'Red' : null, desk.st.name ? 0 : null, feeding((c) => c.toSt), 'post')];
+  for (const [idx, m] of Object.entries(desk.mix)) outs.push(outStrip(`Mix ${Number(idx) + 1}`, m.name, m.color, m.level, feeding((c) => c.toMix?.[idx]), desk.sendPoint[idx] === 0 ? 'pre' : 'post'));
   $('outputs').replaceChildren(...outs);
   if (!Object.keys(desk.inCh).length) $('inputs').prepend(el('p', { className: 'empty-desk', textContent: 'Blank desk. Press "Push show to desk" to load your show.' }));
 }

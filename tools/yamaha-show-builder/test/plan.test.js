@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addSources, applySuggestion, buildPlan, defaultShow, makeSource, packageSuggestion, parseRequest, patchSheetCsv } from '../public/plan.js';
+import { sendOf, addSources, applySuggestion, buildPlan, defaultShow, makeSource, packageSuggestion, parseRequest, patchSheetCsv } from '../public/plan.js';
 
 test('default show matches the conference brief', () => {
   const show = defaultShow();
@@ -161,4 +161,20 @@ test('trigger words report what they did not understand', () => {
   const s = parseRequest('3 vox and a theremin', defaultShow());
   assert.deepEqual(s.sources, [{ type: 'vocal', name: 'Vox', count: 3 }]);
   assert.deepEqual(s.unknown, ['theremin']);
+});
+
+test('speaker zones are post-fade, monitor zones pre-fade', () => {
+  const show = defaultShow();
+  applySuggestion(show, parseRequest('2 wedges', show));
+  const plan = buildPlan(show);
+  const has = (cmd) => plan.commands.includes(cmd);
+  // mixes 1-4 are fills, delays and ceiling (post = 1); 5-6 are wedges (pre = 0)
+  for (const m of [0, 1, 2, 3]) assert.ok(has(`set MIXER:Current/InCh/ToMix/PrePost 0 ${m} 1`));
+  for (const m of [4, 5]) assert.ok(has(`set MIXER:Current/InCh/ToMix/PrePost 0 ${m} 0`));
+  // a zone can be switched by hand, and shows saved before this take the default
+  const fills = show.zones.find((z) => z.type === 'frontfill');
+  fills.send = 'pre';
+  assert.ok(buildPlan(show).commands.includes('set MIXER:Current/InCh/ToMix/PrePost 0 0 0'));
+  delete fills.send;
+  assert.equal(sendOf(fills), 'post');
 });

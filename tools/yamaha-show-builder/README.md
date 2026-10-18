@@ -1,4 +1,4 @@
-# Yamaha Show Builder
+# Show Builder for Yamaha · Scribble Labs
 
 Build a labelled, colour-coded, routed show on a Yamaha digital desk in a couple of minutes, from a laptop or tablet on the same network.
 
@@ -55,6 +55,7 @@ The app talks to the desk using Yamaha's remote control protocol (TCP port 49280
 | Main L/R zone | The stereo bus. Inputs ticked for Main are assigned to it |
 | Other zones | One mix bus each (front fill = Mix 1, and so on). Named, coloured, master at 0 dB, not routed to the stereo bus |
 | Sends | 0 dB to each ticked zone (-3 dB per side for stereo sources into a mono zone), off and -∞ everywhere else |
+| Send point | Post-fade for speaker zones (front fills, delays, ceiling, record), pre-fade for monitor zones (wedges, IEMs). Click Post/Pre under a zone's name to switch it |
 
 Use **First channel** and **First mix** to start somewhere other than channel 1 or Mix 1.
 
@@ -155,6 +156,7 @@ npm test        # unit tests for the routing logic
 - **Parameter names** come from the desks' own `prminfo` replies, as collected in the open-source [Bitfocus Companion Yamaha RCP module](https://github.com/bitfocus/companion-module-yamaha-rcp) (`schemas/`). Those lists cover a selection of each desk's parameters:
   - **Confirmed directly:** names, colours, fader level and on/off, mix sends and pan on every family. HPF on and frequency (sent as Hz × 10) on DM7 and RIVAGE.
   - **Not in the lists, so not yet confirmed:** HPF on CL/QL/TF/DM3. Stereo bus on/off (`ToSt/On`) on CL/QL/TF/RIVAGE (it is listed for DM3/DM7).
+- **Pre/post:** `InCh/ToMix/PrePost` is confirmed on CL/QL, TF, DM3 and RIVAGE, but the lists don't say which value is pre. The app sends 0 = pre and 1 = post (`SEND_POINT` in `public/plan.js`). After the first push, check one wedge send on the desk and swap the two values if they're reversed. On CL/QL, the zone mixes must be VARI buses (Bus Setup) for sends to have a level and send point.
 - **Colours:** TF desks call two colours SkyBlue and Pink where the others say Cyan and Magenta. The app translates automatically.
 
 - **Name length:** older CL, QL and TF firmware shows up to 8 characters. Raise **Name length** for DM7 or RIVAGE.

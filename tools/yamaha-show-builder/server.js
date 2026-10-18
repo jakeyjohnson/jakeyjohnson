@@ -118,6 +118,6 @@ http.createServer(async (req, res) => {
     res.end(JSON.stringify({ error: err.message }));
   }
 }).listen(PORT, () => {
-  console.log(`Show builder running: open http://localhost:${PORT}`);
+  console.log(`Scribble Labs Show Builder running: open http://localhost:${PORT}`);
   console.log('Other devices on this network can use http://<this computer\'s IP>:' + PORT);
 });

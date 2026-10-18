@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64" role="img" aria-label="Scribble Labs">
+  <g>
+    <rect width="64" height="64" rx="14" fill="#16191D"/>
+    <rect x="11" y="11" width="42" height="12" rx="3" fill="#FFB020"/>
+    <path d="M16 17.5c2.2-3.6 4.4-3.6 6.6 0s4.4 3.6 6.6 0 4.4-3.6 6.6 0 4.4 3.6 6.6 0 2.2-1.8 3.6-1.8" fill="none" stroke="#16191D" stroke-width="2" stroke-linecap="round"/>
+    <rect x="17" y="29" width="2" height="25" rx="1" fill="#454C55"/>
+    <rect x="31" y="29" width="2" height="25" rx="1" fill="#454C55"/>
+    <rect x="45" y="29" width="2" height="25" rx="1" fill="#454C55"/>
+    <rect x="12" y="44" width="12" height="7" rx="1.5" fill="#E9EDF1"/>
+    <rect x="26" y="31" width="12" height="7" rx="1.5" fill="#E9EDF1"/>
+    <rect x="40" y="38" width="12" height="7" rx="1.5" fill="#E9EDF1"/>
+  </g>
+  <text x="78" y="41" font-family="'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="1.5" fill="#16191D">SCRIBBLE<tspan font-weight="400" fill="#7A838E"> LABS</tspan></text>
+</svg>

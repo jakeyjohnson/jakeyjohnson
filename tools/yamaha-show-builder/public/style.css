@@ -90,3 +90,8 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
   .desk-row label input { width: 110px; }
 }
 .type-help { margin: 0; font-size: 13px; }
+.send-point { display: block; margin: 4px auto 0; padding: 1px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.send-point.pre { border-color: var(--accent); color: var(--accent); }
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand-mark { flex: none; border-radius: 6px; box-shadow: 0 0 0 1px var(--line); }
+.maker { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 24px 16px 40px; color: var(--muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
