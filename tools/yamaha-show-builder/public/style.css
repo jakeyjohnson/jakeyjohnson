@@ -33,6 +33,19 @@ button:hover, .button:hover { border-color: var(--muted); }
 .chip { border-radius: 999px; padding: 6px 12px; }
 .chip::before { content: "+ "; color: var(--muted); }
 .quick-add { display: flex; gap: 10px; align-items: start; }
+.chip-groups { display: grid; gap: 8px; }
+.chip-group { display: grid; grid-template-columns: 72px 1fr; gap: 8px; align-items: center; }
+.chip-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.ai { display: grid; gap: 8px; margin-top: 16px; max-width: 760px; }
+.ai label { font-size: 14px; color: var(--muted); }
+.ai textarea { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+.ai-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ai-preview { border: 1px solid var(--accent); border-radius: 10px; padding: 12px; display: grid; gap: 10px; }
+.ai-preview p { margin: 0; }
+.pills { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 13px; }
+.zone-pill { border-style: dashed; }
+td.hpf input { width: 72px; }
 .quick-add input { width: 64px; }
 
 input, select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }

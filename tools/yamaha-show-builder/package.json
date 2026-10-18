@@ -9,5 +9,10 @@
     "mock": "node mock-desk.js",
     "test": "node --test test/*.test.js"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0"
+  }
 }

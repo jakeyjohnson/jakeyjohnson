@@ -26,7 +26,17 @@
       <h2><span>1</span>Inputs</h2>
       <div class="quick-add">
         <input id="addCount" type="number" min="1" max="32" value="1" aria-label="How many">
-        <div id="addButtons" class="chips"></div>
+        <div id="addButtons" class="chip-groups"></div>
+      </div>
+      <div class="ai">
+        <label for="aiText">Or describe it and let AI build the inputs</label>
+        <textarea id="aiText" rows="2" placeholder="e.g. full band: drum kit, bass, 2 guitars, keys and 4 vocals, plus 4 wedges"></textarea>
+        <div class="ai-row"><button id="aiGo" class="primary">Build with AI</button><span id="aiStatus" class="status"></span></div>
+        <div id="aiPreview" class="ai-preview" hidden>
+          <p id="aiSummary"></p>
+          <ul id="aiList" class="pills"></ul>
+          <div class="ai-row"><button id="aiAdd" class="primary">Add to show</button><button id="aiDiscard" class="ghost">Discard</button></div>
+        </div>
       </div>
     </section>
 
