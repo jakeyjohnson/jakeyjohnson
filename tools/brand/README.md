@@ -44,3 +44,8 @@ Every Scribble Labs tool carries the brand in three places:
 1. **Header:** the mark at 28 px, then "Scribble Labs · <tool name>" as the small line above the title.
 2. **Browser tab:** `scribble-labs-mark.svg` as the favicon.
 3. **Maker's plate:** the mark at 18–20 px with SCRIBBLE LABS in spaced capitals, in the footer or on the device's surface, like a manufacturer's badge.
+4. **Version and licence:** at the very bottom, "Scribble Labs · <tool> v<version> · Licence <number>". Both come from one `about.js` file in the tool, and the version matches its `package.json`. Licence numbers run SL-<tool code>-<4-digit copy number>, e.g. SL-SB-0001 for copy 1 of Show Builder.
+
+## Writing in the GUI
+
+Write on-screen text the way an engineer would say it at the desk: short, plain, active. "Put the desk IP in first", not "Please enter the desk IP address". Name things by what people see (inputs, outputs, sockets), not how the code works (zones, commands, banks). No exclamation marks, no "Please", no "Successfully".

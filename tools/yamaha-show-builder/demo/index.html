@@ -72,6 +72,9 @@ table.patch-table { min-width: 0; }
 .patch-cell { display: flex; gap: 6px; align-items: center; }
 .patch-cell select { max-width: 230px; }
 .port { width: 72px; }
+.maker { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 8px; padding-top: 28px; color: var(--muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+.foot-sep { color: var(--line); }
+#footProduct, #footLicence { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; text-transform: none; }
 .type-help { margin: 0; font-size: 13px; }
 td.hpf input { width: 72px; }
 .hpf-tag { font: 600 10px/1 var(--f-strip); color: #8a939d; letter-spacing: .04em; }
@@ -177,8 +180,8 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
     </div>
     <div class="typein">
       <label for="typeText">Or type what you need</label>
-      <textarea id="typeText" rows="2" placeholder="e.g. full band, 4 wedges and 2 handhelds"></textarea>
-      <p class="hint type-help">Works offline. Understands numbers (&quot;4 wedges&quot;, &quot;two handhelds&quot;) and: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, main, PA, wedge, mono IEM, stereo IEM, delay, front fill, ceiling, record.</p>
+      <textarea id="typeText" rows="2" placeholder="full band, 4 wedges and 2 handhelds"></textarea>
+      <p class="hint type-help">No internet needed. Write it how you&#39;d say it, like &quot;4 wedges&quot; or &quot;two handhelds&quot;. Words it knows: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, main, PA, wedge, mono IEM, stereo IEM, delay, front fill, ceiling, record.</p>
       <div class="type-row"><button id="typeGo" class="primary">Preview</button><span id="typeStatus" class="status"></span></div>
       <div id="typePreview" class="type-preview" hidden>
         <p id="typeSummary"></p>
@@ -195,8 +198,8 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 
   <section>
     <h2><span class="n">3</span>Routing</h2>
-    <p class="hint">Tick which zones each input feeds. Rename anything; the desk shows the first <span id="maxLen"></span> characters. This example is 2 lecterns, 4 handhelds and 4 stereo playbacks, with playback 3 as background music in the ceiling only. Vocal mics get a 180 Hz high-pass filter; set HPF to blank to switch it off. Tick St to make any input a stereo pair.</p>
-    <label class="check order"><input id="autoOrder" type="checkbox">Auto order channels (mics, then laptops and playback, background music last)</label>
+    <p class="hint">Tick where each input goes. Click any name to change it; the desk shows the first <span id="maxLen"></span> letters. The example is a conference: 2 lecterns, 4 handhelds and 4 playbacks, with playback 3 as background music in the ceiling. Vocal mics start with the HPF at 180; clear the box to turn it off. Tick St to make an input stereo.</p>
+    <label class="check order"><input id="autoOrder" type="checkbox">Auto order channels (speech mics, band, playback, background music last)</label>
     <div class="table-wrap"><table id="grid"></table></div>
     <ul id="summary" class="summary"></ul>
   </section>
@@ -232,7 +235,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
       <button id="pushDesk" class="primary">Push show to desk</button>
       <button id="resetDesk">Wipe simulated desk</button>
       <button id="toggleCommands">Show commands</button>
-      <span id="status" class="status">In the real app this goes to the desk's IP over the network.</span>
+      <span id="status" class="status">In the real app this goes straight to the desk.</span>
     </div>
     <progress id="progress" value="0" max="1" hidden></progress>
     <pre id="log" class="log" hidden></pre>
@@ -240,7 +243,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 
   <section>
     <h2><span class="n">6</span>Desk</h2>
-    <p class="hint">A simulated desk that reads the same commands a real one would. Lamps show where each channel is sent: ST is Main L/R, numbers are mixes.</p>
+    <p class="hint">A pretend desk. It reads the same commands a real one gets. The lamps show where each channel goes: ST is Main L/R, numbers are mixes.</p>
     <div class="surface">
       <div class="surface-head"><span>Input channels</span><span id="deskModel"></span></div>
       <div id="inputs" class="bank"></div>
@@ -249,9 +252,11 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
       <div class="plate"><svg class="brand-mark" width="20" height="20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#16191D"/><rect x="11" y="11" width="42" height="12" rx="3" fill="#FFB020"/><path d="M16 17.5c2.2-3.6 4.4-3.6 6.6 0s4.4 3.6 6.6 0 4.4-3.6 6.6 0 4.4 3.6 6.6 0 2.2-1.8 3.6-1.8" fill="none" stroke="#16191D" stroke-width="2" stroke-linecap="round"/><rect x="17" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="31" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="45" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="12" y="44" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="26" y="31" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="40" y="38" width="12" height="7" rx="1.5" fill="#E9EDF1"/></svg><span>Scribble Labs</span></div>
     </div>
   </section>
+  <footer class="maker"><svg class="brand-mark" width="18" height="18" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#16191D"/><rect x="11" y="11" width="42" height="12" rx="3" fill="#FFB020"/><path d="M16 17.5c2.2-3.6 4.4-3.6 6.6 0s4.4 3.6 6.6 0 4.4-3.6 6.6 0 4.4 3.6 6.6 0 2.2-1.8 3.6-1.8" fill="none" stroke="#16191D" stroke-width="2" stroke-linecap="round"/><rect x="17" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="31" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="45" y="29" width="2" height="25" rx="1" fill="#454C55"/><rect x="12" y="44" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="26" y="31" width="12" height="7" rx="1.5" fill="#E9EDF1"/><rect x="40" y="38" width="12" height="7" rx="1.5" fill="#E9EDF1"/></svg><span>Scribble Labs</span><span class="foot-sep">·</span><span id="footProduct"></span><span class="foot-sep">·</span><span id="footLicence"></span></footer>
 </div>
 
 <script type="module">
+import { LICENCE, PRODUCT, VERSION } from './about.js';
 import { patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 // SkyBlue and Pink are what a TF desk calls Cyan and Magenta
@@ -308,7 +313,7 @@ function render() {
       el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: `Remove ${zone.name}`, textContent: '×', onclick: () => update(() => removeZone(zone)) })),
       zone.type === 'main' ? el('small', { textContent: 'Post' }) : el('button', {
         className: `send-point ${sendOf(zone)}`, textContent: sendOf(zone) === 'pre' ? 'Pre' : 'Post',
-        title: 'Send point for every input to this zone. Click to switch pre/post fade.',
+        title: 'Click to switch every send to this output between pre and post fade.',
         onclick: () => update(() => { zone.send = sendOf(zone) === 'pre' ? 'post' : 'pre'; }),
       }))),
     el('th'));
@@ -321,11 +326,11 @@ function render() {
       el('td', {}, el('select', { 'aria-label': 'Input type', onchange: (e) => update(() => changeType(source, e.target.value)) },
         ...Object.entries(SOURCE_TYPES).map(([k, t]) => el('option', { value: k, textContent: t.label + (t.stereo ? ' (st)' : ''), selected: k === source.type })))),
       el('td', { className: 'route' }, el('input', {
-        type: 'checkbox', checked: source.stereo, 'aria-label': 'Stereo: uses an L/R pair of channels',
+        type: 'checkbox', checked: source.stereo, 'aria-label': 'Stereo: takes two channels, L and R',
         onchange: (e) => update(() => { source.stereo = e.target.checked; }),
       })),
       el('td', { className: 'hpf' }, el('input', {
-        type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', 'aria-label': 'High-pass filter in Hz, blank for off',
+        type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', 'aria-label': 'High-pass filter in Hz. Leave it blank for off.',
         onchange: (e) => update(() => { source.hpf = Math.max(0, Math.round(Number(e.target.value) || 0)); }),
       })),
       ...show.zones.map((zone) => el('td', { className: 'route' }, el('input', {
@@ -335,13 +340,13 @@ function render() {
       el('td', {}, ...moveButtons(source),
         el('button', { className: 'remove', title: `Remove ${source.name}`, textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
   });
-  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 7, textContent: 'No inputs yet. Add some above.' }));
+  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 7, textContent: 'Nothing here yet. Add some inputs above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty));
 
   const of = (n) => (n ? ` of ${n}` : '');
   $('summary').replaceChildren(
     el('li', { className: 'count', textContent: `${plan.channels.length}${of(model.inputs)} input channels · ${plan.mixes.length}${of(model.mixes)} mixes · ${plan.commands.length} commands` }),
-    plan.spares.length > 0 && el('li', { className: 'count', textContent: `Ch ${plan.spares.join(', ')} left spare so stereo pairs start on odd channels` }),
+    plan.spares.length > 0 && el('li', { className: 'count', textContent: `Ch ${plan.spares.join(', ')} left empty so stereo pairs start on an odd channel` }),
     ...[...new Set(plan.warnings)].map((w) => el('li', { className: 'warn', textContent: w })));
   if (showCommands && !pushing) { $('log').hidden = false; $('log').textContent = plan.commands.join('\n'); }
   $('deskModel').textContent = model.inputs ? model.label : '';
@@ -372,7 +377,7 @@ function changeType(source, type) {
   source.zones = show.zones.filter((z) => ZONE_TYPES[z.type].takes.includes(t.category)).map((z) => z.id);
 }
 function addZone(type) {
-  if (type === 'main' && show.zones.some((z) => z.type === 'main')) return setStatus('There is already a Main L/R zone.', 'bad');
+  if (type === 'main' && show.zones.some((z) => z.type === 'main')) return setStatus("You've already got a Main L/R.", 'bad');
   const zone = makeZone(type, nextZoneName(show, type));
   if (type === 'main') show.zones.unshift(zone); else show.zones.push(zone);
   for (const s of show.sources) if (ZONE_TYPES[type].takes.includes(SOURCE_TYPES[s.type].category)) s.zones.push(zone.id);
@@ -447,13 +452,13 @@ function renderDesk(flashIdx) {
   const outs = [outStrip('Stereo', desk.st.name, desk.st.name ? 'Red' : null, desk.st.name ? 0 : null, feeding((c) => c.toSt), 'post', desk.outPatch['ST L'] && [...desk.outPatch['ST L'], ...(desk.outPatch['ST R'] || [])].join(' + '))];
   for (const [idx, m] of Object.entries(desk.mix)) outs.push(outStrip(`Mix ${Number(idx) + 1}`, m.name, m.color, m.level, feeding((c) => c.toMix?.[idx]), desk.sendPoint[idx] === 0 ? 'pre' : 'post', desk.outPatch[`MIX${Number(idx) + 1}`]?.join(' + ')));
   $('outputs').replaceChildren(...outs);
-  if (!Object.keys(desk.inCh).length) $('inputs').prepend(el('p', { className: 'empty-desk', textContent: 'Blank desk. Press "Push show to desk" to load your show.' }));
+  if (!Object.keys(desk.inCh).length) $('inputs').prepend(el('p', { className: 'empty-desk', textContent: 'Nothing on the desk yet. Press "Push show to desk" to load your show.' }));
 }
 
 function askPush() {
   const plan = buildPlan(show);
-  if (!plan.commands.length) return setStatus('Nothing to send yet. Add some inputs or outputs first.', 'bad');
-  $('confirmText').textContent = `Send ${plan.commands.length} commands to the desk? On a real desk this renames and re-routes the current scene, so store a backup scene first.`;
+  if (!plan.commands.length) return setStatus('Add some inputs or outputs first.', 'bad');
+  $('confirmText').textContent = 'Send this show to the desk? On a real desk it renames and re-routes the current scene, so store a backup scene first.';
   $('confirmBox').hidden = false;
 }
 async function pushDesk() {
@@ -481,7 +486,7 @@ async function pushDesk() {
   renderDesk();
   pushing = false;
   $('pushDesk').disabled = false;
-  setStatus(`Done: ${plan.commands.length} commands accepted by the simulated desk`, 'ok');
+  setStatus(`Sent. The pretend desk took all ${plan.commands.length} lines.`, 'ok');
 }
 
 // ---- exports (shown on the page; downloads are blocked in this preview) ----
@@ -545,7 +550,7 @@ function resetPage() {
   $('toggleCommands').textContent = 'Show commands';
   $('sheetPanel').hidden = true;
   $('confirmBox').hidden = true;
-  setStatus('In the real app this goes to the desk\'s IP over the network.');
+  setStatus('In the real app this goes straight to the desk.');
   wipeDesk();
   renderDesk();
 }
@@ -560,8 +565,8 @@ function askToReplace(next, text) {
   $('newConfirm').hidden = false;
   $('newYes').focus();
 }
-$('newShow').onclick = () => askToReplace(emptyShow(show.options.model), 'Start a new, empty show? This clears every input, output and setting on the page.');
-$('exampleShow').onclick = () => askToReplace({ ...exampleShow(), options: { ...exampleShow().options, model: show.options.model } }, 'Load the example show? This replaces everything on the page.');
+$('newShow').onclick = () => askToReplace(emptyShow(show.options.model), "Start again with an empty show? You'll lose everything on this page.");
+$('exampleShow').onclick = () => askToReplace({ ...exampleShow(), options: { ...exampleShow().options, model: show.options.model } }, 'Load the example? It replaces everything on this page.');
 $('newYes').onclick = () => { $('newConfirm').hidden = true; startShow(pendingShow); };
 $('newNo').onclick = () => { $('newConfirm').hidden = true; pendingShow = null; };
 $('toggleCommands').onclick = () => {
@@ -602,10 +607,10 @@ function renderPatch(plan, model) {
   const outBanks = patchBanks(model, 'out');
   const sends = plan.patchOnDesk.outputs;
   $('patchNote').textContent = sends
-    ? `The ${model.label} takes the output patch from this app. Its input patch can't be changed over the network, so patch inputs on the desk from this list or the patch sheet.`
+    ? `The app patches your outputs on the ${model.label}. The desk won't let it touch the input patch, so plug inputs in from this list or the patch sheet.`
     : model.inputs
-      ? `The ${model.label} doesn't take patch changes over the network. Patch on the desk from this list or the patch sheet.`
-      : 'Choose your desk model to see its real sockets. The patch goes on the patch sheet.';
+      ? `The ${model.label} won't take patch changes from the app. Patch it on the desk from this list or the patch sheet.`
+      : 'Pick your desk at the top to see its real sockets.';
   $('sendPatchRow').hidden = !sends;
   $('sendPatch').checked = show.options.sendPatch !== false;
   startControl('inStart', inBanks, 'inPatch');
@@ -640,14 +645,14 @@ function typeStatus(text, kind = '') {
 }
 function previewTyped() {
   const s = parseRequest($('typeText').value, show);
-  const unknown = s.unknown.length ? `Didn't recognise: ${s.unknown.join(', ')}` : '';
+  const unknown = s.unknown.length ? `Not sure what these are: ${s.unknown.join(', ')}` : '';
   if (!s.sources.length && !s.zones.length) {
     $('typePreview').hidden = true;
-    return typeStatus(unknown || 'Type what you need, e.g. "full band and 4 wedges".', 'bad');
+    return typeStatus(unknown || 'Try something like "full band and 4 wedges".', 'bad');
   }
   suggestion = s;
   typeStatus(unknown, unknown ? 'bad' : '');
-  $('typeSummary').textContent = `Adds: ${s.summary}`;
+  $('typeSummary').textContent = `This adds ${s.summary}`;
   $('typeList').replaceChildren(
     ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name}${(x.stereo ?? SOURCE_TYPES[x.type].stereo) ? ' (L/R)' : ''}` })),
     ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Zone: ${z.name}` })));
@@ -660,10 +665,14 @@ $('typeAdd').onclick = () => {
   renderDesk();
   $('typePreview').hidden = true;
   $('typeText').value = '';
-  typeStatus('Added. Check the routing grid below.', 'ok');
+  typeStatus('Added. Check the routing below.', 'ok');
 };
 $('typeDiscard').onclick = () => { $('typePreview').hidden = true; typeStatus(''); };
 $('resetDesk').onclick = () => { wipeDesk(); renderDesk(); setStatus('Simulated desk wiped.'); };
+
+// Footer: version and licence number, from about.js
+$('footProduct').textContent = `${PRODUCT} v${VERSION}`;
+$('footLicence').textContent = `Licence ${LICENCE}`;
 
 wipeDesk();
 render();

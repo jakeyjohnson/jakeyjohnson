@@ -51,7 +51,7 @@ function allocatePorts(items, banks, start, what) {
   const take = (bank, port, item) => {
     for (let k = 0; k < item.ports; k++) {
       const id = `${bank}:${port + k}`;
-      if (used.has(id)) warnings.push(`${item.name} and ${used.get(id)} are both patched to ${portLabel({ bank, port: port + k })}`);
+      if (used.has(id)) warnings.push(`${item.name} and ${used.get(id)} are both on ${portLabel({ bank, port: port + k })}`);
       used.set(id, item.name);
     }
     return { bank, port };
@@ -59,7 +59,7 @@ function allocatePorts(items, banks, start, what) {
   const out = items.map((item) => {
     if (!item.fixed) return null;
     const { bank, port } = item.fixed;
-    if (port < 1 || port + item.ports - 1 > size(bank)) warnings.push(`${item.name}: ${portLabel(item.fixed)} doesn't exist on this desk`);
+    if (port < 1 || port + item.ports - 1 > size(bank)) warnings.push(`${item.name} is on ${portLabel(item.fixed)}, which this desk doesn't have`);
     return take(bank, port, item);
   });
   let b = Math.max(0, banks.findIndex((x) => x.key === start?.bank));
@@ -69,7 +69,7 @@ function allocatePorts(items, banks, start, what) {
     for (;;) {
       const bank = banks[b];
       if (!bank) {
-        warnings.push(`Out of ${what} ports: ${item.name} is unpatched`);
+        warnings.push(`No ${what} sockets left for ${item.name}`);
         return;
       }
       const free = [...Array(item.ports).keys()].every((k) => !used.has(`${bank.key}:${port + k}`));
@@ -248,7 +248,7 @@ export function buildPlan(show) {
   const set = (addr, x, y, v) => commands.push(`set MIXER:Current/${addr} ${x} ${y} ${v}`);
   const label = (name) => {
     const out = clean(name, maxNameLength);
-    if (out !== String(name)) warnings.push(`"${name}" shortened to "${out}" (desk allows ${maxNameLength} characters)`);
+    if (out !== String(name)) warnings.push(`"${name}" is too long for the desk. It'll show as "${out}".`);
     return out;
   };
 
@@ -286,16 +286,16 @@ export function buildPlan(show) {
   const lastCh = ch - 1;
   const lastMix = Math.max(0, ...used);
   if (model.inputs && lastCh > model.inputs) {
-    warnings.push(`Needs channels up to ${lastCh} but the ${model.label} has ${model.inputs} mono inputs`);
+    warnings.push(`This show needs ${lastCh} channels. The ${model.label} has ${model.inputs}.`);
   }
   if (model.mixes && lastMix > model.mixes) {
-    warnings.push(`Needs mixes up to ${lastMix} but the ${model.label} has ${model.mixes}`);
+    warnings.push(`This show needs ${lastMix} mixes. The ${model.label} has ${model.mixes}.`);
   }
   if (model.stereoMixFrom) {
     const stereo = mixes.filter((m) => !m.stereo && m.mix >= model.stereoMixFrom).map((m) => `${m.zone.name} (Mix ${m.mix})`);
-    if (stereo.length) warnings.push(`On the ${model.label}, mixes ${model.stereoMixFrom} and up are stereo pairs: ${stereo.join(', ')}`);
+    if (stereo.length) warnings.push(`On the ${model.label}, mixes ${model.stereoMixFrom} and up are stereo, so these mono outputs land on stereo mixes: ${stereo.join(', ')}`);
   } else {
-    for (const m of mixes.filter((x) => x.stereo)) warnings.push(`Set Mix ${m.mix}/${m.mix + 1} as a stereo pair in the desk's Bus Setup for ${m.zone.name}`);
+    for (const m of mixes.filter((x) => x.stereo)) warnings.push(`For ${m.zone.name}, pair Mix ${m.mix}/${m.mix + 1} as stereo in the desk's Bus Setup`);
   }
 
   // Patch: inputs in channel order (a stereo source takes two ports), outputs Main L/R first then each mix
@@ -318,7 +318,7 @@ export function buildPlan(show) {
   warnings.push(...new Set([...inAlloc.warnings, ...outAlloc.warnings]));
 
   if (show.sources.some((s) => s.zones.length === 0)) {
-    warnings.push(`Not routed anywhere: ${show.sources.filter((s) => !s.zones.length).map((s) => s.name).join(', ')}`);
+    warnings.push(`These don't go anywhere yet: ${show.sources.filter((s) => !s.zones.length).map((s) => s.name).join(', ')}`);
   }
 
   // Outputs first so the buses are named before anything is sent to them

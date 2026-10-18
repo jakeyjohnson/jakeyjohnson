@@ -182,6 +182,10 @@ The DM7 Compact figures come from Yamaha's spec page. The others are from memory
 - **Example:** loads the conference example (2 lecterns, 4 handhelds, 4 playbacks, fills, delays and ceiling).
 - **Main L/R:** after a new show, add it with the Main L/R button, or type "main" or "PA".
 
+## Version and licence
+
+The footer shows the version and licence number. Both live in `public/about.js`: change `VERSION` there for each release (and the `version` in `package.json` to match; a test checks they agree), and `LICENCE` for each copy you hand out.
+
 ## Files
 
 - **Save / Open**: the show as a `.show.json` file, so you can reuse templates between jobs. The page also autosaves in the browser.
