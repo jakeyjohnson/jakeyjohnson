@@ -56,6 +56,7 @@ export const SOURCE_TYPES = {
   keys:     { label: 'Keys',             short: 'Keys',  stereo: true,  color: 'Yellow',  category: 'band',    hpf: 0 },
   instrument: { label: 'Other instrument', short: 'Inst', stereo: false, color: 'Yellow', category: 'band',    hpf: 0 },
   vocal:    { label: 'Vocal mic',        short: 'Vox',   stereo: false, color: 'Magenta', category: 'band',    hpf: 180 },
+  talkback: { label: 'Talkback mic',     short: 'TB',    stereo: false, color: 'Yellow',  category: 'talkback', hpf: 180 },
   laptop:   { label: 'Laptop audio',     short: 'Lap',   stereo: true,  color: 'Green',   category: 'program', hpf: 0 },
   playback: { label: 'Stereo playback',  short: 'PB',    stereo: true,  color: 'Green',   category: 'program', hpf: 0 },
   bgm:      { label: 'Background music', short: 'BGM',   stereo: true,  color: 'Orange',  category: 'bgm',     hpf: 0 },
@@ -77,7 +78,7 @@ export const ZONE_TYPES = {
   frontfill: { label: 'Front fills',    short: 'FrntFil', takes: ['speech', 'band', 'program'], color: 'Magenta' },
   delay:     { label: 'Delay',          short: 'Delay',   takes: ['speech', 'band', 'program'], color: 'Purple' },
   ceiling:   { label: 'Ceiling',        short: 'Ceiling', takes: ['bgm'],                       color: 'Orange' },
-  foldback:  { label: 'Foldback',       short: 'Fldbk',   takes: ['program'],                   color: 'Yellow' },
+  foldback:  { label: 'Foldback',       short: 'Fldbk',   takes: ['program', 'talkback'],       color: 'Yellow' },
   record:    { label: 'Record/stream',  short: 'Record',  takes: ['speech', 'band', 'program'], color: 'Green' },
 };
 
@@ -91,13 +92,13 @@ export function makeZone(type, name) {
   return { id: type === 'main' ? 'main' : uid('z'), type, name: name || t.short, color: t.color };
 }
 
-export function makeSource(type, n, zones, name) {
+export function makeSource(type, n, zones, name, stereo = SOURCE_TYPES[type].stereo) {
   const t = SOURCE_TYPES[type];
   return {
     id: uid('s'),
     type,
     name: name || `${t.short} ${n}`,
-    stereo: t.stereo,
+    stereo,
     color: t.color,
     hpf: t.hpf,
     zones: zones.filter((z) => ZONE_TYPES[z.type].takes.includes(t.category)).map((z) => z.id),
@@ -244,85 +245,111 @@ export function patchSheetCsv(show, plan) {
   return rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
 }
 
-// ---- AI builder: turns a plain-English request into inputs and zones to add ----
-// The same prompt and validation serve the local app (Claude API) and the online demo.
+// ---- Packages and trigger words: build inputs from plain text, entirely offline ----
 
-export const AI_SCHEMA = {
-  type: 'object',
-  properties: {
-    sources: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          type: { type: 'string', enum: Object.keys(SOURCE_TYPES) },
-          name: { type: 'string' },
-          count: { type: 'integer' },
-        },
-        required: ['type', 'name', 'count'],
-        additionalProperties: false,
-      },
-    },
-    zones: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          type: { type: 'string', enum: Object.keys(ZONE_TYPES).filter((t) => t !== 'main') },
-          name: { type: 'string' },
-        },
-        required: ['type', 'name'],
-        additionalProperties: false,
-      },
-    },
-    summary: { type: 'string' },
+// A stereo entry takes two channels named "<name> L" and "<name> R"
+export const PACKAGES = {
+  band: {
+    label: 'Full band',
+    sources: [
+      { type: 'kick', name: 'Kick In' }, { type: 'kick', name: 'Kick Out' },
+      { type: 'snare', name: 'Snare T' }, { type: 'snare', name: 'Snare B' },
+      { type: 'hihat', name: 'Hi Hat' },
+      { type: 'tom', name: 'R Tom 1' }, { type: 'tom', name: 'R Tom 2' }, { type: 'tom', name: 'F Tom' },
+      { type: 'overhead', name: 'OH' },
+      { type: 'bass', name: 'Bass DI' }, { type: 'bass', name: 'Bass Mic' },
+      { type: 'guitar', name: 'Gtr 1', stereo: true }, { type: 'guitar', name: 'Gtr 2', stereo: true },
+      { type: 'keys', name: 'Keys 1' }, { type: 'keys', name: 'Keys 2' },
+      { type: 'vocal', name: 'Vox 1' }, { type: 'vocal', name: 'Vox 2' }, { type: 'vocal', name: 'Vox 3' },
+      { type: 'talkback', name: 'MD TB' },
+    ],
   },
-  required: ['sources', 'zones', 'summary'],
-  additionalProperties: false,
+  drums: {
+    label: 'Drum kit',
+    sources: [
+      { type: 'kick', name: 'Kick In' }, { type: 'kick', name: 'Kick Out' },
+      { type: 'snare', name: 'Snare T' }, { type: 'snare', name: 'Snare B' },
+      { type: 'hihat', name: 'Hi Hat' },
+      { type: 'tom', name: 'R Tom 1' }, { type: 'tom', name: 'R Tom 2' }, { type: 'tom', name: 'F Tom' },
+      { type: 'overhead', name: 'OH' },
+    ],
+  },
 };
 
-export function aiPrompt(request, show) {
-  const max = show.options?.maxNameLength || 8;
-  const types = Object.entries(SOURCE_TYPES).map(([k, t]) => `- ${k}: ${t.label}${t.stereo ? ' (stereo, uses 2 channels)' : ''}`).join('\n');
-  const zoneTypes = Object.entries(ZONE_TYPES).filter(([k]) => k !== 'main').map(([k, t]) => `- ${k}: ${t.label}`).join('\n');
-  const current = show.sources.map((s) => s.name).join(', ') || 'nothing yet';
-  return `You are helping a live sound engineer set up a Yamaha digital mixing desk for an event.
-They describe extra inputs (microphones, instruments, playback) and speaker zones to add to their show.
-Turn the request into the inputs and zones to ADD, using only these input types:
-${types}
-
-and these zone types (each becomes a mix bus; Main L/R already exists):
-${zoneTypes}
-
-Rules:
-- One entry per kind of input. "count" is how many; with a count above 1 they are numbered automatically, so "name" is the base name ("Tom" with count 3 gives Tom 1, Tom 2, Tom 3).
-- Names are what the desk shows: at most ${max} characters including the number, and ${Math.max(2, max - 2)} for stereo inputs.
-- Expand packages into a sensible, standard mic list. A "full band" or "drum kit" means real channels: kick, snare, hi-hat, toms, overheads and so on.
-- Use "instrument" for anything without its own type and name it clearly.
-- Add zones only if the request asks for speakers or monitor mixes. Use "foldback" for wedges and in-ear mixes.
-- Do not repeat inputs the show already has unless the request asks for more.
-- "summary" is one short sentence describing what you added, for the engineer.
-
-The show already has: ${current}.
-
-Request: ${request}
-
-Reply with only JSON in this shape:
-{"sources":[{"type":"kick","name":"Kick","count":1}],"zones":[{"type":"foldback","name":"Wedge 1"}],"summary":"..."}`;
+export function packageSuggestion(key) {
+  const pkg = PACKAGES[key];
+  return { sources: pkg.sources.map((s) => ({ ...s, count: 1 })), zones: [], summary: `${pkg.label} package` };
 }
 
-// Checks a reply against the types this app knows and clamps counts, so a bad reply can't break the show
-export function normalizeSuggestion(raw) {
-  const sources = (Array.isArray(raw?.sources) ? raw.sources : [])
-    .filter((s) => SOURCE_TYPES[s?.type])
-    .map((s) => ({ type: s.type, name: String(s.name || SOURCE_TYPES[s.type].short).replace(/["\r\n]/g, '').trim().slice(0, 32), count: Math.min(32, Math.max(1, Math.round(Number(s.count) || 1))) }));
-  const zones = (Array.isArray(raw?.zones) ? raw.zones : [])
-    .filter((z) => ZONE_TYPES[z?.type] && z.type !== 'main')
-    .map((z) => ({ type: z.type, name: String(z.name || ZONE_TYPES[z.type].short).replace(/["\r\n]/g, '').trim().slice(0, 32) }));
-  return { sources, zones, summary: String(raw?.summary || '').slice(0, 300) };
+// Words people type, mapped to packages, input types or zones. Longer phrases are matched first,
+// so "acoustic guitar" wins over "guitar" and "full band" over "band".
+export const TRIGGERS = [
+  { words: ['full band', 'band package', 'band'], package: 'band' },
+  { words: ['drum kit', 'drums'], package: 'drums' },
+  { words: ['lectern', 'podium'], source: 'lectern' },
+  { words: ['headset', 'lapel', 'lav', 'lavalier'], source: 'headset' },
+  { words: ['handheld', 'radio mic', 'hh'], source: 'handheld' },
+  { words: ['kick'], source: 'kick' },
+  { words: ['snare'], source: 'snare' },
+  { words: ['hi hat', 'hihat', 'hi-hat'], source: 'hihat' },
+  { words: ['tom'], source: 'tom' },
+  { words: ['overhead', 'oh'], source: 'overhead' },
+  { words: ['bass'], source: 'bass' },
+  { words: ['acoustic guitar', 'acoustic'], source: 'acoustic' },
+  { words: ['electric guitar', 'guitar', 'gtr'], source: 'guitar' },
+  { words: ['keys', 'keyboard', 'piano', 'synth'], source: 'keys' },
+  { words: ['vocal', 'vox', 'singer'], source: 'vocal' },
+  { words: ['talkback', 'tb'], source: 'talkback' },
+  { words: ['instrument'], source: 'instrument' },
+  { words: ['laptop'], source: 'laptop' },
+  { words: ['playback', 'pb'], source: 'playback' },
+  { words: ['background music', 'bgm'], source: 'bgm' },
+  { words: ['front fill'], zone: 'frontfill', name: 'FrntFil' },
+  { words: ['delay'], zone: 'delay', name: 'Delay' },
+  { words: ['ceiling'], zone: 'ceiling', name: 'Ceiling' },
+  { words: ['wedge', 'monitor', 'foldback'], zone: 'foldback', name: 'Wedge' },
+  { words: ['iem', 'in-ear', 'in ear'], zone: 'foldback', name: 'IEM' },
+  { words: ['record', 'stream'], zone: 'record', name: 'Record' },
+];
+
+const NUMBER_WORDS = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
+const IGNORED = new Set(['and', 'with', 'plus', 'the', 'some', 'of', 'mic', 'mics', 'for', 'x', 'package', 'channel', 'channels', 'please', 'add', 'also', 'more', 'extra', 'pair', 'stereo', 'mono', 'set', 'up']);
+const escape = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[ -]/g, '[ -]?');
+
+// Reads text like "full band, 4 wedges and 2 handhelds" into a suggestion for applySuggestion
+export function parseRequest(text, show) {
+  let rest = ` ${String(text).toLowerCase()} `;
+  const sources = [];
+  const zones = [];
+  const summary = [];
+  const zoneCount = (type, name) => show.zones.filter((z) => z.type === type).length + zones.filter((z) => z.name.startsWith(name)).length;
+
+  const entries = TRIGGERS.flatMap((t) => t.words.map((w) => ({ ...t, word: w }))).sort((a, b) => b.word.length - a.word.length);
+  for (const t of entries) {
+    const re = new RegExp(`(?:\\b(\\d+|${Object.keys(NUMBER_WORDS).join('|')})\\s*(?:x\\s*)?)?\\b${escape(t.word)}(?:e?s)?\\b`, 'g');
+    rest = rest.replace(re, (match, n) => {
+      const count = Math.min(32, Math.max(1, n ? Number(n) || NUMBER_WORDS[n] : 1));
+      if (t.package) {
+        for (let i = 0; i < count; i++) sources.push(...packageSuggestion(t.package).sources);
+        summary.push(PACKAGES[t.package].label + ' package');
+      } else if (t.source) {
+        sources.push({ type: t.source, name: SOURCE_TYPES[t.source].short, count });
+        summary.push(`${count} × ${SOURCE_TYPES[t.source].label}`);
+      } else {
+        const first = zoneCount(t.zone, t.name);
+        const numbered = count > 1 || first > 0 || t.zone === 'foldback' || t.zone === 'delay';
+        for (let i = 1; i <= count; i++) zones.push({ type: t.zone, name: numbered ? `${t.name} ${first + i}` : t.name });
+        summary.push(`${count} × ${ZONE_TYPES[t.zone].label.toLowerCase()} zone${count > 1 ? 's' : ''}`);
+      }
+      return ' ';
+    });
+  }
+  const unknown = rest.split(/[^a-z0-9-]+/).filter((w) => w && !IGNORED.has(w) && !(w in NUMBER_WORDS) && !/^\d+$/.test(w));
+  return { sources, zones, summary: summary.join(', '), unknown };
 }
 
-// Adds a normalized suggestion to the show: zones first so the new inputs route to them
+// Adds a suggestion to the show: zones first so the new inputs route to them.
+// Sources with a count above 1 are numbered on from any of the same name already in the show.
 export function applySuggestion(show, suggestion) {
   for (const z of suggestion.zones) {
     const zone = makeZone(z.type, z.name);
@@ -332,9 +359,14 @@ export function applySuggestion(show, suggestion) {
     }
   }
   for (const s of suggestion.sources) {
+    const stereo = s.stereo ?? SOURCE_TYPES[s.type].stereo;
+    const numbered = s.count > 1 || show.sources.some((x) => x.name === s.name || x.name.startsWith(`${s.name} `));
+    const already = show.sources.filter((x) => x.name.startsWith(`${s.name} `) || x.name === s.name).length;
     for (let i = 1; i <= s.count; i++) {
-      show.sources.push(makeSource(s.type, i, show.zones, s.count > 1 ? `${s.name} ${i}` : s.name));
+      const name = numbered && !PACKAGE_NAMES.has(s.name) ? `${s.name} ${already + i}` : s.name;
+      show.sources.push(makeSource(s.type, i, show.zones, name, stereo));
     }
   }
   return show;
 }
+const PACKAGE_NAMES = new Set(Object.values(PACKAGES).flatMap((p) => p.sources.map((s) => s.name)));

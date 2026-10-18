@@ -5,7 +5,6 @@ import net from 'node:net';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AI_SCHEMA, aiPrompt, normalizeSuggestion } from './public/plan.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const PUBLIC = fileURLToPath(new URL('./public/', import.meta.url));
@@ -72,58 +71,8 @@ function target(body) {
   return { host, port };
 }
 
-// Asks Claude to turn a plain-English request ("full band with 4 vocals") into inputs and zones.
-// The SDK loads on first use so the rest of the app runs without `npm install`.
-async function suggest(body) {
-  const request = String(body.request || '').trim().slice(0, 2000);
-  if (!request) throw new Error('Describe what you want to add first.');
-  let Anthropic, betaJSONSchemaOutputFormat;
-  try {
-    ({ default: Anthropic } = await import('@anthropic-ai/sdk'));
-    ({ betaJSONSchemaOutputFormat } = await import('@anthropic-ai/sdk/helpers/beta/json-schema'));
-  } catch {
-    throw new Error('The AI builder needs the Anthropic SDK: run "npm install" in this folder, then restart.');
-  }
-  // Only names and the name length go to Claude, not the whole show
-  const show = {
-    options: { maxNameLength: Number(body.show?.options?.maxNameLength) || 8 },
-    sources: (Array.isArray(body.show?.sources) ? body.show.sources : []).slice(0, 300).map((s) => ({ name: String(s?.name ?? '').slice(0, 32) })),
-  };
-  let message;
-  try {
-    const client = new Anthropic();
-    message = await client.beta.messages.parse({
-      model: 'claude-opus-5-5',
-      max_tokens: 16000,
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      messages: [{ role: 'user', content: aiPrompt(request, show) }],
-      output_config: { format: betaJSONSchemaOutputFormat(AI_SCHEMA) },
-    });
-  } catch (err) {
-    if (err instanceof Anthropic.AuthenticationError) throw new Error('Claude rejected the API key. Check ANTHROPIC_API_KEY and restart.');
-    if (err instanceof Anthropic.RateLimitError) throw new Error('Claude is busy or you hit your rate limit. Try again in a minute.');
-    if (err instanceof Anthropic.APIConnectionError) throw new Error('Could not reach Claude. Check this computer has internet access.');
-    if (err instanceof Anthropic.APIError) throw new Error(`Claude returned an error: ${err.message}`);
-    if (/auth|api key|apiKey/i.test(String(err?.message))) {
-      throw new Error('No Claude API key found. Start the app with ANTHROPIC_API_KEY=... npm start (see README).');
-    }
-    throw err;
-  }
-  if (message.stop_reason === 'refusal') throw new Error('Claude declined that request. Try describing the inputs differently.');
-  if (!message.parsed_output) throw new Error('Claude did not return a usable list. Try again or reword the request.');
-  return normalizeSuggestion(message.parsed_output);
-}
-
 async function handleApi(req, res, path) {
   const body = await readJson(req);
-
-  if (path === '/api/suggest') {
-    const suggestion = await suggest(body);
-    res.writeHead(200, { 'content-type': 'application/json' });
-    return res.end(JSON.stringify(suggestion));
-  }
-
   const { host, port } = target(body);
 
   if (path === '/api/test') {
