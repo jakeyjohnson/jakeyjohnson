@@ -26,15 +26,22 @@ export const MODELS = {
 
 export const COLORS =['Blue', 'SkyBlue', 'Cyan', 'Green', 'Yellow', 'Orange', 'Red', 'Magenta', 'Purple', 'White'];
 
-// category decides which zones a new source is routed to by default
+// category decides which zones a new source is routed to by default.
+// The order here is the auto channel order: speech mics first, then program, BGM last.
 export const SOURCE_TYPES = {
   lectern:  { label: 'Lectern mic',      short: 'Lect',  stereo: false, color: 'Blue',    category: 'speech' },
-  handheld: { label: 'Handheld mic',     short: 'HH',    stereo: false, color: 'SkyBlue', category: 'speech' },
   headset:  { label: 'Headset mic',      short: 'HS',    stereo: false, color: 'Cyan',    category: 'speech' },
-  playback: { label: 'Stereo playback',  short: 'PB',    stereo: true,  color: 'Green',   category: 'program' },
+  handheld: { label: 'Handheld mic',     short: 'HH',    stereo: false, color: 'SkyBlue', category: 'speech' },
   laptop:   { label: 'Laptop audio',     short: 'Lap',   stereo: true,  color: 'Yellow',  category: 'program' },
+  playback: { label: 'Stereo playback',  short: 'PB',    stereo: true,  color: 'Green',   category: 'program' },
   bgm:      { label: 'Background music', short: 'BGM',   stereo: true,  color: 'Orange',  category: 'bgm' },
 };
+const TYPE_RANK = Object.keys(SOURCE_TYPES);
+
+// Groups sources by type in the order above, keeping their order within each type
+export function orderSources(sources) {
+  return [...sources].sort((a, b) => TYPE_RANK.indexOf(a.type) - TYPE_RANK.indexOf(b.type));
+}
 
 export const ZONE_TYPES = {
   main:      { label: 'Main L/R',       short: 'Main LR', takes: ['speech', 'program'], color: 'Red' },
@@ -84,7 +91,7 @@ export function defaultShow() {
   ];
   const show = {
     name: 'New show',
-    options: { model: 'custom', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true },
+    options: { model: 'custom', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true },
     zones,
     sources: [],
   };
@@ -101,7 +108,8 @@ export function defaultShow() {
 const clean = (s, max) => String(s).replace(/["\r\n]/g, '').slice(0, max);
 
 export function buildPlan(show) {
-  const { firstChannel = 1, firstMix = 1, maxNameLength = 8, setLevels = true } = show.options || {};
+  const { firstChannel = 1, firstMix = 1, maxNameLength = 8, setLevels = true, autoOrder = true } = show.options || {};
+  const spares = [];
   const warnings = [];
   const channels = [];
   const mixes = [];
@@ -120,9 +128,11 @@ export function buildPlan(show) {
     mixes.push({ mix: mixNo++, zone });
   }
 
-  // Allocate input channels: stereo sources take an L/R pair of mono channels
+  // Allocate input channels: stereo sources take an L/R pair of mono channels.
+  // With auto order on, pairs start on an odd channel so they line up with the desk's channel pairing.
   let ch = firstChannel;
-  for (const source of show.sources) {
+  for (const source of autoOrder ? orderSources(show.sources) : show.sources) {
+    if (autoOrder && source.stereo && ch % 2 === 0) spares.push(ch++);
     const sides = source.stereo ? ['L', 'R'] : [null];
     for (const side of sides) {
       const name = side ? `${clean(source.name, maxNameLength - 2)} ${side}` : source.name;
@@ -183,7 +193,7 @@ export function buildPlan(show) {
     }
   }
 
-  return { channels, mixes, commands, warnings };
+  return { channels, mixes, commands, warnings, spares };
 }
 
 // Patch sheet for the engineer: what plugs in where

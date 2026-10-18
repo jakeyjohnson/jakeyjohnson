@@ -1,4 +1,4 @@
-import { COLORS, MODELS, SOURCE_TYPES, ZONE_TYPES, addSources, buildPlan, defaultShow, makeZone, patchSheetCsv } from './plan.js';
+import { COLORS, MODELS, SOURCE_TYPES, ZONE_TYPES, addSources, buildPlan, orderSources, defaultShow, makeZone, patchSheetCsv } from './plan.js';
 
 const SWATCH = { Blue: '#3d6dff', SkyBlue: '#58b8ff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff', White: '#e8e8e8' };
 const $ = (id) => document.getElementById(id);
@@ -26,6 +26,7 @@ function colorSelect(value, onChange) {
 }
 
 function render() {
+  if (show.options.autoOrder !== false) show.sources = orderSources(show.sources);
   const plan = buildPlan(show);
   const model = MODELS[show.options.model] || MODELS.custom;
   $('showName').value = show.name;
@@ -33,6 +34,7 @@ function render() {
   $('maxLen').textContent = show.options.maxNameLength;
   for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) $(k).value = show.options[k];
   $('setLevels').checked = show.options.setLevels;
+  $('autoOrder').checked = show.options.autoOrder !== false;
 
   // Routing grid
   const busLabel = (zone) => zone.type === 'main' ? 'Stereo' : `Mix ${plan.mixes.find((m) => m.zone === zone).mix}`;
@@ -57,13 +59,15 @@ function render() {
           source.zones = e.target.checked ? [...source.zones, zone.id] : source.zones.filter((z) => z !== zone.id);
         }),
       }))),
-      el('td', {}, el('button', { className: 'remove', title: 'Remove input', textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
+      el('td', {}, ...moveButtons(source),
+        el('button', { className: 'remove', title: 'Remove input', textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
   });
   const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 5, className: 'type', textContent: 'No inputs yet. Add some above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty || null));
 
   const of = (n) => (model.inputs ? ` of ${n}` : '');
-  const totals = `${plan.channels.length}${of(model.inputs)} input channels, ${plan.mixes.length}${of(model.mixes)} mixes, ${plan.commands.length} commands`;
+  const spares = plan.spares.length ? `, ch ${plan.spares.join(', ')} left spare so stereo pairs start on odd channels` : '';
+  const totals = `${plan.channels.length}${of(model.inputs)} input channels, ${plan.mixes.length}${of(model.mixes)} mixes, ${plan.commands.length} commands${spares}`;
   $('warnings').replaceChildren(el('li', { style: 'color: var(--muted); list-style: none; margin-left: -18px', textContent: totals }),
     ...[...new Set(plan.warnings)].map((w) => el('li', { textContent: w })));
 
@@ -76,6 +80,21 @@ function render() {
 }
 
 function update(fn) { fn(); render(); }
+
+// Up/down arrows, only when channels are ordered by hand
+function moveButtons(source) {
+  if (show.options.autoOrder !== false) return [];
+  const move = (step) => update(() => {
+    const i = show.sources.indexOf(source);
+    const j = i + step;
+    if (j < 0 || j >= show.sources.length) return;
+    [show.sources[i], show.sources[j]] = [show.sources[j], show.sources[i]];
+  });
+  return [
+    el('button', { className: 'remove', title: 'Move up', textContent: '↑', onclick: () => move(-1) }),
+    el('button', { className: 'remove', title: 'Move down', textContent: '↓', onclick: () => move(1) }),
+  ];
+}
 
 function removeZone(zone) {
   show.zones = show.zones.filter((z) => z !== zone);
@@ -188,6 +207,7 @@ $('showName').onchange =(e) => update(() => { show.name = e.target.value; });
 for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) {
   $(k).onchange = (e) => update(() => { show.options[k] = Math.max(1, Number(e.target.value) || 1); });
 }
+$('autoOrder').onchange = (e) => update(() => { show.options.autoOrder = e.target.checked; });
 $('setLevels').onchange = (e) => update(() => { show.options.setLevels = e.target.checked; });
 $('newShow').onclick = () => confirm('Start a new show? Unsaved changes are lost.') && update(() => { show = defaultShow(); });
 $('saveShow').onclick = () => download(`${fileBase()}.show.json`, JSON.stringify(show, null, 2), 'application/json');
