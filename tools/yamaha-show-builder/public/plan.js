@@ -1,13 +1,15 @@
 // Turns a show description into channel/mix allocations and Yamaha RCP commands.
 // Shared by the browser UI and the Node tests, so keep it dependency free.
 
-// Mono input channels and mix buses per model, from Yamaha's published specs.
-// stereoMixFrom: mixes from this number up are stereo pairs on that desk.
+// Mono input channels and mix buses per model, from Yamaha's spec tables and reference manuals
+// (checked October 2026). Stereo input channels and FX returns are not counted: stereo sources
+// here use pairs of mono channels. stereoMixFrom: mixes from this number up are stereo pairs.
+// RIVAGE capacity depends on the DSP engine, not the control surface, so it is listed by engine.
 export const MODELS = {
   custom:  { label: 'Other / not sure', inputs: 0, mixes: 0 },
-  TF1:     { label: 'TF1',            series: 'TF',     inputs: 32,  mixes: 20, stereoMixFrom: 9 },
-  TF3:     { label: 'TF3',            series: 'TF',     inputs: 32,  mixes: 20, stereoMixFrom: 9 },
-  TF5:     { label: 'TF5',            series: 'TF',     inputs: 32,  mixes: 20, stereoMixFrom: 9 },
+  TF1:     { label: 'TF1',            series: 'TF',     inputs: 32,  mixes: 20, stereoMixFrom: 9 }, // AUX 1-8 mono, 9/10-19/20 stereo
+  TF3:     { label: 'TF3',            series: 'TF',     inputs: 40,  mixes: 20, stereoMixFrom: 9 },
+  TF5:     { label: 'TF5',            series: 'TF',     inputs: 40,  mixes: 20, stereoMixFrom: 9 },
   DM3:     { label: 'DM3 / DM3 Standard', series: 'DM3', inputs: 16, mixes: 6 },
   QL1:     { label: 'QL1',            series: 'QL',     inputs: 32,  mixes: 16 },
   QL5:     { label: 'QL5',            series: 'QL',     inputs: 64,  mixes: 16 },
@@ -16,10 +18,10 @@ export const MODELS = {
   CL5:     { label: 'CL5',            series: 'CL',     inputs: 72,  mixes: 24 },
   DM7C:    { label: 'DM7 Compact',    series: 'DM7',    inputs: 72,  mixes: 48 },
   DM7:     { label: 'DM7',            series: 'DM7',    inputs: 120, mixes: 48 },
-  PM3:     { label: 'RIVAGE PM3',     series: 'RIVAGE', inputs: 120, mixes: 60 },
-  PM5:     { label: 'RIVAGE PM5',     series: 'RIVAGE', inputs: 144, mixes: 72 },
-  PM7:     { label: 'RIVAGE PM7',     series: 'RIVAGE', inputs: 120, mixes: 60 },
-  PM10:    { label: 'RIVAGE PM10',    series: 'RIVAGE', inputs: 144, mixes: 72 },
+  RX:      { label: 'PM10 / PM5 / PM3 with DSP-RX',    series: 'RIVAGE', inputs: 120, mixes: 48 },
+  RXEX:    { label: 'PM10 / PM5 / PM3 with DSP-RX-EX', series: 'RIVAGE', inputs: 288, mixes: 72 },
+  R10:     { label: 'PM10 with DSP-R10',               series: 'RIVAGE', inputs: 144, mixes: 72 },
+  PM7:     { label: 'PM7 (CSD-R7)',                    series: 'RIVAGE', inputs: 144, mixes: 60 }, // sources disagree on inputs; check yours
 };
 
 export const COLORS =['Blue', 'SkyBlue', 'Cyan', 'Green', 'Yellow', 'Orange', 'Red', 'Magenta', 'Purple', 'White'];
