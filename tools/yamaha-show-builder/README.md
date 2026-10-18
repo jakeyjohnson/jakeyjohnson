@@ -21,14 +21,20 @@ Pick your desk from the **Desk model** dropdown at the top. The app then checks 
 
 | Model | Mono inputs | Mixes |
 |---|---|---|
-| TF1 / TF3 / TF5 | 32 | 20 (9–20 stereo) |
+| TF1 | 32 | 20 (8 mono + 6 stereo pairs) |
+| TF3 / TF5 | 40 | 20 (8 mono + 6 stereo pairs) |
 | DM3 / DM3 Standard | 16 | 6 |
 | QL1 / QL5 | 32 / 64 | 16 |
 | CL1 / CL3 / CL5 | 48 / 64 / 72 | 24 |
 | DM7 Compact / DM7 | 72 / 120 | 48 |
-| RIVAGE PM3, PM7 / PM5, PM10 | 120 / 144 | 60 / 72 |
+| RIVAGE PM, DSP-RX engine | 120 | 48 |
+| RIVAGE PM, DSP-RX-EX engine | 288 | 72 |
+| RIVAGE PM10, DSP-R10 engine | 144 | 72 |
+| RIVAGE PM7 (CSD-R7) | 144 (unconfirmed) | 60 |
 
-These come from Yamaha's spec sheets. If your desk's firmware differs, edit `MODELS` in `public/plan.js`.
+Only mono input channels are counted. The desks' stereo inputs and FX returns aren't used, because stereo sources here take a pair of mono channels. RIVAGE capacity depends on the DSP engine, not the control surface, so pick your engine.
+
+These figures come from Yamaha's spec tables and reference manuals (checked October 2026). If your desk differs, edit `MODELS` in `public/plan.js`.
 
 ## Desk setup
 
