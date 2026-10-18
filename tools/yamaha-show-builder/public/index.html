@@ -23,6 +23,15 @@
     </div>
   </header>
 
+  <div class="connect-bar" role="group" aria-label="Desk connection">
+    <span id="linkDot" class="link-dot" aria-hidden="true"></span>
+    <span class="connect-title">Desk</span>
+    <input id="host" placeholder="IP, e.g. 192.168.0.128" inputmode="decimal" autocomplete="off" aria-label="Desk IP address">
+    <input id="port" class="port" type="number" value="49280" aria-label="Port">
+    <button id="connectBtn" class="primary">Connect</button>
+    <span id="linkStatus" class="status" role="status">Not connected</span>
+  </div>
+
   <main>
     <div id="newConfirm" class="confirm" hidden>
       <span id="newText"></span>
@@ -79,15 +88,12 @@
     <section>
       <h2><span>5</span>Send to desk</h2>
       <div class="desk-row">
-        <label>Desk IP<input id="host" placeholder="192.168.0.128"></label>
-        <label>Port<input id="port" type="number" value="49280"></label>
         <label>First channel<input id="firstChannel" type="number" min="1"></label>
         <label>First mix<input id="firstMix" type="number" min="1"></label>
         <label>Name length<input id="maxNameLength" type="number" min="4" max="32"></label>
-        <label class="check"><input id="setLevels" type="checkbox">Reset faders (inputs to -∞, zones to 0 dB)</label>
+        <label class="check"><input id="setLevels" type="checkbox">Reset faders (inputs to -∞, outputs to 0 dB)</label>
       </div>
       <div class="desk-row">
-        <button id="testDesk" class="ghost">Test connection</button>
         <button id="pushDesk" class="primary">Push show to desk</button>
         <button id="toggleCommands" class="ghost">Show commands</button>
         <span id="status" class="status"></span>

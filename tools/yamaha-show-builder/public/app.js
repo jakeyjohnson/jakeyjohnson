@@ -1,5 +1,5 @@
 import { LICENCE, PRODUCT, VERSION } from './about.js';
-import { patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
+import { modelFromProduct, patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
 const $ = (id) => document.getElementById(id);
@@ -148,30 +148,72 @@ function setStatus(text, kind = '') {
   $('status').textContent = text;
   $('status').className = `status ${kind}`;
 }
-function deskTarget() {
-  const host = $('host').value.trim();
-  try { localStorage.setItem(`${STORE}-host`, host); } catch { /* ignore */ }
-  return { host, port: Number($('port').value) || 49280 };
+// ---- Desk connection: the app server holds one live connection and reports every change ----
+let link = { state: 'idle' };
+function showLink(s) {
+  const was = link.state;
+  link = s;
+  $('linkDot').className = `link-dot ${s.state}`;
+  const text = {
+    idle: s.error || 'Not connected',
+    connecting: `Connecting to ${s.host}…`,
+    connected: `Connected to ${s.product || 'the desk'} at ${s.host}`,
+    lost: `${s.error} Check the cable, then reconnect.`,
+  }[s.state];
+  $('linkStatus').textContent = text;
+  $('linkStatus').className = `status ${s.state === 'connected' ? 'ok' : s.error ? 'bad' : ''}`;
+  const btn = $('connectBtn');
+  btn.textContent = { idle: 'Connect', connecting: 'Connecting…', connected: 'Disconnect', lost: 'Reconnect' }[s.state];
+  btn.className = s.state === 'connected' ? 'ghost' : 'primary';
+  btn.disabled = s.state === 'connecting';
+  $('host').disabled = $('port').disabled = s.state === 'connected' || s.state === 'connecting';
+  if (s.state === 'connected' && was !== 'connected') matchModel(s.product);
 }
-
-async function testDesk() {
-  setStatus('Connecting…');
-  try {
-    const res = await fetch('/api/test', { method: 'POST', body: JSON.stringify(deskTarget()) });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    setStatus(data.ok ? `Connected: ${data.reply.replace(/^OK devinfo productname\s*/, '')}` : `The desk answered: ${data.reply}`, data.ok ? 'ok' : 'bad');
-  } catch (err) {
-    setStatus(err.message, 'bad');
+// Set the desk model from the name the desk reports, when it's one the app knows
+function matchModel(product) {
+  const id = modelFromProduct(product);
+  if (id && id !== show.options.model) {
+    update(() => { show.options.model = id; });
+    setStatus(`Desk model set to ${MODELS[id].label} to match the desk.`, 'ok');
+  } else if (/RIVAGE|PM\d/i.test(product || '')) {
+    setStatus('RIVAGE desks vary by DSP engine: pick yours under Desk model.');
   }
 }
+async function connectDesk() {
+  if (link.state === 'connected') {
+    await fetch('/api/disconnect', { method: 'POST' });
+    return;
+  }
+  const host = $('host').value.trim();
+  if (!host) {
+    showLink({ state: 'idle', error: 'Type the desk IP first.' });
+    return $('host').focus();
+  }
+  try { localStorage.setItem(`${STORE}-host`, host); } catch { /* ignore */ }
+  showLink({ state: 'connecting', host });
+  try {
+    const res = await fetch('/api/connect', { method: 'POST', body: JSON.stringify({ host, port: Number($('port').value) || 49280 }) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showLink(data);
+  } catch (err) {
+    showLink({ state: 'idle', host, error: err.message === 'Failed to fetch' ? 'The app server has stopped. Start it again with npm start.' : err.message });
+  }
+}
+const events = new EventSource('/api/events');
+events.onmessage = (e) => showLink(JSON.parse(e.data));
+events.onerror = () => { if (link.state === 'connected') showLink({ state: 'lost', host: link.host, error: 'Lost touch with the app server.' }); };
+$('connectBtn').onclick = connectDesk;
+$('host').onkeydown = (e) => { if (e.key === 'Enter') connectDesk(); };
 
 async function pushDesk() {
   const plan = buildPlan(show);
   if (!plan.commands.length) return setStatus('Add some inputs or outputs first.', 'bad');
-  const target = deskTarget();
-  if (!target.host) return setStatus('Put the desk IP in first.', 'bad');
-  if (!confirm(`Send this show to the desk at ${target.host}?\n\nIt renames and re-routes the current scene, so store a backup scene first.`)) return;
+  if (link.state !== 'connected') {
+    setStatus('Connect to the desk first, at the top of the page.', 'bad');
+    return $('host').focus();
+  }
+  if (!confirm(`Send this show to ${link.product || 'the desk'} at ${link.host}?\n\nIt renames and re-routes the current scene, so store a backup scene first.`)) return;
 
   const log = $('log');
   const progress = $('progress');
@@ -182,7 +224,7 @@ async function pushDesk() {
   $('pushDesk').disabled = true;
   setStatus('Sending…');
   try {
-    const res = await fetch('/api/push', { method: 'POST', body: JSON.stringify({ ...target, commands: plan.commands }) });
+    const res = await fetch('/api/push', { method: 'POST', body: JSON.stringify({ commands: plan.commands }) });
     if (!res.ok) throw new Error((await res.json()).error);
     const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
     let buffer = '';
@@ -379,7 +421,6 @@ $('typeAdd').onclick = () => {
   typeStatus('Added. Check the routing below.', 'ok');
 };
 $('typeDiscard').onclick = () => { $('typePreview').hidden = true; typeStatus(''); };
-$('testDesk').onclick = testDesk;
 $('pushDesk').onclick = pushDesk;
 try { $('host').value = localStorage.getItem(`${STORE}-host`) || ''; } catch { /* ignore */ }
 

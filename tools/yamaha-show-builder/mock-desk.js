@@ -3,6 +3,7 @@
 import net from 'node:net';
 
 const PORT = Number(process.env.DESK_PORT || 49280);
+const MODEL = process.env.DESK_MODEL || 'MockDesk'; // e.g. DESK_MODEL=QL5 to test model detection
 const state = new Map();
 
 net.createServer((socket) => {
@@ -18,7 +19,7 @@ net.createServer((socket) => {
       if (!line) continue;
       console.log('>', line);
       const [verb, addr, x, y, ...rest] = line.split(' ');
-      if (verb === 'devinfo') socket.write(`OK devinfo ${addr} "MockDesk"\n`);
+      if (verb === 'devinfo') socket.write(`OK devinfo ${addr} "${MODEL}"\n`);
       else if (verb === 'set' && addr?.startsWith('MIXER:')) {
         state.set(`${addr} ${x} ${y}`, rest.join(' '));
         socket.write(`OK ${line}\n`);

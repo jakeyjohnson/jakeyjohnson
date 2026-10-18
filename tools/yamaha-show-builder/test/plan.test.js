@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { portLabel, emptyShow, sendOf, makeZone, addSources, applySuggestion, buildPlan, defaultShow, makeSource, packageSuggestion, parseRequest, patchSheetCsv } from '../public/plan.js';
+import { modelFromProduct, portLabel, emptyShow, sendOf, makeZone, addSources, applySuggestion, buildPlan, defaultShow, makeSource, packageSuggestion, parseRequest, patchSheetCsv } from '../public/plan.js';
 
 test('default show matches the conference brief', () => {
   const show = defaultShow();
@@ -325,4 +325,15 @@ test('the footer version matches package.json', async () => {
   const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
   assert.equal(VERSION, pkg.version);
   assert.match(LICENCE, /^SL-SB-\d{4}$/);
+});
+
+test('the desk model is read from the name the desk reports', () => {
+  assert.equal(modelFromProduct('QL5'), 'QL5');
+  assert.equal(modelFromProduct('CL5'), 'CL5');
+  assert.equal(modelFromProduct('DM7 Compact'), 'DM7C');
+  assert.equal(modelFromProduct('DM7'), 'DM7');
+  assert.equal(modelFromProduct('DM3 Standard'), 'DM3');
+  assert.equal(modelFromProduct('TF-5'), 'TF5');
+  assert.equal(modelFromProduct('RIVAGE PM10'), null);
+  assert.equal(modelFromProduct('MockDesk'), null);
 });
