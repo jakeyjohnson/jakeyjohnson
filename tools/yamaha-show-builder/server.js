@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { LICENCE, PRODUCT, VERSION } from './public/about.js';
 import { DeskLink } from './desk-link.js';
 import { discover, localTargets } from './discover.js';
+import { allowedShureLine, shureSession, specteraRequest } from './rf-link.js';
+import { shureMatches, shureReadback } from './public/rig.js';
 import { matchesReadback, readbackCommand } from './public/plan.js';
 
 const PORT = Number(process.env.PORT || 8080);
@@ -80,6 +82,43 @@ async function handleApi(req, res, path) {
         .finally(() => { scanning = null; });
     }
     return json(res, await scanning);
+  }
+
+  if (path === '/api/shure') {
+    // One receiver: send its lines (or, to check, read each one back) and stream each reply
+    const { host } = target(body);
+    const sets = (Array.isArray(body.lines) ? body.lines : []).filter(allowedShureLine);
+    const lines = body.check ? sets.map(shureReadback).filter(Boolean) : sets;
+    res.writeHead(200, { 'content-type': 'application/x-ndjson' });
+    let bad = 0;
+    const { error } = await shureSession(host, lines, {
+      onReply: (i, line, reply) => {
+        const ok = body.check ? shureMatches(sets[i], reply) : /^<\s*REP/.test(reply);
+        if (!ok) bad++;
+        res.write(JSON.stringify({ i, total: lines.length, line, reply, ok }) + '\n');
+      },
+    });
+    return res.end(JSON.stringify(error ? { error } : { done: true, total: lines.length, bad }) + '\n');
+  }
+
+  if (path === '/api/spectera/devices') {
+    const { host } = target(body);
+    const devices = await specteraRequest(host, String(body.password || ''), 'GET', '/mts/paired/all');
+    return json(res, { devices: Array.isArray(devices) ? devices : [] });
+  }
+
+  if (path === '/api/spectera/push') {
+    const { host } = target(body);
+    const results = [];
+    for (const w of Array.isArray(body.writes) ? body.writes : []) {
+      try {
+        await specteraRequest(host, String(body.password || ''), 'PUT', String(w.path), w.body);
+        results.push({ path: w.path, ok: true });
+      } catch (err) {
+        results.push({ path: w.path, ok: false, error: err.message });
+      }
+    }
+    return json(res, { results });
   }
 
   if (path === '/api/disconnect') {

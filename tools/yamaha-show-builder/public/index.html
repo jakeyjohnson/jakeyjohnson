@@ -26,16 +26,12 @@
     </div>
   </header>
 
-  <div class="connect-bar" role="group" aria-label="Desk connection">
-    <span id="linkDot" class="link-dot" aria-hidden="true"></span>
-    <span class="connect-title">Desk</span>
-    <input id="host" placeholder="IP, e.g. 192.168.0.128" inputmode="decimal" autocomplete="off" aria-label="Desk IP address">
-    <input id="port" class="port" type="number" value="49280" aria-label="Port">
-    <button id="connectBtn" class="primary">Connect</button>
-    <span id="linkStatus" class="status" role="status">Not connected</span>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="tabBtn-desk" data-tab="desk" aria-controls="tab-desk">Desk</button>
+    <button role="tab" id="tabBtn-amps" data-tab="amps" aria-controls="tab-amps">Amplifiers</button>
+    <button role="tab" id="tabBtn-rf" data-tab="rf" aria-controls="tab-rf">RF</button>
     <button id="findBtn" class="ghost find-btn">Find devices</button>
-  </div>
-
+  </nav>
   <div id="findPanel" class="find-panel" hidden>
     <div class="find-head">
       <span id="findStatus" class="status" role="status"></span>
@@ -46,6 +42,16 @@
       </span>
     </div>
     <div id="findList" class="find-list"></div>
+  </div>
+
+  <div id="tab-desk" role="tabpanel" aria-labelledby="tabBtn-desk">
+  <div class="connect-bar" role="group" aria-label="Desk connection">
+    <span id="linkDot" class="link-dot" aria-hidden="true"></span>
+    <span class="connect-title">Desk</span>
+    <input id="host" placeholder="IP, e.g. 192.168.0.128" inputmode="decimal" autocomplete="off" aria-label="Desk IP address">
+    <input id="port" class="port" type="number" value="49280" aria-label="Port">
+    <button id="connectBtn" class="primary">Connect</button>
+    <span id="linkStatus" class="status" role="status">Not connected</span>
   </div>
 
   <main>
@@ -113,6 +119,7 @@
         <label>Outputs start at<span class="patch-cell"><select id="outStartBank" aria-label="Output patch starts at bank"></select><input id="outStartPort" class="port" type="number" min="1" aria-label="Output patch starts at port"></span></label>
         <label class="check" id="sendPatchRow"><input id="sendPatch" type="checkbox">Send the output patch to the desk</label>
       </div>
+ <div id="rioBox" class="rio-box"></div>
       <div class="patch-tables">
         <div class="table-wrap"><table id="patchIn" class="patch-table"></table></div>
         <div class="table-wrap"><table id="patchOut" class="patch-table"></table></div>
@@ -125,7 +132,8 @@
         <label>First channel<input id="firstChannel" type="number" min="1"></label>
         <label>First mix<input id="firstMix" type="number" min="1"></label>
         <label>Name length<input id="maxNameLength" type="number" min="4" max="32"></label>
-        <label class="check"><input id="setLevels" type="checkbox">Reset faders (inputs to -∞, outputs to 0 dB)</label>
+        <label class="check"><input id="setLevels" type="checkbox">Reset faders</label>
+        <label class="check"><input id="safeStart" type="checkbox">Safe start: head-amps at their lowest, every fader at -∞</label>
       </div>
       <div class="desk-row send-opts">
         <label class="check"><input id="setGain" type="checkbox">Set gain and 48V <span id="gainNote" class="status"></span></label>
@@ -155,6 +163,9 @@
       <div class="table-wrap"><table id="lcTable" class="patch-table"></table></div>
     </section>
   </main>
+  </div>
+  <div id="tab-amps" role="tabpanel" aria-labelledby="tabBtn-amps" hidden><main id="ampsMain"></main></div>
+  <div id="tab-rf" role="tabpanel" aria-labelledby="tabBtn-rf" hidden><main id="rfMain"></main></div>
 
   <footer class="maker"><svg class="brand-word" width="160" height="24" role="img" aria-label="KobiKraken" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1237 186"><path fill="currentColor" fill-rule="evenodd" d="M194.0 184.9C170.0 180.3 153.0 163.7 146.4 138.5C143.7 127.9 143.9 108.0 146.8 97.6C150.3 85.4 154.7 77.4 162.4 69.3C188.7 41.4 237.9 46.5 257.3 79.1C265.0 92.1 268.6 110.5 266.9 127.6C265.2 144.4 259.6 157.1 249.1 168.3C236.1 182.1 214.0 188.8 194.0 184.9ZM345.2 184.9C335.2 183.0 325.2 176.4 318.8 167.6L316.0 163.7 L316.0 173.3L316.0 183.0 L303.5 183.0L291.0 183.0 L291.0 92.0L291.0 1.0 L303.5 1.0L316.0 1.0 L316.0 37.2L316.1 73.5 L318.2 70.5C336.2 45.6 377.8 46.2 397.2 71.7C419.4 100.9 415.6 153.3 389.7 174.1C377.5 183.9 360.7 188.0 345.2 184.9ZM1031.0 184.5C1009.4 179.6 993.1 163.3 986.8 140.3C983.8 129.2 983.8 108.8 986.8 97.7C990.1 85.7 995.3 76.6 1004.0 67.9C1018.3 53.5 1036.8 48.2 1057.5 52.5C1085.7 58.4 1104.0 83.8 1104.0 117.0L1104.0 126.0 L1057.0 126.0L1010.0 126.0 L1010.0 129.2C1010.1 141.7 1018.5 155.7 1029.1 160.8C1038.1 165.2 1053.8 165.2 1062.7 160.9C1068.4 158.2 1074.5 152.0 1076.2 147.4L1077.4 144.0 L1089.8 144.0L1102.2 144.0 L1101.6 147.2C1098.6 162.1 1084.3 176.6 1066.5 182.6C1056.5 185.9 1041.0 186.8 1031.0 184.5ZM759.5 183.5C750.6 181.6 744.1 178.2 738.4 172.5C731.2 165.3 728.6 158.4 728.6 146.0C728.5 137.6 728.9 135.8 731.3 130.8C738.2 116.8 750.7 111.1 784.0 107.0C803.9 104.6 807.5 103.6 809.6 100.4C812.0 96.8 811.1 88.2 807.7 83.2C800.5 72.3 779.1 69.9 766.0 78.6C761.6 81.5 757.0 88.3 757.0 91.8C757.0 93.9 756.6 94.0 744.7 94.0C737.9 94.0 732.1 93.8 731.8 93.5C730.8 92.5 733.2 82.5 735.6 77.7C740.9 67.3 750.5 59.6 763.8 55.2C770.5 53.0 773.3 52.7 785.0 52.6C800.0 52.5 806.0 53.8 816.3 59.2C826.5 64.7 833.7 74.7 836.0 87.0C836.6 90.0 837.0 111.3 837.0 137.6L837.0 183.0 L824.0 183.0L811.0 183.0 L811.0 173.8L811.0 164.5 L809.1 167.5C806.8 171.3 799.2 178.3 795.2 180.4C786.9 184.7 771.2 186.1 759.5 183.5ZM0.0 92.0L0.0 1.0 L13.5 1.0L27.0 1.0 L27.2 45.8L27.5 90.7 L37.4 79.6C42.8 73.5 61.0 53.3 77.8 34.8L108.3 1.0 L125.3 1.0L142.3 1.0 L140.4 3.2C137.6 6.4 78.3 71.8 74.3 76.1L70.8 79.8 L106.4 130.5C126.0 158.4 142.3 181.6 142.6 182.1C142.9 182.6 136.3 183.0 127.3 183.0L111.5 183.0 L82.4 141.2C66.3 118.3 52.8 99.5 52.2 99.5C51.6 99.5 45.7 105.5 39.1 112.9L27.0 126.2 L27.0 154.6L27.0 183.0 L13.5 183.0L0.0 183.0 L0.0 92.0ZM435.0 118.5L435.0 54.0 L447.5 54.0L460.0 54.0 L460.0 118.5L460.0 183.0 L447.5 183.0L435.0 183.0 L435.0 118.5ZM492.0 92.0L492.0 1.0 L505.5 1.0L519.0 1.0 L519.2 45.8L519.5 90.7 L529.4 79.6C534.8 73.5 553.0 53.3 569.8 34.8L600.3 1.0 L617.3 1.0L634.3 1.0 L632.4 3.2C629.6 6.4 570.3 71.8 566.3 76.1L562.8 79.8 L598.4 130.5C618.0 158.4 634.3 181.6 634.6 182.1C634.9 182.6 628.3 183.0 619.3 183.0L603.5 183.0 L574.4 141.2C558.3 118.3 544.8 99.5 544.2 99.5C543.6 99.5 537.7 105.5 531.1 112.9L519.0 126.2 L519.0 154.6L519.0 183.0 L505.5 183.0L492.0 183.0 L492.0 92.0ZM653.0 118.5L653.0 54.0 L665.0 54.0L677.0 54.0 L677.0 64.8L677.0 75.5 L680.1 70.0C686.5 58.3 694.1 53.8 708.7 53.2L718.0 52.8 L718.0 65.2L718.0 77.6 L711.8 76.9C704.6 76.2 696.4 77.2 692.3 79.3C688.8 81.2 683.7 86.6 681.7 90.5C678.5 97.0 678.0 104.0 678.0 143.5L678.0 183.0 L665.5 183.0L653.0 183.0 L653.0 118.5ZM867.0 92.0L867.0 1.0 L879.5 1.0L892.0 1.0 L892.0 55.2L892.0 109.5 L919.8 81.7L947.5 54.0 L963.4 54.0L979.2 54.0 L952.2 81.8L925.1 109.6 L949.2 140.1C962.4 156.8 975.5 173.3 978.2 176.8L983.2 183.0 L967.3 183.0L951.5 183.0 L928.5 154.0L905.5 125.0 L898.8 131.7L892.0 138.4 L892.0 160.7L892.0 183.0 L879.5 183.0L867.0 183.0 L867.0 92.0ZM1127.0 118.5L1127.0 54.0 L1139.5 54.0L1152.0 54.0 L1152.0 63.6L1152.0 73.2 L1156.0 68.2C1163.5 58.6 1173.9 53.3 1187.0 52.3C1206.1 50.8 1222.6 59.3 1230.9 75.0C1236.7 85.8 1237.0 89.0 1237.0 138.2L1237.0 183.0 L1224.5 183.0L1212.0 183.0 L1212.0 145.2C1211.9 103.0 1211.3 95.2 1207.3 87.9C1202.5 79.0 1191.7 74.1 1179.8 75.4C1164.8 76.9 1155.9 85.3 1153.1 100.5C1152.4 104.1 1152.0 121.3 1152.0 144.7L1152.0 183.0 L1139.5 183.0L1127.0 183.0 L1127.0 118.5ZM219.9 161.0C225.5 158.5 232.7 151.5 235.9 145.2C243.1 131.1 243.1 105.8 235.9 91.8C227.7 75.7 208.6 68.9 191.8 76.2C186.5 78.4 179.2 85.7 176.2 91.6C170.7 102.3 168.8 121.4 171.9 134.0C175.7 149.5 184.8 159.7 197.7 163.0C203.4 164.4 214.1 163.4 219.9 161.0ZM363.2 161.5C377.3 156.6 385.4 141.1 385.4 119.0C385.4 107.0 383.9 99.6 379.9 91.7C368.8 70.0 337.7 68.1 323.2 88.2C318.0 95.6 315.8 103.0 315.2 115.3C314.7 127.4 316.0 136.0 319.6 143.5C327.6 160.5 345.2 167.7 363.2 161.5ZM794.5 161.1C800.5 158.5 805.4 153.9 808.3 148.5C810.0 145.2 810.5 142.3 810.8 132.3L811.2 120.2 L806.9 121.6C804.6 122.4 798.1 123.8 792.6 124.7C763.5 129.1 754.0 134.5 754.0 146.5C754.0 154.0 758.3 159.5 766.6 162.6C772.6 164.8 788.1 164.0 794.5 161.1ZM1078.6 101.8C1076.2 86.8 1064.6 75.1 1050.3 73.2C1029.8 70.5 1014.3 81.8 1010.5 102.3L1009.8 106.0 L1044.5 106.0L1079.3 106.0 L1078.6 101.8ZM443.4 31.0C435.6 29.2 430.1 21.1 431.3 13.4C432.5 6.2 439.8 -0.0 447.2 0.0C451.5 0.1 458.3 3.2 460.4 6.1C465.2 13.0 464.4 21.7 458.5 26.9C455.7 29.4 449.0 32.3 447.0 31.9C446.7 31.8 445.1 31.5 443.4 31.0Z"/></svg><span class="foot-sep">·</span><span id="footProduct"></span><span class="foot-sep">·</span><span id="footLicence"></span></footer>
 

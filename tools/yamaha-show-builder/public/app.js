@@ -1,4 +1,6 @@
 import { LICENCE, PRODUCT, VERSION } from './about.js';
+import { rigPaperwork } from './rig.js';
+import { mountRig } from './rig-ui.js';
 import {
   applyTemplate, changedCommands, cueCommand, deskCaps, gainOf, makeTemplate, monitorShow, pairMonitors, paperwork, parseInputList, phantomOf,
   rememberPush, sceneStoreCommand,
@@ -19,7 +21,11 @@ function save() {
   try { localStorage.setItem(STORE, JSON.stringify(show)); } catch { /* private mode: fine */ }
 }
 function el(tag, props = {}, ...children) {
-  const node = Object.assign(document.createElement(tag), props);
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k.includes('-') || k === 'list') node.setAttribute(k, v); // aria-* and list are attributes only
+    else node[k] = v;
+  }
   node.append(...children.filter((c) => c != null && c !== false));
   return node;
 }
@@ -40,6 +46,7 @@ function render() {
   $('maxLen').textContent = show.options.maxNameLength;
   for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) $(k).value = show.options[k];
   $('setLevels').checked = show.options.setLevels;
+  $('safeStart').checked = show.options.safeStart !== false;
   $('autoOrder').checked = show.options.autoOrder !== false;
 
   // Routing grid
@@ -49,7 +56,7 @@ function render() {
     return m.stereo ? `Mix ${m.mix}/${m.mix + 1}` : `Mix ${m.mix}`;
   };
   const head = el('tr', {},
-    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }), el('th', { textContent: 'Gain dB' }), el('th', { textContent: '48V' }), el('th', { className: 'zone all-col', textContent: 'All' }),
+    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }), el('th', { textContent: 'Gain target dB', title: 'Safe start sends the lowest gain; bring it up to this at line check' }), el('th', { textContent: '48V' }), el('th', { className: 'zone all-col', textContent: 'All' }),
     ...show.zones.map((zone) => el('th', { className: 'zone' },
       el('input', { value: zone.name, onchange: (e) => update(() => { zone.name = e.target.value; }) }),
       el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: 'Remove zone', textContent: '×', onclick: () => update(() => removeZone(zone)) })),
@@ -115,6 +122,9 @@ function render() {
   renderGroups(plan, model);
   renderSendOptions(plan, model);
   renderLineCheck(plan, model);
+  rigUi.renderRios($('rioBox'));
+  if (activeTab === 'amps') rigUi.renderAmps($('ampsMain'));
+  if (activeTab === 'rf') rigUi.renderRf($('rfMain'));
   save();
   return plan;
 }
@@ -274,6 +284,12 @@ function showDevices({ devices, subnets }) {
           connectDesk();
         };
         li.append(use);
+      } else if (d.ip && (d.kind === 'amp' || d.kind === 'radio')) {
+        const targets = rigUi.ipTargets().filter((t) => t.kind === d.kind);
+        li.append(el('select', {
+          'aria-label': `Use ${d.ip} for`,
+          onchange: (e) => { const t = targets[Number(e.target.value)]; if (t) { update(() => t.set(d.ip)); $('findStatus').textContent = `${d.ip} is now ${t.label}.`; } e.target.value = ''; },
+        }, el('option', { value: '', textContent: 'Use for…' }), ...targets.map((t, i) => el('option', { value: String(i), textContent: t.label }))));
       }
       ul.append(li);
     }
@@ -287,6 +303,43 @@ $('findBtn').onclick = findDevices;
 $('findAgain').onclick = findDevices;
 $('findSubnet').onkeydown = (e) => { if (e.key === 'Enter') findDevices(); };
 $('findClose').onclick = () => { $('findPanel').hidden = true; };
+
+// ---- Desk / Amplifiers / RF tabs ----
+const TAB_KEY = `${STORE}-tab`;
+let activeTab = (() => { try { return localStorage.getItem(TAB_KEY) || 'desk'; } catch { return 'desk'; } })();
+function showTab(tab) {
+  activeTab = ['desk', 'amps', 'rf'].includes(tab) ? tab : 'desk';
+  try { localStorage.setItem(TAB_KEY, activeTab); } catch { /* storage off */ }
+  for (const t of ['desk', 'amps', 'rf']) {
+    $(`tab-${t}`).hidden = t !== activeTab;
+    $(`tabBtn-${t}`).setAttribute('aria-selected', String(t === activeTab));
+  }
+  render();
+}
+for (const t of ['desk', 'amps', 'rf']) $(`tabBtn-${t}`).onclick = () => showTab(t);
+
+// How the Amplifiers and RF tabs reach the kit: through this app's server
+const rigUi = mountRig({
+  getShow: () => show,
+  update,
+  transport: {
+    shure: async (host, lines, check, onLine) => {
+      try { return await streamLines('/api/shure', { host, lines, check }, onLine); } catch (err) { return { error: err.message }; }
+    },
+    specteraDevices: async (host, password) => {
+      const res = await fetch('/api/spectera/devices', { method: 'POST', body: JSON.stringify({ host, password }) });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      return data.devices;
+    },
+    specteraPush: async (host, password, writes) => {
+      const res = await fetch('/api/spectera/push', { method: 'POST', body: JSON.stringify({ host, password, writes }) });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      return data.results;
+    },
+  },
+});
 
 // Streams one JSON line per command from the app server and hands each to onLine
 async function streamLines(path, body, onLine) {
@@ -423,6 +476,7 @@ for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) {
 }
 $('autoOrder').onchange = (e) => update(() => { show.options.autoOrder = e.target.checked; });
 $('setLevels').onchange = (e) => update(() => { show.options.setLevels = e.target.checked; });
+$('safeStart').onchange = (e) => update(() => { show.options.safeStart = e.target.checked; });
 // New show wipes the page back to empty; Example loads the conference example. Both ask first unless the page is already empty.
 let pendingShow = null;
 function resetPage() {
@@ -480,7 +534,7 @@ const range = (p, n) => (p ? (n > 1 ? `${portLabel(p)}–${p.port + n - 1}` : po
 function bankSelect(banks, value, autoText, onChange) {
   return el('select', { 'aria-label': 'Patch', onchange: (e) => onChange(e.target.value) },
     ...(autoText ? [el('option', { value: 'auto', textContent: autoText, selected: !value })] : []),
-    ...banks.map((b) => el('option', { value: b.key, textContent: `${b.label} (1–${b.size})`, selected: value === b.key })));
+    ...banks.map((b) => el('option', { value: b.key, textContent: `${b.label} (${b.first || 1}–${(b.first || 1) + b.size - 1})`, selected: value === b.key })));
 }
 function patchControl(target, banks, autoText) {
   const fixed = target.patch;
@@ -500,8 +554,8 @@ function startControl(id, banks, opt) {
   $(`${id}Port`).onchange = (e) => update(() => { show.options[opt] = { bank: $(`${id}Bank`).value, port: Math.max(1, Math.round(Number(e.target.value) || 1)) }; });
 }
 function renderPatch(plan, model) {
-  const inBanks = patchBanks(model, 'in');
-  const outBanks = patchBanks(model, 'out');
+  const inBanks = patchBanks(model, 'in', show.rios);
+  const outBanks = patchBanks(model, 'out', show.rios);
   const sends = plan.patchOnDesk.outputs;
   $('patchNote').textContent = sends
     ? `The app patches your outputs on the ${model.label}. The desk won't let it touch the input patch, so plug inputs in from this list or the patch sheet.`
@@ -695,7 +749,7 @@ function renderLineCheck(plan, model) {
     : canSolo ? 'Tap Solo to hear a channel on the desk, then tick it. Ticking a soloed channel moves the solo on to the next one.'
       : 'Connect to the desk to solo channels from here.';
   $('lcTable').replaceChildren(
-    el('thead', {}, el('tr', {}, ...['✓', 'Ch', 'Name', 'Plugs into', 'Mic / note', '48V', 'Gain', ''].map((t) => el('th', { textContent: t })))),
+    el('thead', {}, el('tr', {}, ...['✓', 'Ch', 'Name', 'Plugs into', 'Mic / note', '48V', 'Bring gain to', ''].map((t) => el('th', { textContent: t })))),
     el('tbody', {}, ...plan.channels.map((c) => {
       const key = lcKey(c);
       const ticked = Boolean(show.lineCheck[key]);
@@ -744,7 +798,8 @@ $('lcClear').onclick = () => update(() => { show.lineCheck = {}; });
 
 // ---- Paperwork: input list, outputs, line check sheet, desk tape and stage-box labels, ready to print ----
 $('paperworkBtn').onclick = () => {
-  const p = paperwork(show, buildPlan(show), { version: VERSION, licence: LICENCE });
+  const plan = buildPlan(show);
+  const p = paperwork(show, plan, { version: VERSION, licence: LICENCE, extra: rigPaperwork(show, plan) });
   const title = p.title.replace(/[<>&]/g, '');
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title><style>body{margin:24px;background:#fff}${p.css}@media print{.noprint{display:none}body{margin:0}}</style></head><body><p class="noprint"><button onclick="print()">Print</button></p>${p.body}</body></html>`;
   window.open(URL.createObjectURL(new Blob([html], { type: 'text/html' })), '_blank');
@@ -756,4 +811,4 @@ renderTemplates();
 $('footProduct').textContent = `${PRODUCT} v${VERSION}`;
 $('footLicence').textContent = `Licence ${LICENCE}`;
 
-render();
+showTab(activeTab);
