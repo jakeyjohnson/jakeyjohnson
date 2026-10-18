@@ -24,18 +24,47 @@ export const MODELS = {
   PM7:     { label: 'PM7 (CSD-R7)',                    series: 'RIVAGE', inputs: 144, mixes: 60 }, // sources disagree on inputs; check yours
 };
 
-export const COLORS =['Blue', 'SkyBlue', 'Cyan', 'Green', 'Yellow', 'Orange', 'Red', 'Magenta', 'Purple', 'White'];
+// Channel colours every desk has. CL/QL/DM/RIVAGE call two of them Cyan and Magenta; TF calls them
+// SkyBlue and Pink (from the desks' own parameter lists). Shows store these names; deskColor() translates.
+export const COLORS = ['Blue', 'Cyan', 'Green', 'Yellow', 'Orange', 'Red', 'Magenta', 'Purple'];
+const TF_COLORS = { Cyan: 'SkyBlue', Magenta: 'Pink' };
+const OLD_COLORS = { SkyBlue: 'Cyan', Pink: 'Magenta', White: 'Blue' }; // shows saved by earlier versions
 
-// category decides which zones a new source is routed to by default.
-// The order here is the auto channel order: speech mics first, then program, BGM last.
+export function normalizeColor(color) {
+  return COLORS.includes(color) ? color : OLD_COLORS[color] || 'Blue';
+}
+function deskColor(model, color) {
+  const c = normalizeColor(color);
+  return model.series === 'TF' ? TF_COLORS[c] || c : c;
+}
+
+// category decides which zones a new source is routed to by default; hpf is the default
+// high-pass filter in Hz (0 = off). The order here is the auto channel order: speech mics,
+// then the band (drums, bass, guitars, keys, vocals), then program, BGM last.
 export const SOURCE_TYPES = {
-  lectern:  { label: 'Lectern mic',      short: 'Lect',  stereo: false, color: 'Blue',    category: 'speech' },
-  headset:  { label: 'Headset mic',      short: 'HS',    stereo: false, color: 'Cyan',    category: 'speech' },
-  handheld: { label: 'Handheld mic',     short: 'HH',    stereo: false, color: 'SkyBlue', category: 'speech' },
-  laptop:   { label: 'Laptop audio',     short: 'Lap',   stereo: true,  color: 'Yellow',  category: 'program' },
-  playback: { label: 'Stereo playback',  short: 'PB',    stereo: true,  color: 'Green',   category: 'program' },
-  bgm:      { label: 'Background music', short: 'BGM',   stereo: true,  color: 'Orange',  category: 'bgm' },
+  lectern:  { label: 'Lectern mic',      short: 'Lect',  stereo: false, color: 'Blue',    category: 'speech',  hpf: 180 },
+  headset:  { label: 'Headset mic',      short: 'HS',    stereo: false, color: 'Cyan',    category: 'speech',  hpf: 180 },
+  handheld: { label: 'Handheld mic',     short: 'HH',    stereo: false, color: 'Cyan',    category: 'speech',  hpf: 180 },
+  kick:     { label: 'Kick drum',        short: 'Kick',  stereo: false, color: 'Red',     category: 'band',    hpf: 30 },
+  snare:    { label: 'Snare',            short: 'Snare', stereo: false, color: 'Red',     category: 'band',    hpf: 80 },
+  hihat:    { label: 'Hi-hat',           short: 'HiHat', stereo: false, color: 'Red',     category: 'band',    hpf: 200 },
+  tom:      { label: 'Tom',              short: 'Tom',   stereo: false, color: 'Red',     category: 'band',    hpf: 60 },
+  overhead: { label: 'Overheads',        short: 'OH',    stereo: true,  color: 'Red',     category: 'band',    hpf: 150 },
+  bass:     { label: 'Bass (DI or mic)', short: 'Bass',  stereo: false, color: 'Purple',  category: 'band',    hpf: 30 },
+  guitar:   { label: 'Electric guitar',  short: 'Gtr',   stereo: false, color: 'Orange',  category: 'band',    hpf: 100 },
+  acoustic: { label: 'Acoustic guitar',  short: 'AcGtr', stereo: false, color: 'Orange',  category: 'band',    hpf: 100 },
+  keys:     { label: 'Keys',             short: 'Keys',  stereo: true,  color: 'Yellow',  category: 'band',    hpf: 0 },
+  instrument: { label: 'Other instrument', short: 'Inst', stereo: false, color: 'Yellow', category: 'band',    hpf: 0 },
+  vocal:    { label: 'Vocal mic',        short: 'Vox',   stereo: false, color: 'Magenta', category: 'band',    hpf: 180 },
+  laptop:   { label: 'Laptop audio',     short: 'Lap',   stereo: true,  color: 'Green',   category: 'program', hpf: 0 },
+  playback: { label: 'Stereo playback',  short: 'PB',    stereo: true,  color: 'Green',   category: 'program', hpf: 0 },
+  bgm:      { label: 'Background music', short: 'BGM',   stereo: true,  color: 'Orange',  category: 'bgm',     hpf: 0 },
 };
+
+// A source's HPF in Hz, 0 when off. Shows saved before HPF existed take the type's default.
+export function hpfOf(source) {
+  return source.hpf ?? SOURCE_TYPES[source.type]?.hpf ?? 0;
+}
 const TYPE_RANK = Object.keys(SOURCE_TYPES);
 
 // Groups sources by type in the order above, keeping their order within each type
@@ -44,12 +73,12 @@ export function orderSources(sources) {
 }
 
 export const ZONE_TYPES = {
-  main:      { label: 'Main L/R',       short: 'Main LR', takes: ['speech', 'program'], color: 'Red' },
-  frontfill: { label: 'Front fills',    short: 'FrntFil', takes: ['speech', 'program'], color: 'Magenta' },
-  delay:     { label: 'Delay',          short: 'Delay',   takes: ['speech', 'program'], color: 'Purple' },
-  ceiling:   { label: 'Ceiling',        short: 'Ceiling', takes: ['bgm'],               color: 'Orange' },
-  foldback:  { label: 'Foldback',       short: 'Fldbk',   takes: ['program'],           color: 'Yellow' },
-  record:    { label: 'Record/stream',  short: 'Record',  takes: ['speech', 'program'], color: 'White' },
+  main:      { label: 'Main L/R',       short: 'Main LR', takes: ['speech', 'band', 'program'], color: 'Red' },
+  frontfill: { label: 'Front fills',    short: 'FrntFil', takes: ['speech', 'band', 'program'], color: 'Magenta' },
+  delay:     { label: 'Delay',          short: 'Delay',   takes: ['speech', 'band', 'program'], color: 'Purple' },
+  ceiling:   { label: 'Ceiling',        short: 'Ceiling', takes: ['bgm'],                       color: 'Orange' },
+  foldback:  { label: 'Foldback',       short: 'Fldbk',   takes: ['program'],                   color: 'Yellow' },
+  record:    { label: 'Record/stream',  short: 'Record',  takes: ['speech', 'band', 'program'], color: 'Green' },
 };
 
 const NEG_INF = -32768; // RCP value for -inf; levels are in 1/100 dB
@@ -70,6 +99,7 @@ export function makeSource(type, n, zones, name) {
     name: name || `${t.short} ${n}`,
     stereo: t.stereo,
     color: t.color,
+    hpf: t.hpf,
     zones: zones.filter((z) => ZONE_TYPES[z.type].takes.includes(t.category)).map((z) => z.id),
   };
 }
@@ -166,7 +196,7 @@ export function buildPlan(show) {
   for (const { mix, zone } of mixes) {
     const i = mix - 1;
     set('Mix/Label/Name', i, 0, `"${label(zone.name)}"`);
-    set('Mix/Label/Color', i, 0, zone.color);
+    set('Mix/Label/Color', i, 0, deskColor(model, zone.color));
     set('Mix/ToSt/On', i, 0, 0); // zones never feed back into the main bus
     if (setLevels) {
       set('Mix/Fader/On', i, 0, 1);
@@ -178,7 +208,11 @@ export function buildPlan(show) {
     const i = c.ch - 1;
     const { source } = c;
     set('InCh/Label/Name', i, 0, `"${label(c.name)}"`);
-    set('InCh/Label/Color', i, 0, source.color);
+    set('InCh/Label/Color', i, 0, deskColor(model, source.color));
+    // HPF frequency is sent in tenths of a hertz (180 Hz = 1800)
+    const hpf = hpfOf(source);
+    set('InCh/HPF/On', i, 0, hpf ? 1 : 0);
+    if (hpf) set('InCh/HPF/Freq', i, 0, Math.round(Math.min(2000, Math.max(20, hpf)) * 10));
     if (setLevels) {
       set('InCh/Fader/On', i, 0, 1);
       set('InCh/Fader/Level', i, 0, NEG_INF); // always start inputs closed
@@ -199,12 +233,108 @@ export function buildPlan(show) {
 // Patch sheet for the engineer: what plugs in where
 export function patchSheetCsv(show, plan) {
   const zoneName = (id) => show.zones.find((z) => z.id === id)?.name ?? id;
-  const rows = [['Kind', 'Number', 'Name', 'Type', 'Routed to']];
+  const rows = [['Kind', 'Number', 'Name', 'Type', 'HPF', 'Routed to']];
   for (const c of plan.channels) {
-    rows.push(['Input', `Ch ${c.ch}`, c.name, SOURCE_TYPES[c.source.type].label, c.source.zones.map(zoneName).join(' + ')]);
+    const hpf = hpfOf(c.source);
+    rows.push(['Input', `Ch ${c.ch}`, c.name, SOURCE_TYPES[c.source.type].label, hpf ? `${hpf} Hz` : 'off', c.source.zones.map(zoneName).join(' + ')]);
   }
   const main = show.zones.find((z) => z.type === 'main');
-  if (main) rows.push(['Output', 'Stereo L/R', main.name, 'Main PA', '']);
-  for (const m of plan.mixes) rows.push(['Output', `Mix ${m.mix}`, m.zone.name, ZONE_TYPES[m.zone.type].label, '']);
+  if (main) rows.push(['Output', 'Stereo L/R', main.name, 'Main PA', '', '']);
+  for (const m of plan.mixes) rows.push(['Output', `Mix ${m.mix}`, m.zone.name, ZONE_TYPES[m.zone.type].label, '', '']);
   return rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+}
+
+// ---- AI builder: turns a plain-English request into inputs and zones to add ----
+// The same prompt and validation serve the local app (Claude API) and the online demo.
+
+export const AI_SCHEMA = {
+  type: 'object',
+  properties: {
+    sources: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: Object.keys(SOURCE_TYPES) },
+          name: { type: 'string' },
+          count: { type: 'integer' },
+        },
+        required: ['type', 'name', 'count'],
+        additionalProperties: false,
+      },
+    },
+    zones: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: Object.keys(ZONE_TYPES).filter((t) => t !== 'main') },
+          name: { type: 'string' },
+        },
+        required: ['type', 'name'],
+        additionalProperties: false,
+      },
+    },
+    summary: { type: 'string' },
+  },
+  required: ['sources', 'zones', 'summary'],
+  additionalProperties: false,
+};
+
+export function aiPrompt(request, show) {
+  const max = show.options?.maxNameLength || 8;
+  const types = Object.entries(SOURCE_TYPES).map(([k, t]) => `- ${k}: ${t.label}${t.stereo ? ' (stereo, uses 2 channels)' : ''}`).join('\n');
+  const zoneTypes = Object.entries(ZONE_TYPES).filter(([k]) => k !== 'main').map(([k, t]) => `- ${k}: ${t.label}`).join('\n');
+  const current = show.sources.map((s) => s.name).join(', ') || 'nothing yet';
+  return `You are helping a live sound engineer set up a Yamaha digital mixing desk for an event.
+They describe extra inputs (microphones, instruments, playback) and speaker zones to add to their show.
+Turn the request into the inputs and zones to ADD, using only these input types:
+${types}
+
+and these zone types (each becomes a mix bus; Main L/R already exists):
+${zoneTypes}
+
+Rules:
+- One entry per kind of input. "count" is how many; with a count above 1 they are numbered automatically, so "name" is the base name ("Tom" with count 3 gives Tom 1, Tom 2, Tom 3).
+- Names are what the desk shows: at most ${max} characters including the number, and ${Math.max(2, max - 2)} for stereo inputs.
+- Expand packages into a sensible, standard mic list. A "full band" or "drum kit" means real channels: kick, snare, hi-hat, toms, overheads and so on.
+- Use "instrument" for anything without its own type and name it clearly.
+- Add zones only if the request asks for speakers or monitor mixes. Use "foldback" for wedges and in-ear mixes.
+- Do not repeat inputs the show already has unless the request asks for more.
+- "summary" is one short sentence describing what you added, for the engineer.
+
+The show already has: ${current}.
+
+Request: ${request}
+
+Reply with only JSON in this shape:
+{"sources":[{"type":"kick","name":"Kick","count":1}],"zones":[{"type":"foldback","name":"Wedge 1"}],"summary":"..."}`;
+}
+
+// Checks a reply against the types this app knows and clamps counts, so a bad reply can't break the show
+export function normalizeSuggestion(raw) {
+  const sources = (Array.isArray(raw?.sources) ? raw.sources : [])
+    .filter((s) => SOURCE_TYPES[s?.type])
+    .map((s) => ({ type: s.type, name: String(s.name || SOURCE_TYPES[s.type].short).replace(/["\r\n]/g, '').trim().slice(0, 32), count: Math.min(32, Math.max(1, Math.round(Number(s.count) || 1))) }));
+  const zones = (Array.isArray(raw?.zones) ? raw.zones : [])
+    .filter((z) => ZONE_TYPES[z?.type] && z.type !== 'main')
+    .map((z) => ({ type: z.type, name: String(z.name || ZONE_TYPES[z.type].short).replace(/["\r\n]/g, '').trim().slice(0, 32) }));
+  return { sources, zones, summary: String(raw?.summary || '').slice(0, 300) };
+}
+
+// Adds a normalized suggestion to the show: zones first so the new inputs route to them
+export function applySuggestion(show, suggestion) {
+  for (const z of suggestion.zones) {
+    const zone = makeZone(z.type, z.name);
+    show.zones.push(zone);
+    for (const s of show.sources) {
+      if (ZONE_TYPES[z.type].takes.includes(SOURCE_TYPES[s.type].category)) s.zones.push(zone.id);
+    }
+  }
+  for (const s of suggestion.sources) {
+    for (let i = 1; i <= s.count; i++) {
+      show.sources.push(makeSource(s.type, i, show.zones, s.count > 1 ? `${s.name} ${i}` : s.name));
+    }
+  }
+  return show;
 }

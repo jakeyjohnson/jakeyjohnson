@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addSources, buildPlan, defaultShow, makeSource, patchSheetCsv } from '../public/plan.js';
+import { addSources, applySuggestion, buildPlan, defaultShow, makeSource, normalizeSuggestion, patchSheetCsv } from '../public/plan.js';
 
 test('default show matches the conference brief', () => {
   const show = defaultShow();
@@ -48,7 +48,8 @@ test('patch sheet lists every channel and output', () => {
   const show = defaultShow();
   const csv = patchSheetCsv(show, buildPlan(show)).split('\n');
   assert.equal(csv.length, 1 + 14 + 1 + 4);
-  assert.match(csv[13], /"Ch 13","BGM L","Background music","Ceiling"/);
+  assert.match(csv[13], /"Ch 13","BGM L","Background music","off","Ceiling"/);
+  assert.match(csv[1], /"Ch 1","Lect 1","Lectern mic","180 Hz",/);
 });
 
 test('model limits are checked', () => {
@@ -82,4 +83,60 @@ test('auto order off keeps the hand-made order with no spares', () => {
   assert.equal(plan.channels.at(-1).name, 'Lect 3');
   assert.deepEqual(plan.spares, []);
   assert.equal(plan.channels.find((c) => c.name === 'BGM L').ch, 11);
+});
+
+test('vocal mics get an HPF at 180 Hz, playback has it off', () => {
+  const plan = buildPlan(defaultShow());
+  const has = (cmd) => plan.commands.includes(cmd);
+  assert.ok(has('set MIXER:Current/InCh/HPF/On 0 0 1')); // Lect 1
+  assert.ok(has('set MIXER:Current/InCh/HPF/Freq 0 0 1800'));
+  assert.ok(has('set MIXER:Current/InCh/HPF/Freq 5 0 1800')); // HH 4
+  assert.ok(has('set MIXER:Current/InCh/HPF/On 6 0 0')); // PB 1 L
+  assert.ok(!plan.commands.some((c) => c.startsWith('set MIXER:Current/InCh/HPF/Freq 6 ')));
+});
+
+test('a show saved before HPF existed takes the type default', () => {
+  const show = defaultShow();
+  for (const s of show.sources) delete s.hpf;
+  assert.ok(buildPlan(show).commands.includes('set MIXER:Current/InCh/HPF/Freq 0 0 1800'));
+});
+
+test('colours use each desk family\'s own names', () => {
+  const show = defaultShow();
+  show.options.model = 'TF5';
+  let plan = buildPlan(show);
+  assert.ok(plan.commands.includes('set MIXER:Current/InCh/Label/Color 2 0 SkyBlue')); // HH 1 on a TF
+  assert.ok(plan.commands.includes('set MIXER:Current/Mix/Label/Color 0 0 Pink')); // front fills
+  show.options.model = 'CL5';
+  plan = buildPlan(show);
+  assert.ok(plan.commands.includes('set MIXER:Current/InCh/Label/Color 2 0 Cyan'));
+  show.sources[0].color = 'White'; // saved by an older version
+  assert.ok(buildPlan(show).commands.includes('set MIXER:Current/InCh/Label/Color 0 0 Blue'));
+});
+
+test('an AI suggestion is checked before it touches the show', () => {
+  const raw = {
+    sources: [
+      { type: 'kick', name: 'Kick', count: 1 },
+      { type: 'tom', name: 'Tom', count: 3 },
+      { type: 'overhead', name: 'OH', count: 1 },
+      { type: 'vocal', name: 'Vox', count: 99 },
+      { type: 'laser', name: 'Pew', count: 1 }, // unknown type: dropped
+    ],
+    zones: [{ type: 'foldback', name: 'Wedge 1' }, { type: 'main', name: 'Main 2' }],
+    summary: 'Drum kit, vocals and a wedge.',
+  };
+  const s = normalizeSuggestion(raw);
+  assert.deepEqual(s.sources.map((x) => `${x.type}x${x.count}`), ['kickx1', 'tomx3', 'overheadx1', 'vocalx32']);
+  assert.deepEqual(s.zones.map((z) => z.name), ['Wedge 1']);
+
+  const show = defaultShow();
+  applySuggestion(show, { ...s, sources: s.sources.slice(0, 3) });
+  const names = buildPlan(show).channels.map((c) => c.name);
+  assert.deepEqual(names.slice(6, 12), ['Kick', 'Tom 1', 'Tom 2', 'Tom 3', 'OH L', 'OH R']); // band sits after the speech mics
+  const kick = show.sources.find((x) => x.name === 'Kick');
+  const wedge = show.zones.find((z) => z.name === 'Wedge 1');
+  assert.equal(kick.hpf, 30);
+  assert.ok(kick.zones.includes('main') && !kick.zones.includes(wedge.id));
+  assert.equal(normalizeSuggestion(null).sources.length, 0);
 });

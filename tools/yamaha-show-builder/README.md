@@ -6,11 +6,12 @@ Pick your inputs (lectern mics, handhelds, playback…), pick your speaker zones
 
 ## Run it
 
-Needs Node.js 18 or newer. There is nothing to install.
+Needs Node.js 18 or newer.
 
 ```bash
 cd tools/yamaha-show-builder
-npm start
+npm install                              # only needed for the AI builder
+ANTHROPIC_API_KEY=sk-ant-... npm start   # leave the key out if you don't use the AI builder
 ```
 
 Open http://localhost:8080. Other devices on the network (an iPad at FOH, say) can use `http://<laptop IP>:8080`.
@@ -50,12 +51,37 @@ The app talks to the desk using Yamaha's remote control protocol (TCP port 49280
 | Thing | How |
 |---|---|
 | Inputs | Channel names, colours, input faders at -∞ (switch off "Reset faders" to leave levels alone) |
+| HPF | High-pass filter on and set per input (see below), or off |
 | Stereo sources | Use two mono channels (L/R) panned hard left and right |
 | Main L/R zone | The stereo bus. Inputs ticked for Main are assigned to it |
 | Other zones | One mix bus each (front fill = Mix 1, and so on). Named, coloured, master at 0 dB, not routed to the stereo bus |
 | Sends | 0 dB to each ticked zone (-3 dB per side for stereo sources into a mono zone), off and -∞ everywhere else |
 
 Use **First channel** and **First mix** to start somewhere other than channel 1 or Mix 1.
+
+## Processing defaults
+
+Every input type comes with a high-pass filter default, which you can change per row in the **HPF Hz** column (blank = off):
+
+| Input | HPF |
+|---|---|
+| Lectern, headset, handheld and vocal mics | 180 Hz |
+| Kick, bass | 30 Hz |
+| Tom | 60 Hz |
+| Snare | 80 Hz |
+| Electric and acoustic guitar | 100 Hz |
+| Overheads | 150 Hz |
+| Hi-hat | 200 Hz |
+| Keys, other instruments, laptop, playback, background music | off |
+
+## AI builder
+
+Type what else you need in plain English, for example *"full band: drum kit, bass, 2 guitars, keys and 4 vocals, plus 4 wedges"*, and press **Build with AI**. Claude turns it into a list of inputs and zones. Nothing changes until you press **Add to show**, and everything it adds can be edited like any other row.
+
+- **Local app:** uses the Claude API (Claude Opus 5.5) through the official Anthropic SDK. Start the app with `ANTHROPIC_API_KEY` set, after `npm install`. Requests are billed to that API key, and anyone on your network who can open the app can use it.
+- **Online demo:** uses Claude on the viewer's own claude.ai account. The first use asks for permission.
+- **What gets sent:** your request, the names of inputs already in the show, and the name length. Nothing about the desk or the network is sent.
+- **Checks:** Claude can only pick from the input and zone types the app knows. Unknown types are dropped and counts are capped at 32.
 
 ## Channel order
 
@@ -92,6 +118,11 @@ npm test        # unit tests for the routing logic
 ```
 
 ## Desk notes
+
+- **Parameter names** come from the desks' own `prminfo` replies, as collected in the open-source [Bitfocus Companion Yamaha RCP module](https://github.com/bitfocus/companion-module-yamaha-rcp) (`schemas/`). Those lists cover a selection of each desk's parameters:
+  - **Confirmed directly:** names, colours, fader level and on/off, mix sends and pan on every family. HPF on and frequency (sent as Hz × 10) on DM7 and RIVAGE.
+  - **Not in the lists, so not yet confirmed:** HPF on CL/QL/TF/DM3. Stereo bus on/off (`ToSt/On`) on CL/QL/TF/RIVAGE (it is listed for DM3/DM7).
+- **Colours:** TF desks call two colours SkyBlue and Pink where the others say Cyan and Magenta. The app translates automatically.
 
 - **Name length:** older CL, QL and TF firmware shows up to 8 characters. Raise **Name length** for DM7 or RIVAGE.
 - **Rejected commands:** if a desk rejects a command (some parameter names differ between models or firmware), the push carries on and the log lists the rejected lines in red. Send those so the generator can be adjusted.

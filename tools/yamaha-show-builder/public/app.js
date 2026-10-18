@@ -1,6 +1,6 @@
-import { COLORS, MODELS, SOURCE_TYPES, ZONE_TYPES, addSources, buildPlan, orderSources, defaultShow, makeZone, patchSheetCsv } from './plan.js';
+import { COLORS, MODELS, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, patchSheetCsv } from './plan.js';
 
-const SWATCH = { Blue: '#3d6dff', SkyBlue: '#58b8ff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff', White: '#e8e8e8' };
+const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
 const $ = (id) => document.getElementById(id);
 const STORE = 'yamaha-show-builder';
 
@@ -18,7 +18,8 @@ function el(tag, props = {}, ...children) {
   node.append(...children.filter((c) => c != null));
   return node;
 }
-function colorSelect(value, onChange) {
+function colorSelect(color, onChange) {
+  const value = normalizeColor(color);
   const sel = el('select', { title: 'Colour', onchange: (e) => onChange(e.target.value) },
     ...COLORS.map((c) => el('option', { value: c, textContent: c, selected: c === value })));
   sel.style.borderLeft = `6px solid ${SWATCH[value]}`;
@@ -39,7 +40,7 @@ function render() {
   // Routing grid
   const busLabel = (zone) => zone.type === 'main' ? 'Stereo' : `Mix ${plan.mixes.find((m) => m.zone === zone).mix}`;
   const head = el('tr', {},
-    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }),
+    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'HPF Hz' }),
     ...show.zones.map((zone) => el('th', { className: 'zone' },
       el('input', { value: zone.name, onchange: (e) => update(() => { zone.name = e.target.value; }) }),
       el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: 'Remove zone', textContent: '×', onclick: () => update(() => removeZone(zone)) })))),
@@ -53,6 +54,10 @@ function render() {
       el('td', { className: 'name' }, el('input', { value: source.name, onchange: (e) => update(() => { source.name = e.target.value; }) })),
       el('td', { className: 'type' }, el('select', { onchange: (e) => update(() => changeType(source, e.target.value)) },
         ...Object.entries(SOURCE_TYPES).map(([k, t]) => el('option', { value: k, textContent: t.label + (t.stereo ? ' (st)' : ''), selected: k === source.type })))),
+      el('td', { className: 'hpf' }, el('input', {
+        type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', title: 'High-pass filter in Hz (blank = off)',
+        onchange: (e) => update(() => { source.hpf = Math.max(0, Math.round(Number(e.target.value) || 0)); }),
+      })),
       ...show.zones.map((zone) => el('td', { className: 'route' }, el('input', {
         type: 'checkbox', checked: source.zones.includes(zone.id), title: `${source.name} → ${zone.name}`,
         onchange: (e) => update(() => {
@@ -62,7 +67,7 @@ function render() {
       el('td', {}, ...moveButtons(source),
         el('button', { className: 'remove', title: 'Remove input', textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
   });
-  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 5, className: 'type', textContent: 'No inputs yet. Add some above.' }));
+  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 6, className: 'type', textContent: 'No inputs yet. Add some above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty || null));
 
   const of = (n) => (model.inputs ? ` of ${n}` : '');
@@ -103,7 +108,7 @@ function removeZone(zone) {
 
 function changeType(source, type) {
   const t = SOURCE_TYPES[type];
-  Object.assign(source, { type, stereo: t.stereo, color: t.color });
+  Object.assign(source, { type, stereo: t.stereo, color: t.color, hpf: t.hpf });
   source.zones = show.zones.filter((z) => ZONE_TYPES[z.type].takes.includes(t.category)).map((z) => z.id);
 }
 
@@ -191,8 +196,14 @@ async function pushDesk() {
 }
 
 // Static controls
+const GROUPS = { speech: 'Speech', band: 'Band', program: 'Playback', bgm: 'Playback' };
+const groups = {};
 for (const [type, t] of Object.entries(SOURCE_TYPES)) {
-  $('addButtons').append(el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addSources(show, type, Math.max(1, Number($('addCount').value) || 1))) }));
+  const chip = el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addSources(show, type, Math.max(1, Number($('addCount').value) || 1))) });
+  (groups[GROUPS[t.category]] ||= []).push(chip);
+}
+for (const [name, chips] of Object.entries(groups)) {
+  $('addButtons').append(el('div', { className: 'chip-group' }, el('span', { className: 'chip-label', textContent: name }), el('div', { className: 'chips' }, ...chips)));
 }
 for (const [type, t] of Object.entries(ZONE_TYPES)) {
   $('zoneButtons').append(el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addZone(type)) }));
@@ -227,6 +238,47 @@ $('toggleCommands').onclick = () => {
   $('toggleCommands').textContent = showCommands ? 'Hide commands' : 'Show commands';
   if (!showCommands) $('log').hidden = true;
   render();
+};
+
+// ---- AI builder ----
+let suggestion = null;
+function aiStatus(text, kind = '') {
+  $('aiStatus').textContent = text;
+  $('aiStatus').className = `status ${kind}`;
+}
+function showSuggestion(s) {
+  suggestion = s;
+  if (!s.sources.length && !s.zones.length) return aiStatus('Claude found nothing to add. Try naming the instruments or mics.', 'bad');
+  aiStatus('');
+  $('aiSummary').textContent = s.summary;
+  $('aiList').replaceChildren(
+    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name} · ${SOURCE_TYPES[x.type].label}` })),
+    ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Zone: ${z.name}` })));
+  $('aiPreview').hidden = false;
+}
+$('aiAdd').onclick = () => {
+  update(() => applySuggestion(show, suggestion));
+  $('aiPreview').hidden = true;
+  $('aiText').value = '';
+  aiStatus('Added. Check the routing grid below.', 'ok');
+};
+$('aiDiscard').onclick = () => { $('aiPreview').hidden = true; aiStatus(''); };
+$('aiGo').onclick = async () => {
+  const request = $('aiText').value.trim();
+  if (!request) return aiStatus('Describe what you want to add first.', 'bad');
+  $('aiGo').disabled = true;
+  $('aiPreview').hidden = true;
+  aiStatus('Asking Claude… this can take up to a minute.');
+  try {
+    const res = await fetch('/api/suggest', { method: 'POST', body: JSON.stringify({ request, show }) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showSuggestion(data);
+  } catch (err) {
+    aiStatus(err.message, 'bad');
+  } finally {
+    $('aiGo').disabled = false;
+  }
 };
 $('testDesk').onclick = testDesk;
 $('pushDesk').onclick = pushDesk;
