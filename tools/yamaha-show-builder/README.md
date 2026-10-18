@@ -4,6 +4,10 @@ Build a labelled, colour-coded, routed show on a Yamaha digital desk in a couple
 
 Pick your inputs (lectern mics, handhelds, playback…), pick your speaker zones (Main L/R, front fills, delays, ceiling…), tick what goes where, and push it to the desk.
 
+## Mac app
+
+There's a Mac app with the bridge built in: download, drag to Applications, open. See [`mac/README.md`](mac/README.md) for installing it, and for building it yourself.
+
 ## Run it
 
 Needs Node.js 18 or newer. Nothing to install, and it works fully offline: no internet connection is needed at any point.
