@@ -57,6 +57,21 @@ The app talks to the desk using Yamaha's remote control protocol (TCP port 49280
 
 Use **First channel** and **First mix** to start somewhere other than channel 1 or Mix 1.
 
+## Channel order
+
+With **Auto order channels** on (the default), inputs are grouped by type:
+
+1. Lectern mics
+2. Headset mics
+3. Handheld mics
+4. Laptop audio
+5. Stereo playback
+6. Background music
+
+Inputs of the same type stay in the order you added them. Stereo pairs always start on an odd channel, so they line up with the desk's odd/even channel pairing; when that needs a gap, the spare channel is listed under the grid and left untouched on the desk.
+
+Turn auto order off to set the order by hand with the ↑ ↓ arrows on each row.
+
 ## What you still do on the desk
 
 - **Physical patching.** Input sockets and Dante patching to channels, and mix buses to output sockets or amps. The **Patch sheet** button exports a CSV listing what goes where.

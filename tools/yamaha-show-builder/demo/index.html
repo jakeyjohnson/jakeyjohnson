@@ -61,6 +61,8 @@ td.ch { color: var(--muted); font: 13px var(--f-mono); }
 td.name input { width: 120px; }
 .remove { background: none; border: 0; color: var(--muted); padding: 4px 8px; }
 .remove:hover { color: var(--bad); }
+.order { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; font-size: 14px; }
+.order input { accent-color: var(--accent); }
 .summary { margin: 10px 0 0; padding: 0; list-style: none; font-size: 14px; display: grid; gap: 4px; }
 .summary .count { color: var(--muted); font-variant-numeric: tabular-nums; }
 .summary .warn { color: var(--warn); }
@@ -143,7 +145,8 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 
   <section>
     <h2><span class="n">3</span>Routing</h2>
-    <p class="hint">Tick which zones each input feeds. Rename anything; the desk shows the first <span id="maxLen"></span> characters. This example is 2 lecterns, 4 handhelds and 4 stereo playbacks, with playback 3 as background music in the ceiling only.</p>
+    <p class="hint">Tick which zones each input feeds. Rename anything; the desk shows the first <span id="maxLen"></span> characters. This example is 2 lecterns, 4 handhelds and 4 stereo playbacks, with playback 3 as background music in the ceiling only. Auto order puts it last.</p>
+    <label class="check order"><input id="autoOrder" type="checkbox">Auto order channels (mics, then laptops and playback, background music last)</label>
     <div class="table-wrap"><table id="grid"></table></div>
     <ul id="summary" class="summary"></ul>
   </section>
@@ -184,7 +187,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 </div>
 
 <script type="module">
-import { COLORS, MODELS, SOURCE_TYPES, ZONE_TYPES, addSources, buildPlan, defaultShow, makeZone, patchSheetCsv } from './plan.js';
+import { COLORS, MODELS, SOURCE_TYPES, ZONE_TYPES, addSources, buildPlan, orderSources, defaultShow, makeZone, patchSheetCsv } from './plan.js';
 
 const SWATCH = { Blue: '#3d6dff', SkyBlue: '#58b8ff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff', White: '#e8e8e8' };
 const $ = (id) => document.getElementById(id);
@@ -216,6 +219,7 @@ function colorSelect(value, onChange) {
 
 // ---- builder ----
 function render() {
+  if (show.options.autoOrder !== false) show.sources = orderSources(show.sources);
   const plan = buildPlan(show);
   const model = MODELS[show.options.model] || MODELS.custom;
   $('showName').value = show.name;
@@ -223,6 +227,7 @@ function render() {
   $('maxLen').textContent = show.options.maxNameLength;
   for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) $(k).value = show.options[k];
   $('setLevels').checked = show.options.setLevels;
+  $('autoOrder').checked = show.options.autoOrder !== false;
 
   const busLabel = (zone) => zone.type === 'main' ? 'Stereo' : `Mix ${plan.mixes.find((m) => m.zone === zone).mix}`;
   const head = el('tr', {},
@@ -243,7 +248,8 @@ function render() {
         type: 'checkbox', checked: source.zones.includes(zone.id), title: `${source.name} → ${zone.name}`,
         onchange: (e) => update(() => { source.zones = e.target.checked ? [...source.zones, zone.id] : source.zones.filter((z) => z !== zone.id); }),
       }))),
-      el('td', {}, el('button', { className: 'remove', title: `Remove ${source.name}`, textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
+      el('td', {}, ...moveButtons(source),
+        el('button', { className: 'remove', title: `Remove ${source.name}`, textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
   });
   const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 5, textContent: 'No inputs yet. Add some above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty));
@@ -251,12 +257,26 @@ function render() {
   const of = (n) => (n ? ` of ${n}` : '');
   $('summary').replaceChildren(
     el('li', { className: 'count', textContent: `${plan.channels.length}${of(model.inputs)} input channels · ${plan.mixes.length}${of(model.mixes)} mixes · ${plan.commands.length} commands` }),
+    plan.spares.length > 0 && el('li', { className: 'count', textContent: `Ch ${plan.spares.join(', ')} left spare so stereo pairs start on odd channels` }),
     ...[...new Set(plan.warnings)].map((w) => el('li', { className: 'warn', textContent: w })));
   if (showCommands && !pushing) { $('log').hidden = false; $('log').textContent = plan.commands.join('\n'); }
   $('deskModel').textContent = model.inputs ? model.label : '';
   save();
 }
 function update(fn) { fn(); render(); }
+function moveButtons(source) {
+  if (show.options.autoOrder !== false) return [];
+  const move = (step) => update(() => {
+    const i = show.sources.indexOf(source);
+    const j = i + step;
+    if (j < 0 || j >= show.sources.length) return;
+    [show.sources[i], show.sources[j]] = [show.sources[j], show.sources[i]];
+  });
+  return [
+    el('button', { className: 'remove', title: 'Move up', textContent: '↑', onclick: () => move(-1) }),
+    el('button', { className: 'remove', title: 'Move down', textContent: '↓', onclick: () => move(1) }),
+  ];
+}
 function removeZone(zone) {
   show.zones = show.zones.filter((z) => z !== zone);
   for (const s of show.sources) s.zones = s.zones.filter((z) => z !== zone.id);
@@ -401,6 +421,7 @@ for (const [type, t] of Object.entries(ZONE_TYPES)) {
 }
 $('showName').onchange = (e) => update(() => { show.name = e.target.value; });
 for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) $(k).onchange = (e) => update(() => { show.options[k] = Math.max(1, Number(e.target.value) || 1); });
+$('autoOrder').onchange = (e) => update(() => { show.options.autoOrder = e.target.checked; });
 $('setLevels').onchange = (e) => update(() => { show.options.setLevels = e.target.checked; });
 $('newShow').onclick = () => { update(() => { show = exampleShow(); }); setStatus('Started over with the example show.'); };
 $('toggleCommands').onclick = () => {
