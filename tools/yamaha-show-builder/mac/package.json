@@ -1,0 +1,74 @@
+{
+  "name": "kobikraken-show-builder",
+  "productName": "KobiKraken Show Builder",
+  "version": "0.11.0",
+  "description": "Builds and pushes shows for Yamaha desks, d&b amps, Shure and Spectera RF.",
+  "author": "Jakey Johnson",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "main.mjs",
+  "scripts": {
+    "prepare-app": "node prepare.mjs",
+    "start": "node prepare.mjs && electron .",
+    "build": "node prepare.mjs && electron-builder --mac zip --arm64 --x64 --publish never && node sign.mjs",
+    "build:dmg": "node prepare.mjs && electron-builder --mac dmg zip --arm64 --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.4.1",
+    "electron-builder": "26.16.1"
+  },
+  "build": {
+    "appId": "uk.co.jakejohnson.kobikraken.showbuilder",
+    "productName": "KobiKraken Show Builder",
+    "copyright": "\u00a9 2026 Jakey Johnson \u00b7 KobiKraken",
+    "artifactName": "KobiKraken-Show-Builder-${version}-${arch}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.mjs",
+      "bundle/**",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.music",
+      "icon": "build/icon.icns",
+      "identity": null,
+      "darkModeSupport": true,
+      "extendInfo": {
+        "NSLocalNetworkUsageDescription": "Show Builder talks to your desk, stage boxes, amps and radio mics on the show network.",
+        "NSBonjourServices": [
+          "_netaudio-arc._udp",
+          "_qlab._tcp",
+          "_osc._udp",
+          "_oca._tcp",
+          "_ssc._udp"
+        ]
+      }
+    },
+    "dmg": {
+      "title": "KobiKraken Show Builder",
+      "background": "build/dmg-background.png",
+      "window": {
+        "width": 640,
+        "height": 400
+      },
+      "contents": [
+        {
+          "x": 170,
+          "y": 210,
+          "type": "file"
+        },
+        {
+          "x": 470,
+          "y": 210,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "publish": null
+  }
+}

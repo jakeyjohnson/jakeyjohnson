@@ -172,7 +172,7 @@ async function handleApi(req, res, path) {
   res.writeHead(404).end();
 }
 
-http.createServer(async (req, res) => {
+async function handle(req, res) {
   const path = new URL(req.url, 'http://x').pathname;
   try {
     if (path.startsWith('/api/')) return await handleApi(req, res, path);
@@ -187,7 +187,21 @@ http.createServer(async (req, res) => {
     res.writeHead(status, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ error: err.message }));
   }
-}).listen(PORT, () => {
-  console.log(`KobiKraken ${PRODUCT} v${VERSION} (licence ${LICENCE}) running: open http://localhost:${PORT}`);
-  console.log('Other devices on this network can use http://<this computer\'s IP>:' + PORT);
-});
+}
+
+// Starts the app server. The Mac app calls this with host 127.0.0.1 so only this computer can use it;
+// `npm start` listens on every interface so a tablet on the same network can open the page too.
+export function startServer({ port = PORT, host } = {}) {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer(handle);
+    server.once('error', reject);
+    server.listen(port, host, () => resolve({ server, port: server.address().port, close: () => { link.disconnect(); server.close(); } }));
+  });
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  startServer().then(({ port }) => {
+    console.log(`KobiKraken ${PRODUCT} v${VERSION} (licence ${LICENCE}) running: open http://localhost:${port}`);
+    console.log('Other devices on this network can use http://<this computer\'s IP>:' + port);
+  });
+}

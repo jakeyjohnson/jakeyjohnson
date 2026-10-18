@@ -1,0 +1,46 @@
+# Builds the KobiKraken Show Builder Mac app on a Mac: .dmg installers and zips for Apple Silicon and Intel,
+# ad-hoc signed. Download them from the run's Artifacts.
+name: Show Builder Mac app
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/yamaha-show-builder/**'
+      - '.github/workflows/show-builder-mac.yml'
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: tools/yamaha-show-builder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test
+        run: npm test
+      - name: Install Electron
+        working-directory: tools/yamaha-show-builder/mac
+        run: npm ci
+      - name: Build the app
+        working-directory: tools/yamaha-show-builder/mac
+        run: node prepare.mjs && npx electron-builder --mac dir --arm64 --x64 --publish never
+      - name: Sign (ad-hoc) and zip
+        working-directory: tools/yamaha-show-builder/mac
+        run: node sign.mjs
+      - name: Make the .dmg installers from the signed apps
+        working-directory: tools/yamaha-show-builder/mac
+        run: |
+          npx electron-builder --mac dmg --arm64 --publish never --prepackaged "dist/mac-arm64/KobiKraken Show Builder.app"
+          npx electron-builder --mac dmg --x64 --publish never --prepackaged "dist/mac/KobiKraken Show Builder.app"
+          codesign --verify --deep --strict "dist/mac-arm64/KobiKraken Show Builder.app"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KobiKraken-Show-Builder-mac
+          path: |
+            tools/yamaha-show-builder/mac/dist/*.dmg
+            tools/yamaha-show-builder/mac/dist/*.zip
+          retention-days: 30
