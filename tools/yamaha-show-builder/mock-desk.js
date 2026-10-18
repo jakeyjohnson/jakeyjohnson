@@ -20,7 +20,8 @@ net.createServer((socket) => {
       console.log('>', line);
       const [verb, addr, x, y, ...rest] = line.split(' ');
       if (verb === 'devinfo') socket.write(`OK devinfo ${addr} "${MODEL}"\n`);
-      else if (verb === 'set' && addr?.startsWith('MIXER:')) {
+      else if (verb.startsWith('ssupdate')) socket.write(`OK ${line}\n`);
+      else if (verb === 'set' && (addr?.startsWith('MIXER:') || addr?.startsWith('IO:'))) {
         state.set(`${addr} ${x} ${y}`, rest.join(' '));
         socket.write(`OK ${line}\n`);
       } else if (verb === 'get') socket.write(`OK ${line} ${state.get(`${addr} ${x} ${y}`) ?? 0}\n`);

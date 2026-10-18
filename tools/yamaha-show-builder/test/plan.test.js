@@ -145,7 +145,7 @@ test('trigger words: packages, counts, number words and zones', () => {
   const show = defaultShow();
   const s = parseRequest('Full band, 4 wedges, two handhelds, an acoustic guitar and 2 IEMs', show);
   assert.equal(s.sources.filter((x) => x.type === 'kick').length, 2);
-  assert.deepEqual(s.sources.filter((x) => x.type === 'handheld' || x.type === 'acoustic').map((x) => `${x.type}x${x.count}`), ['acousticx1', 'handheldx2']);
+  assert.deepEqual(s.sources.filter((x) => x.type === 'handheld' || x.type === 'acoustic').map((x) => `${x.type}x${x.count}`), ['handheldx2', 'acousticx1']);
   assert.ok(!s.sources.some((x) => x.type === 'guitar' && x.name === 'Gtr')); // "acoustic guitar" is not also a guitar
   assert.deepEqual(s.zones.map((z) => z.name), ['Wedge 1', 'Wedge 2', 'Wedge 3', 'Wedge 4', 'IEM 1', 'IEM 2']);
   assert.deepEqual(s.unknown, []);
@@ -242,6 +242,7 @@ test('a new show is completely empty and keeps only the desk model', () => {
     options: {
       model: 'TF5', firstChannel: 1, firstMix: 1, maxNameLength: 8, setLevels: true, autoOrder: true,
       inPatch: { bank: 'analog', port: 1 }, outPatch: { bank: 'analog', port: 1 }, sendPatch: true,
+      groups: true, setGain: true,
     },
     zones: [],
     sources: [],

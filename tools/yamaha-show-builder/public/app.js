@@ -1,4 +1,8 @@
 import { LICENCE, PRODUCT, VERSION } from './about.js';
+import {
+  applyTemplate, changedCommands, cueCommand, deskCaps, gainOf, makeTemplate, monitorShow, pairMonitors, paperwork, parseInputList, phantomOf,
+  rememberPush, sceneStoreCommand,
+} from './plan.js';
 import { modelFromProduct, patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
@@ -45,7 +49,7 @@ function render() {
     return m.stereo ? `Mix ${m.mix}/${m.mix + 1}` : `Mix ${m.mix}`;
   };
   const head = el('tr', {},
-    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }),
+    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }), el('th', { textContent: 'Gain dB' }), el('th', { textContent: '48V' }),
     ...show.zones.map((zone) => el('th', { className: 'zone' },
       el('input', { value: zone.name, onchange: (e) => update(() => { zone.name = e.target.value; }) }),
       el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: 'Remove zone', textContent: '×', onclick: () => update(() => removeZone(zone)) })),
@@ -72,6 +76,14 @@ function render() {
         type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', title: 'High-pass filter in Hz. Leave it blank for off.',
         onchange: (e) => update(() => { source.hpf = Math.max(0, Math.round(Number(e.target.value) || 0)); }),
       })),
+      el('td', { className: 'gain' }, el('input', {
+        type: 'number', min: -6, max: 66, step: 1, value: gainOf(source), title: 'Head-amp gain in dB',
+        onchange: (e) => update(() => { source.gain = Math.min(66, Math.max(-6, Math.round(Number(e.target.value) || 0))); }),
+      })),
+      el('td', { className: 'route' }, el('input', {
+        type: 'checkbox', checked: phantomOf(source), title: '48V phantom power',
+        onchange: (e) => update(() => { source.phantom = e.target.checked; }),
+      })),
       ...show.zones.map((zone) => el('td', { className: 'route' }, el('input', {
         type: 'checkbox', checked: source.zones.includes(zone.id), title: `${source.name} → ${zone.name}`,
         onchange: (e) => update(() => {
@@ -81,7 +93,7 @@ function render() {
       el('td', {}, ...moveButtons(source),
         el('button', { className: 'remove', title: 'Remove input', textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
   });
-  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 7, className: 'type', textContent: 'Nothing here yet. Add some inputs above.' }));
+  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 9, className: 'type', textContent: 'Nothing here yet. Add some inputs above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty || null));
 
   const of = (n) => (model.inputs ? ` of ${n}` : '');
@@ -95,6 +107,9 @@ function render() {
     $('log').textContent = plan.commands.join('\n');
   }
   renderPatch(plan, model);
+  renderGroups(plan, model);
+  renderSendOptions(plan, model);
+  renderLineCheck(plan, model);
   save();
   return plan;
 }
@@ -123,7 +138,7 @@ function removeZone(zone) {
 
 function changeType(source, type) {
   const t = SOURCE_TYPES[type];
-  Object.assign(source, { type, stereo: t.stereo, color: t.color, hpf: t.hpf });
+  Object.assign(source, { type, stereo: t.stereo, color: t.color, hpf: t.hpf, gain: t.gain, phantom: t.phantom });
   source.zones = show.zones.filter((z) => ZONE_TYPES[z.type].takes.includes(t.category)).map((z) => z.id);
 }
 
@@ -168,6 +183,7 @@ function showLink(s) {
   btn.disabled = s.state === 'connecting';
   $('host').disabled = $('port').disabled = s.state === 'connected' || s.state === 'connecting';
   if (s.state === 'connected' && was !== 'connected') matchModel(s.product);
+  if (s.state !== was) render();
 }
 // Set the desk model from the name the desk reports, when it's one the app knows
 function matchModel(product) {
@@ -206,49 +222,104 @@ events.onerror = () => { if (link.state === 'connected') showLink({ state: 'lost
 $('connectBtn').onclick = connectDesk;
 $('host').onkeydown = (e) => { if (e.key === 'Enter') connectDesk(); };
 
+// Streams one JSON line per command from the app server and hands each to onLine
+async function streamLines(path, body, onLine) {
+  const res = await fetch(path, { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok) throw new Error((await res.json()).error);
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = '';
+  let summary = null;
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += value;
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines.filter(Boolean)) {
+      const msg = JSON.parse(line);
+      if (msg.error) throw new Error(msg.error);
+      if (msg.done) summary = msg;
+      else onLine(msg);
+    }
+  }
+  return summary;
+}
+function startLog() {
+  $('log').hidden = false;
+  $('log').replaceChildren();
+  $('progress').hidden = false;
+  $('progress').value = 0;
+}
+function logLine(msg, okText, badText) {
+  $('progress').value = (msg.i + 1) / msg.total;
+  $('log').append(el('div', { className: msg.ok ? '' : 'bad', textContent: msg.ok ? okText(msg) : badText(msg) }));
+}
+
 async function pushDesk() {
   const plan = buildPlan(show);
+  const model = MODELS[show.options.model] || MODELS.custom;
   if (!plan.commands.length) return setStatus('Add some inputs or outputs first.', 'bad');
   if (link.state !== 'connected') {
     setStatus('Connect to the desk first, at the top of the page.', 'bad');
     return $('host').focus();
   }
-  if (!confirm(`Send this show to ${link.product || 'the desk'} at ${link.host}?\n\nIt renames and re-routes the current scene, so store a backup scene first.`)) return;
+  const last = loadLast();
+  const onlyChanges = Boolean(last) && show.options.onlyChanges !== false;
+  const commands = onlyChanges ? changedCommands(plan.commands, last) : plan.commands;
+  if (!commands.length) return setStatus('Nothing has changed since the last push.', 'ok');
+  const caps = deskCaps(model);
+  const backup = show.options.backup || {};
+  const scene = backup.scene || caps?.sceneMax;
+  const backupCmd = caps && backup.on !== false ? sceneStoreCommand(model, scene) : null;
+  const what = onlyChanges ? `${commands.length} changed lines` : 'this show';
+  const safety = backupCmd ? `First it stores the desk's current scene as scene ${scene}, overwriting what's there.` : 'It renames and re-routes the current scene, so store a backup scene first.';
+  if (!confirm(`Send ${what} to ${link.product || 'the desk'} at ${link.host}?\n\n${safety}`)) return;
 
-  const log = $('log');
-  const progress = $('progress');
-  log.hidden = false;
-  log.replaceChildren();
-  progress.hidden = false;
-  progress.value = 0;
+  startLog();
   $('pushDesk').disabled = true;
-  setStatus('Sending…');
+  const sent = [];
   try {
-    const res = await fetch('/api/push', { method: 'POST', body: JSON.stringify({ commands: plan.commands }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-    let buffer = '';
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += value;
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
-      for (const line of lines.filter(Boolean)) {
-        const msg = JSON.parse(line);
-        if (msg.error) throw new Error(msg.error);
-        if (msg.done) {
-          setStatus(msg.errors ? `Sent, but the desk refused ${msg.errors} lines. They're in red in the log.` : `Sent. The desk took all ${msg.total} lines.`, msg.errors ? 'bad' : 'ok');
-          continue;
-        }
-        progress.value = (msg.i + 1) / msg.total;
-        log.append(el('div', { className: msg.ok ? '' : 'bad', textContent: msg.ok ? msg.cmd : `${msg.cmd}\n  ↳ ${msg.reply}` }));
-      }
+    if (backupCmd) {
+      setStatus(`Backing up to scene ${scene}…`);
+      const result = await streamLines('/api/push', { commands: [backupCmd] }, (msg) => logLine(msg, (m) => `${m.cmd}  (backup)`, (m) => `${m.cmd}\n  ↳ ${m.reply}`));
+      if (result?.errors) return setStatus(`The desk refused the backup, so nothing else was sent. Store a scene by hand, or untick the backup.`, 'bad');
     }
+    setStatus('Sending…');
+    const result = await streamLines('/api/push', { commands }, (msg) => {
+      if (msg.ok) sent.push(msg.cmd);
+      logLine(msg, (m) => m.cmd, (m) => `${m.cmd}\n  ↳ ${m.reply}`);
+    });
+    const backedUp = backupCmd ? ` Your old scene is safe in scene ${scene}.` : '';
+    setStatus(result.errors ? `Sent, but the desk refused ${result.errors} lines. They're in red in the log.${backedUp}` : `Sent. The desk took ${result.total === 1 ? 'the 1 line' : `all ${result.total} lines`}.${backedUp}`, result.errors ? 'bad' : 'ok');
   } catch (err) {
     setStatus(err.message, 'bad');
   } finally {
+    if (sent.length) saveLast(rememberPush(last, sent));
     $('pushDesk').disabled = false;
+    render();
+  }
+}
+
+async function verifyDesk() {
+  const plan = buildPlan(show);
+  if (link.state !== 'connected') {
+    setStatus('Connect to the desk first, at the top of the page.', 'bad');
+    return $('host').focus();
+  }
+  startLog();
+  $('verifyDesk').disabled = true;
+  setStatus('Reading the desk back…');
+  try {
+    const result = await streamLines('/api/verify', { commands: plan.commands }, (msg) => {
+      if (!msg.ok) logLine(msg, () => '', (m) => `${m.cmd}\n  ↳ the desk has: ${m.reply.replace(/^OK get \S+ \d+ \d+ /, '')}`);
+      else $('progress').value = (msg.i + 1) / msg.total;
+    });
+    setStatus(result.wrong ? `${result.wrong} of ${result.total} settings don't match the show. They're in the log.` : `The desk matches the show. All ${result.total} settings checked.`, result.wrong ? 'bad' : 'ok');
+    if (!result.wrong) $('log').hidden = true;
+  } catch (err) {
+    setStatus(err.message, 'bad');
+  } finally {
+    $('verifyDesk').disabled = false;
   }
 }
 
@@ -265,6 +336,8 @@ for (const [type, t] of Object.entries(SOURCE_TYPES)) {
 for (const [name, chips] of Object.entries(groups)) {
   $('addButtons').append(el('div', { className: 'chip-group' }, el('span', { className: 'chip-label', textContent: name }), el('div', { className: 'chips' }, ...chips)));
 }
+$('addButtons').children[0].after(el('div', { className: 'chip-group', id: 'tplGroup', hidden: true },
+  el('span', { className: 'chip-label', textContent: 'Yours' }), el('div', { className: 'chips', id: 'tplChips' })));
 const zoneGroups = { 'Speakers · post-fade': [], 'Monitors · pre-fade': [] };
 for (const [type, t] of Object.entries(ZONE_TYPES)) {
   zoneGroups[t.monitor ? 'Monitors · pre-fade' : 'Speakers · post-fade'].push(el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addZone(type)) }));
@@ -288,6 +361,10 @@ $('setLevels').onchange = (e) => update(() => { show.options.setLevels = e.targe
 let pendingShow = null;
 function resetPage() {
   $('typeText').value = '';
+  $('pasteText').value = '';
+  $('monStatus').textContent = '';
+  $('tplBar').hidden = true;
+  soloKey = null;
   $('typePreview').hidden = true;
   typeStatus('');
   $('addCount').value = 1;
@@ -404,25 +481,210 @@ function previewTyped() {
     $('typePreview').hidden = true;
     return typeStatus(unknown || 'Try something like "full band and 4 wedges".', 'bad');
   }
-  suggestion = s;
+  pasteMode = false;
   typeStatus(unknown, unknown ? 'bad' : '');
+  showPreview(s);
+}
+function showPreview(s) {
+  suggestion = s;
   $('typeSummary').textContent = `This adds ${s.summary}`;
   $('typeList').replaceChildren(
-    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name}${(x.stereo ?? SOURCE_TYPES[x.type].stereo) ? ' (L/R)' : ''}` })),
-    ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Zone: ${z.name}` })));
+    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name}${(x.stereo ?? SOURCE_TYPES[x.type].stereo) ? ' (L/R)' : ''}${x.note ? ` · ${x.note}` : ''}${x.phantom ? ' · 48V' : ''}` })),
+    ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Output: ${z.name}` })));
   $('typePreview').hidden = false;
 }
+let pasteMode = false;
+$('pasteGo').onclick = () => {
+  const s = parseInputList($('pasteText').value);
+  if (!s.sources.length) return typeStatus('Paste at least one line, like "1  Kick In  Beta 91".', 'bad');
+  pasteMode = true;
+  typeStatus('');
+  showPreview(s);
+};
 $('typeGo').onclick = previewTyped;
 $('typeText').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); previewTyped(); } };
 $('typeAdd').onclick = () => {
-  update(() => applySuggestion(show, suggestion));
+  const keepOrder = pasteMode && $('pasteKeepOrder').checked;
+  update(() => {
+    applySuggestion(show, suggestion);
+    if (keepOrder) show.options.autoOrder = false;
+  });
   $('typePreview').hidden = true;
-  $('typeText').value = '';
-  typeStatus('Added. Check the routing below.', 'ok');
+  if (pasteMode) $('pasteText').value = '';
+  else $('typeText').value = '';
+  typeStatus(keepOrder ? 'Added. Auto order is off, so your list keeps its order.' : 'Added. Check the routing below.', 'ok');
 };
 $('typeDiscard').onclick = () => { $('typePreview').hidden = true; typeStatus(''); };
 $('pushDesk').onclick = pushDesk;
 try { $('host').value = localStorage.getItem(`${STORE}-host`) || ''; } catch { /* ignore */ }
+
+// ---- Your templates: saved on this computer, shown as one-click chips next to the packages ----
+const TPL_KEY = `${STORE}-templates`;
+function loadTemplates() {
+  try { return JSON.parse(localStorage.getItem(TPL_KEY)) || []; } catch { return []; }
+}
+function saveTemplates(list) {
+  try { localStorage.setItem(TPL_KEY, JSON.stringify(list)); } catch { /* storage off */ }
+}
+function renderTemplates() {
+  const list = loadTemplates();
+  $('tplGroup').hidden = !list.length;
+  $('tplChips').replaceChildren(...list.map((tpl, i) => el('span', { className: 'tpl-chip' },
+    el('button', {
+      className: 'chip', textContent: tpl.name, title: `${tpl.sources.length} inputs, ${tpl.zones.length} outputs`,
+      onclick: () => { update(() => applyTemplate(show, tpl)); typeStatus(`Added the ${tpl.name} template.`, 'ok'); },
+    }),
+    el('button', { className: 'remove', textContent: '×', title: `Delete the ${tpl.name} template`, onclick: () => { saveTemplates(loadTemplates().filter((_, j) => j !== i)); renderTemplates(); } }))));
+}
+$('saveTemplate').onclick = () => {
+  $('tplBar').hidden = false;
+  $('tplName').value = show.name === 'New show' ? '' : show.name;
+  $('tplName').focus();
+};
+$('tplSave').onclick = () => {
+  if (!show.sources.length && !show.zones.length) return typeStatus('Add some inputs or outputs before saving a template.', 'bad');
+  const tpl = makeTemplate(show, $('tplName').value);
+  saveTemplates([...loadTemplates().filter((t) => t.name !== tpl.name), tpl]);
+  renderTemplates();
+  $('tplBar').hidden = true;
+  typeStatus(`Saved "${tpl.name}". It's under Yours, next to the packages.`, 'ok');
+};
+$('tplCancel').onclick = () => { $('tplBar').hidden = true; };
+$('tplName').onkeydown = (e) => { if (e.key === 'Enter') $('tplSave').click(); };
+
+// ---- Monitors: pair singers with their own mix, and make a monitor-desk show ----
+$('pairMon').onclick = () => {
+  let pairs = [];
+  update(() => { pairs = pairMonitors(show); });
+  $('monStatus').textContent = pairs.length ? pairs.join(' · ') : 'Add some vocal mics and monitor outputs first.';
+  $('monStatus').className = `status ${pairs.length ? 'ok' : 'bad'}`;
+};
+$('monitorShow').onclick = () => {
+  const mon = monitorShow(show);
+  download(`${fileBase()}-monitors.show.json`, JSON.stringify(mon, null, 2), 'application/json');
+  $('monStatus').textContent = `Saved ${mon.name}. Open it with Open on the monitor desk's laptop.`;
+  $('monStatus').className = 'status ok';
+};
+
+// ---- DCAs, mute groups, gain and push options ----
+function renderGroups(plan, model) {
+  const caps = deskCaps(model);
+  $('autoGroups').checked = show.options.groups !== false;
+  $('groupsList').replaceChildren(...plan.groups.map((g) => el('span', { className: 'group-pill', title: g.channels.map((c) => c.name).join(', ') },
+    el('b', { textContent: g.number }), ` ${g.name} · ${g.channels.length}`)));
+  $('groupsNote').textContent = show.options.groups === false || !plan.groups.length ? ''
+    : !caps ? 'Pick your desk to send these.'
+      : !caps.dcas ? `The ${model.label} won't take DCAs from the app.`
+        : caps.dcaAssign ? `DCAs go to the desk, named and assigned.${caps.muteGroups ? ' Mute groups get their names; assign channels to them on the desk.' : ''}`
+          : 'Names go to the desk. Assign channels to them on the desk.';
+}
+$('autoGroups').onchange = (e) => update(() => { show.options.groups = e.target.checked; });
+
+const lastKey = () => `${STORE}-last-${link.host || 'none'}-${show.options.model}`;
+function loadLast() {
+  if (link.state !== 'connected') return null;
+  try { return JSON.parse(localStorage.getItem(lastKey())); } catch { return null; }
+}
+function saveLast(value) {
+  try { if (value) localStorage.setItem(lastKey(), JSON.stringify(value)); else localStorage.removeItem(lastKey()); } catch { /* storage off */ }
+}
+function renderSendOptions(plan, model) {
+  const caps = deskCaps(model);
+  $('setGain').checked = show.options.setGain !== false;
+  $('gainNote').textContent = !caps ? '(pick your desk)' : !caps.gain ? '(this desk takes neither from the app)' : caps.phantom ? '' : '(gain only: switch 48V on at the desk)';
+  const backup = show.options.backup || {};
+  $('backupOn').disabled = !caps;
+  $('backupOn').checked = Boolean(caps) && backup.on !== false;
+  $('backupScene').value = backup.scene || caps?.sceneMax || 100;
+  $('backupScene').disabled = !caps;
+  $('backupNote').textContent = caps ? 'This overwrites that scene.' : 'Pick your desk to back up from here.';
+  const last = loadLast();
+  $('onlyChanges').disabled = !last;
+  $('onlyChanges').checked = Boolean(last) && show.options.onlyChanges !== false;
+  $('forgetPush').hidden = !last;
+  $('changesNote').textContent = last
+    ? `${changedCommands(plan.commands, last).length} of ${plan.commands.length} lines have changed since the last push to this desk.`
+    : 'After your first push to a desk, later pushes can send only the changes.';
+}
+$('setGain').onchange = (e) => update(() => { show.options.setGain = e.target.checked; });
+$('backupOn').onchange = (e) => update(() => { show.options.backup = { ...show.options.backup, on: e.target.checked }; });
+$('backupScene').onchange = (e) => update(() => { show.options.backup = { ...show.options.backup, scene: Math.max(1, Math.round(Number(e.target.value) || 1)) }; });
+$('onlyChanges').onchange = (e) => update(() => { show.options.onlyChanges = e.target.checked; });
+$('forgetPush').onclick = () => { saveLast(null); render(); setStatus('The next push sends everything.'); };
+$('verifyDesk').onclick = verifyDesk;
+
+// ---- Line check: tick each channel off, soloing it on the desk where the desk allows ----
+let soloKey = null;
+const lcKey = (c) => `${c.source.id}:${c.side || ''}`;
+function renderLineCheck(plan, model) {
+  const caps = deskCaps(model);
+  show.lineCheck ||= {};
+  const done = plan.channels.filter((c) => show.lineCheck[lcKey(c)]).length;
+  $('lcCount').textContent = plan.channels.length ? `${done} of ${plan.channels.length} checked` : '';
+  $('lcCount').className = `status ${done && done === plan.channels.length ? 'ok' : ''}`;
+  const canSolo = Boolean(caps?.cue) && link.state === 'connected';
+  if (!canSolo) soloKey = null;
+  $('lcNote').textContent = !caps?.cue
+    ? (model.inputs ? `The ${model.label} won't take solo from the app, so solo on the desk as you go.` : 'Pick your desk to solo channels from here.')
+    : canSolo ? 'Tap Solo to hear a channel on the desk, then tick it. Ticking a soloed channel moves the solo on to the next one.'
+      : 'Connect to the desk to solo channels from here.';
+  $('lcTable').replaceChildren(
+    el('thead', {}, el('tr', {}, ...['✓', 'Ch', 'Name', 'Plugs into', 'Mic / note', '48V', 'Gain', ''].map((t) => el('th', { textContent: t })))),
+    el('tbody', {}, ...plan.channels.map((c) => {
+      const key = lcKey(c);
+      const ticked = Boolean(show.lineCheck[key]);
+      return el('tr', { className: `${ticked ? 'lc-done' : ''} ${soloKey === key ? 'lc-solo' : ''}` },
+        el('td', { className: 'lc-tick' }, el('input', { type: 'checkbox', checked: ticked, 'aria-label': `${c.name} checked`, onchange: (e) => tickLine(plan, c, e.target.checked) })),
+        el('td', { className: 'ch', textContent: c.ch }),
+        el('td', { textContent: c.name }),
+        el('td', { textContent: portLabel(c.patch) }),
+        el('td', { textContent: c.source.note || '' }),
+        el('td', { textContent: phantomOf(c.source) ? '48V' : '' }),
+        el('td', { textContent: `${gainOf(c.source)} dB` }),
+        el('td', {}, canSolo && el('button', { className: `solo ${soloKey === key ? 'on' : ''}`, textContent: soloKey === key ? 'Soloed' : 'Solo', onclick: () => solo(plan, c) })));
+    })));
+}
+async function sendCue(commands) {
+  const res = await fetch('/api/cue', { method: 'POST', body: JSON.stringify({ commands }) });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+}
+async function solo(plan, c) {
+  const model = MODELS[show.options.model] || MODELS.custom;
+  const key = lcKey(c);
+  const prev = soloKey && plan.channels.find((x) => lcKey(x) === soloKey);
+  const commands = [];
+  if (prev) commands.push(cueCommand(model, prev.ch, false));
+  if (soloKey !== key) commands.push(cueCommand(model, c.ch, true));
+  try {
+    await sendCue(commands);
+    soloKey = soloKey === key ? null : key;
+  } catch (err) {
+    setStatus(err.message, 'bad');
+  }
+  render();
+}
+function tickLine(plan, c, ticked) {
+  const key = lcKey(c);
+  show.lineCheck[key] = ticked;
+  if (ticked && soloKey === key) {
+    const next = plan.channels.slice(plan.channels.indexOf(c) + 1).find((x) => !show.lineCheck[lcKey(x)]);
+    if (next) return solo(plan, next);
+    return solo(plan, c); // last one: solo off
+  }
+  render();
+}
+$('lcClear').onclick = () => update(() => { show.lineCheck = {}; });
+
+// ---- Paperwork: input list, outputs, line check sheet, desk tape and stage-box labels, ready to print ----
+$('paperworkBtn').onclick = () => {
+  const p = paperwork(show, buildPlan(show), { version: VERSION, licence: LICENCE });
+  const title = p.title.replace(/[<>&]/g, '');
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title><style>body{margin:24px;background:#fff}${p.css}@media print{.noprint{display:none}body{margin:0}}</style></head><body><p class="noprint"><button onclick="print()">Print</button></p>${p.body}</body></html>`;
+  window.open(URL.createObjectURL(new Blob([html], { type: 'text/html' })), '_blank');
+};
+
+renderTemplates();
 
 // Footer: version and licence number, from about.js
 $('footProduct').textContent = `${PRODUCT} v${VERSION}`;

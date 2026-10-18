@@ -6,6 +6,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LICENCE, PRODUCT, VERSION } from './public/about.js';
 import { DeskLink } from './desk-link.js';
+import { matchesReadback, readbackCommand } from './public/plan.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const PUBLIC = fileURLToPath(new URL('./public/', import.meta.url));
@@ -68,7 +69,8 @@ async function handleApi(req, res, path) {
 
   if (path === '/api/push') {
     if (link.state !== 'connected') throw new Error('Connect to the desk first, at the top of the page.');
-    const commands = Array.isArray(body.commands) ? body.commands.filter((c) => /^set MIXER:Current\//.test(c)) : [];
+    // Settings and the scene backup only: nothing that could recall or delete anything on the desk
+    const commands = Array.isArray(body.commands) ? body.commands.filter((c) => /^(set (MIXER|IO):Current\/|ssupdatet?_ex )/.test(c)) : [];
     // Stream one JSON line per command so the page can show progress
     res.writeHead(200, { 'content-type': 'application/x-ndjson' });
     let errors = 0;
@@ -82,6 +84,30 @@ async function handleApi(req, res, path) {
       res.write(JSON.stringify({ i, total: commands.length, cmd, reply, ok }) + '\n');
     }
     return res.end(JSON.stringify({ done: true, total: commands.length, errors }) + '\n');
+  }
+
+  if (path === '/api/verify') {
+    if (link.state !== 'connected') throw new Error('Connect to the desk first, at the top of the page.');
+    const commands = Array.isArray(body.commands) ? body.commands.filter((c) => readbackCommand(c)) : [];
+    // Read every setting back and report the ones the desk doesn't hold
+    res.writeHead(200, { 'content-type': 'application/x-ndjson' });
+    let wrong = 0;
+    for (const [i, cmd] of commands.entries()) {
+      const reply = await link.send(readbackCommand(cmd));
+      if (reply === 'NOT CONNECTED') return res.end(JSON.stringify({ error: 'Lost the desk while checking. Reconnect and check again.' }) + '\n');
+      const ok = matchesReadback(cmd, reply);
+      if (!ok) wrong++;
+      res.write(JSON.stringify({ i, total: commands.length, cmd, reply, ok }) + '\n');
+    }
+    return res.end(JSON.stringify({ done: true, total: commands.length, wrong }) + '\n');
+  }
+
+  if (path === '/api/cue') {
+    if (link.state !== 'connected') throw new Error('Connect to the desk first, at the top of the page.');
+    const commands = Array.isArray(body.commands) ? body.commands.filter((c) => /^set MIXER:Current\/Cue\/InCh\/On \d+ \d+ [01]$/.test(c)).slice(0, 4) : [];
+    const replies = [];
+    for (const cmd of commands) replies.push(await link.send(cmd));
+    return json(res, { replies });
   }
 
   res.writeHead(404).end();
