@@ -33,6 +33,19 @@
     <input id="port" class="port" type="number" value="49280" aria-label="Port">
     <button id="connectBtn" class="primary">Connect</button>
     <span id="linkStatus" class="status" role="status">Not connected</span>
+    <button id="findBtn" class="ghost find-btn">Find devices</button>
+  </div>
+
+  <div id="findPanel" class="find-panel" hidden>
+    <div class="find-head">
+      <span id="findStatus" class="status" role="status"></span>
+      <span class="find-other">
+        <input id="findSubnet" placeholder="Other network, e.g. 192.168.1" inputmode="decimal" autocomplete="off" aria-label="Other network to scan">
+        <button id="findAgain" class="ghost">Scan again</button>
+        <button id="findClose" class="ghost">Close</button>
+      </span>
+    </div>
+    <div id="findList" class="find-list"></div>
   </div>
 
   <main>

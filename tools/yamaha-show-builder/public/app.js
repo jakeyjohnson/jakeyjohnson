@@ -49,7 +49,7 @@ function render() {
     return m.stereo ? `Mix ${m.mix}/${m.mix + 1}` : `Mix ${m.mix}`;
   };
   const head = el('tr', {},
-    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }), el('th', { textContent: 'Gain dB' }), el('th', { textContent: '48V' }),
+    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }), el('th', { textContent: 'Gain dB' }), el('th', { textContent: '48V' }), el('th', { className: 'zone all-col', textContent: 'All' }),
     ...show.zones.map((zone) => el('th', { className: 'zone' },
       el('input', { value: zone.name, onchange: (e) => update(() => { zone.name = e.target.value; }) }),
       el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: 'Remove zone', textContent: '×', onclick: () => update(() => removeZone(zone)) })),
@@ -84,6 +84,11 @@ function render() {
         type: 'checkbox', checked: phantomOf(source), title: '48V phantom power',
         onchange: (e) => update(() => { source.phantom = e.target.checked; }),
       })),
+      el('td', { className: 'route all-col' }, el('input', {
+        type: 'checkbox', checked: show.zones.length > 0 && show.zones.every((z) => source.zones.includes(z.id)),
+        'aria-label': `${source.name} to every output`, title: 'Send to every output',
+        onchange: (e) => update(() => { source.zones = e.target.checked ? show.zones.map((z) => z.id) : []; }),
+      })),
       ...show.zones.map((zone) => el('td', { className: 'route' }, el('input', {
         type: 'checkbox', checked: source.zones.includes(zone.id), title: `${source.name} → ${zone.name}`,
         onchange: (e) => update(() => {
@@ -93,7 +98,7 @@ function render() {
       el('td', {}, ...moveButtons(source),
         el('button', { className: 'remove', title: 'Remove input', textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
   });
-  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 9, className: 'type', textContent: 'Nothing here yet. Add some inputs above.' }));
+  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 10, className: 'type', textContent: 'Nothing here yet. Add some inputs above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty || null));
 
   const of = (n) => (model.inputs ? ` of ${n}` : '');
@@ -221,6 +226,67 @@ events.onmessage = (e) => showLink(JSON.parse(e.data));
 events.onerror = () => { if (link.state === 'connected') showLink({ state: 'lost', host: link.host, error: 'Lost touch with the app server.' }); };
 $('connectBtn').onclick = connectDesk;
 $('host').onkeydown = (e) => { if (e.key === 'Enter') connectDesk(); };
+
+// ---- Find devices on the network ----
+const KINDS = [['desk', 'Desks'], ['stagebox', 'Stage boxes'], ['radio', 'Radio mics'], ['amp', 'Amps'], ['playback', 'Playback'], ['other', 'Other']];
+async function findDevices() {
+  $('findPanel').hidden = false;
+  const subnet = $('findSubnet').value.trim();
+  $('findStatus').className = 'status';
+  $('findStatus').textContent = subnet ? `Looking on ${subnet}.x…` : 'Looking on this network… (about 10 seconds)';
+  $('findBtn').disabled = $('findAgain').disabled = true;
+  try {
+    const res = await fetch('/api/discover', { method: 'POST', body: JSON.stringify({ subnet }) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showDevices(data);
+  } catch (err) {
+    $('findStatus').className = 'status bad';
+    $('findStatus').textContent = err.message === 'Failed to fetch' ? 'The app server has stopped. Start it again with npm start.' : err.message;
+  } finally {
+    $('findBtn').disabled = $('findAgain').disabled = false;
+  }
+}
+function showDevices({ devices, subnets }) {
+  const where = subnets.length ? subnets.join(', ') : 'this computer only (no network found)';
+  $('findStatus').className = `status ${devices.length ? 'ok' : ''}`;
+  $('findStatus').textContent = devices.length
+    ? `Found ${devices.length} ${devices.length === 1 ? 'device' : 'devices'} on ${where}.`
+    : `Nothing found on ${where}. Check the network cable, or try another network.`;
+  const groups = KINDS.map(([kind, title]) => {
+    const list = devices.filter((d) => d.kind === kind);
+    if (!list.length) return null;
+    const ul = el('ul');
+    for (const d of list) {
+      const who = el('span', { className: 'who' });
+      who.append(el('b', { textContent: [d.make, d.model].filter(Boolean).join(' ') }),
+        el('small', { textContent: [d.ip || 'no address sent', d.name && d.name !== d.model ? d.name : ''].filter(Boolean).join(' · ') }));
+      who.title = `Found by: ${d.via.join(', ')}`;
+      const li = el('li');
+      li.append(who);
+      if (d.make === 'Yamaha' && d.kind === 'desk' && d.ip) {
+        const use = el('button', { className: 'primary', textContent: 'Use this desk' });
+        use.onclick = async () => {
+          if (link.state === 'connected') await fetch('/api/disconnect', { method: 'POST' });
+          $('host').value = d.ip;
+          $('port').value = d.port || 49280;
+          link.state = 'idle';
+          connectDesk();
+        };
+        li.append(use);
+      }
+      ul.append(li);
+    }
+    const g = el('div', { className: 'find-group' });
+    g.append(el('h3', { textContent: title }), ul);
+    return g;
+  }).filter(Boolean);
+  $('findList').replaceChildren(...groups);
+}
+$('findBtn').onclick = findDevices;
+$('findAgain').onclick = findDevices;
+$('findSubnet').onkeydown = (e) => { if (e.key === 'Enter') findDevices(); };
+$('findClose').onclick = () => { $('findPanel').hidden = true; };
 
 // Streams one JSON line per command from the app server and hands each to onLine
 async function streamLines(path, body, onLine) {

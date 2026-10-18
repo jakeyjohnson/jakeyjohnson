@@ -79,6 +79,18 @@ table.patch-table { min-width: 0; }
 .connect-title { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .connect-bar #host { width: 200px; font-variant-numeric: tabular-nums; }
 .connect-bar .port { width: 88px; }
+
+.connect-bar .find-btn { margin-left: auto; }
+.find-panel { margin-top: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.find-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; margin-bottom: 10px; }
+.find-other { display: flex; flex-wrap: wrap; gap: 8px; }
+.find-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.find-group h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.find-group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.find-group li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.find-group li .who { flex: 1; min-width: 0; }
+.find-group li .who b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.find-group li .who small { color: var(--muted); font-variant-numeric: tabular-nums; }
 .link-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--line); flex: none; }
 .link-dot.connecting { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
 .link-dot.connected { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
@@ -103,6 +115,7 @@ tr.lc-solo td { background: color-mix(in srgb, var(--accent) 14%, transparent); 
 .paper-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--line); padding: 16px; background: #fff; }
 .strip.soloed { box-shadow: 0 0 0 2px #ffb020; }
 .strip .gain-tag { font: 500 10px var(--f-mono); color: #9aa3ad; min-height: 12px; }
+.all-col { border-right: 2px solid var(--line); }
 .type-help { margin: 0; font-size: 13px; }
 td.hpf input { width: 72px; }
 .hpf-tag { font: 600 10px/1 var(--f-strip); color: #8a939d; letter-spacing: .04em; }
@@ -195,6 +208,17 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
     <input id="port" class="port" type="number" value="49280" aria-label="Port">
     <button id="connectBtn" class="primary">Connect</button>
     <span id="linkStatus" class="status" role="status">Not connected. In the demo, any IP connects to the pretend desk below.</span>
+    <button id="findBtn" class="find-btn">Find devices</button>
+  </div>
+  <div id="findPanel" class="find-panel" hidden>
+    <div class="find-head">
+      <span id="findStatus" class="status" role="status"></span>
+      <span class="find-other">
+        <button id="findAgain">Scan again</button>
+        <button id="findClose">Close</button>
+      </span>
+    </div>
+    <div id="findList" class="find-list"></div>
   </div>
   <div id="newConfirm" class="confirm" hidden>
     <span id="newText"></span>
@@ -395,7 +419,7 @@ function render() {
     return m.stereo ? `Mix ${m.mix}/${m.mix + 1}` : `Mix ${m.mix}`;
   };
   const head = el('tr', {},
-    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }), el('th', { textContent: 'Gain dB' }), el('th', { textContent: '48V' }),
+    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }), el('th', { textContent: 'Gain dB' }), el('th', { textContent: '48V' }), el('th', { className: 'zone all-col', textContent: 'All' }),
     ...show.zones.map((zone) => el('th', { className: 'zone' },
       el('input', { value: zone.name, 'aria-label': 'Zone name', onchange: (e) => update(() => { zone.name = e.target.value; }) }),
       el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: `Remove ${zone.name}`, textContent: '×', onclick: () => update(() => removeZone(zone)) })),
@@ -429,6 +453,11 @@ function render() {
         type: 'checkbox', checked: phantomOf(source), 'aria-label': '48V phantom power',
         onchange: (e) => update(() => { source.phantom = e.target.checked; }),
       })),
+      el('td', { className: 'route all-col' }, el('input', {
+        type: 'checkbox', checked: show.zones.length > 0 && show.zones.every((z) => source.zones.includes(z.id)),
+        'aria-label': `${source.name} to every output`, title: 'Send to every output',
+        onchange: (e) => update(() => { source.zones = e.target.checked ? show.zones.map((z) => z.id) : []; }),
+      })),
       ...show.zones.map((zone) => el('td', { className: 'route' }, el('input', {
         type: 'checkbox', checked: source.zones.includes(zone.id), title: `${source.name} → ${zone.name}`,
         onchange: (e) => update(() => { source.zones = e.target.checked ? [...source.zones, zone.id] : source.zones.filter((z) => z !== zone.id); }),
@@ -436,7 +465,7 @@ function render() {
       el('td', {}, ...moveButtons(source),
         el('button', { className: 'remove', title: `Remove ${source.name}`, textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
   });
-  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 9, textContent: 'Nothing here yet. Add some inputs above.' }));
+  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 10, textContent: 'Nothing here yet. Add some inputs above.' }));
   $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty));
 
   const of = (n) => (n ? ` of ${n}` : '');
@@ -853,6 +882,58 @@ function connectDesk() {
 }
 $('connectBtn').onclick = connectDesk;
 $('host').onkeydown = (e) => { if (e.key === 'Enter') connectDesk(); };
+// ---- Find devices (demo): the real app scans the network; here it lists a pretend rig ----
+const KINDS = [['desk', 'Desks'], ['stagebox', 'Stage boxes'], ['radio', 'Radio mics'], ['amp', 'Amps'], ['playback', 'Playback'], ['other', 'Other']];
+function pretendDevices() {
+  const model = MODELS[show.options.model];
+  return [
+    { kind: 'desk', make: 'Yamaha', model: model?.inputs ? model.label : 'QL5', ip: '192.168.0.128', via: ['port 49280'] },
+    { kind: 'stagebox', make: 'Yamaha', model: 'Rio3224-D2', ip: '192.168.0.130', via: ['port 49280'] },
+    { kind: 'radio', make: 'Shure', model: 'ULXD4Q', name: 'Rack 1', ip: '192.168.0.50', via: ['port 2202'] },
+    { kind: 'radio', make: 'Shure', model: 'AD4Q', name: 'Rack 2', ip: '192.168.0.51', via: ['port 2202'] },
+    { kind: 'amp', make: 'Dante', model: 'Dante device', name: 'LabGruppen-D20-1', ip: '192.168.0.60', via: ['announces _netaudio-arc._udp'] },
+    { kind: 'amp', make: '', model: 'AES70 device (d&b and others)', ip: '192.168.0.61', via: ['port 30013'] },
+    { kind: 'playback', make: 'Figure 53', model: 'QLab', name: 'Show Mac', ip: '192.168.0.70', via: ['announces _qlab._tcp', 'port 53000'] },
+  ];
+}
+function findDevices() {
+  $('findPanel').hidden = false;
+  $('findStatus').className = 'status';
+  $('findStatus').textContent = 'Looking on this network…';
+  $('findList').replaceChildren();
+  $('findBtn').disabled = $('findAgain').disabled = true;
+  setTimeout(() => {
+    $('findBtn').disabled = $('findAgain').disabled = false;
+    const devices = pretendDevices();
+    $('findStatus').className = 'status ok';
+    $('findStatus').textContent = `Found ${devices.length} pretend devices on 192.168.0.0/24. The real app finds what's on your network.`;
+    $('findList').replaceChildren(...KINDS.map(([kind, title]) => {
+      const list = devices.filter((d) => d.kind === kind);
+      if (!list.length) return null;
+      const ul = el('ul');
+      for (const d of list) {
+        const who = el('span', { className: 'who' });
+        who.append(el('b', { textContent: [d.make, d.model].filter(Boolean).join(' ') }),
+          el('small', { textContent: [d.ip, d.name].filter(Boolean).join(' · ') }));
+        who.title = `Found by: ${d.via.join(', ')}`;
+        const li = el('li');
+        li.append(who);
+        if (d.kind === 'desk') {
+          const use = el('button', { className: 'primary', textContent: 'Use this desk' });
+          use.onclick = () => { link = { state: 'idle' }; $('host').value = d.ip; connectDesk(); };
+          li.append(use);
+        }
+        ul.append(li);
+      }
+      const g = el('div', { className: 'find-group' });
+      g.append(el('h3', { textContent: title }), ul);
+      return g;
+    }).filter(Boolean));
+  }, 900);
+}
+$('findBtn').onclick = findDevices;
+$('findAgain').onclick = findDevices;
+$('findClose').onclick = () => { $('findPanel').hidden = true; };
 // ---- Your templates: saved on this computer, shown as one-click chips next to the packages ----
 const TPL_KEY = `${STORE}-templates`;
 function loadTemplates() {

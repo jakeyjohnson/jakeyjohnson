@@ -128,9 +128,24 @@ tr.lc-solo td { background: color-mix(in srgb, var(--accent) 14%, transparent); 
 .solo.on { background: var(--accent); border-color: var(--accent); color: var(--accent-fg, #16191d); font-weight: 600; }
 .tpl-chip { display: inline-flex; align-items: center; gap: 2px; }
 .tpl-chip .remove { padding: 2px 6px; }
+.all-col { border-right: 2px solid var(--line); }
 .type-help { margin: 0; font-size: 13px; }
 .send-point { display: block; margin: 4px auto 0; padding: 1px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 .send-point.pre { border-color: var(--accent); color: var(--accent-text); }
 .brand { display: flex; align-items: center; gap: 8px; }
 .brand-mark { flex: none; border-radius: 6px; box-shadow: 0 0 0 1px var(--line); }
 .maker { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 24px 16px 40px; color: var(--muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+
+/* Find devices */
+.connect-bar .find-btn { margin-left: auto; }
+.find-panel { padding: 12px 16px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.find-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; margin-bottom: 10px; }
+.find-other { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.find-other input { width: 230px; }
+.find-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.find-group h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.find-group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.find-group li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.find-group li .who { flex: 1; min-width: 0; }
+.find-group li .who b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.find-group li .who small { color: var(--muted); font-variant-numeric: tabular-nums; }
