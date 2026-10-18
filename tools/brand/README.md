@@ -24,6 +24,15 @@ A scribble strip (amber, with a hand-drawn line) above three faders set at diffe
 | Slot grey | `#454C55` | Fader slots |
 | Label grey | `#7A838E` (light) / `#9AA3AD` (dark) | "LABS" |
 
+## GUI colour
+
+Every Scribble Labs plugin uses **strip amber `#FFB020`** as its interface accent: primary buttons, selected and "on" states, toggles, checkboxes, progress bars and focus rings. Don't use any other accent colour.
+
+- **Text on amber:** console black `#16191D`.
+- **Amber as text on a light background:** use `#9A5B00`, because amber text on white is too faint to read. On dark backgrounds, plain `#FFB020` is fine.
+- **Warnings:** orange (`#B4430A` light, `#FF8A4C` dark), so they never look like the accent.
+- **Starting point:** `scribble-labs.css` has these as ready-made tokens.
+
 ## Type
 
 The wordmark is set in **Barlow Condensed** (Google Fonts, free): Bold for SCRIBBLE, Regular for LABS, uppercase with slight letter-spacing. The SVGs fall back to Arial Narrow where Barlow Condensed isn't installed. For print or signage, open the logo in a vector editor with Barlow Condensed installed and convert the text to outlines.
