@@ -73,13 +73,17 @@ export function orderSources(sources) {
   return [...sources].sort((a, b) => TYPE_RANK.indexOf(a.type) - TYPE_RANK.indexOf(b.type));
 }
 
+// monitor: a monitor output (pre-fade sends). numbered: always named "<short> 1", "<short> 2"…
+// stereo: takes an odd/even pair of mixes (L, R).
 export const ZONE_TYPES = {
-  main:      { label: 'Main L/R',       short: 'Main LR', takes: ['speech', 'band', 'program'], color: 'Red',     send: 'post' },
-  frontfill: { label: 'Front fills',    short: 'FrntFil', takes: ['speech', 'band', 'program'], color: 'Magenta', send: 'post' },
-  delay:     { label: 'Delay',          short: 'Delay',   takes: ['speech', 'band', 'program'], color: 'Purple',  send: 'post' },
-  ceiling:   { label: 'Ceiling',        short: 'Ceiling', takes: ['bgm'],                       color: 'Orange',  send: 'post' },
-  foldback:  { label: 'Foldback',       short: 'Fldbk',   takes: ['program', 'talkback'],       color: 'Yellow',  send: 'pre' },
-  record:    { label: 'Record/stream',  short: 'Record',  takes: ['speech', 'band', 'program'], color: 'Green',   send: 'post' },
+  main:      { label: 'Main L/R',       short: 'Main LR', takes: ['speech', 'band', 'program'], color: 'Red' },
+  frontfill: { label: 'Front fills',    short: 'FrntFil', takes: ['speech', 'band', 'program'], color: 'Magenta' },
+  delay:     { label: 'Delay',          short: 'Delay',   takes: ['speech', 'band', 'program'], color: 'Purple', numbered: true },
+  ceiling:   { label: 'Ceiling',        short: 'Ceiling', takes: ['bgm'],                       color: 'Orange' },
+  record:    { label: 'Record/stream',  short: 'Record',  takes: ['speech', 'band', 'program'], color: 'Green' },
+  foldback:  { label: 'Foldback',       short: 'Wedge',   takes: ['program', 'talkback'],       color: 'Yellow', monitor: true, numbered: true },
+  iemMono:   { label: 'Mono IEM',       short: 'IEM',     takes: ['program', 'talkback'],       color: 'Cyan',   monitor: true, numbered: true },
+  iemStereo: { label: 'Stereo IEM',     short: 'IEM',     takes: ['program', 'talkback'],       color: 'Cyan',   monitor: true, numbered: true, stereo: true },
 };
 
 const NEG_INF = -32768; // RCP value for -inf; levels are in 1/100 dB
@@ -89,9 +93,22 @@ const NEG_INF = -32768; // RCP value for -inf; levels are in 1/100 dB
 // on the desk after the first push, and swap these two if they come out reversed.
 const SEND_POINT = { pre: 0, post: 1 };
 
-// Speaker zones default to post-fade, monitor zones to pre-fade. Shows saved before this take the type default.
+// Monitor outputs (foldback, IEMs, or anything named "monitor") send pre-fade; every other output
+// (Main L/R, fills, delays, ceiling…) post-fade. A zone's own `send` overrides this when set by hand.
+export function isMonitor(zone) {
+  return Boolean(ZONE_TYPES[zone.type]?.monitor) || /monitor/i.test(zone.name);
+}
 export function sendOf(zone) {
-  return zone.send || ZONE_TYPES[zone.type].send;
+  if (zone.type === 'main') return 'post';
+  return zone.send || (isMonitor(zone) ? 'pre' : 'post');
+}
+
+// Next free name for a new zone of this type: "Wedge 3", "IEM 2", or the plain name if it is the first
+export function nextZoneName(show, type, taken = []) {
+  const t = ZONE_TYPES[type];
+  const names = [...show.zones.map((z) => z.name), ...taken];
+  const n = names.filter((x) => x === t.short || x.startsWith(`${t.short} `)).length;
+  return t.numbered || n ? `${t.short} ${n + 1}` : t.short;
 }
 
 let nextId = 1;
@@ -99,7 +116,7 @@ const uid = (p) => `${p}${Date.now().toString(36)}${(nextId++).toString(36)}`;
 
 export function makeZone(type, name) {
   const t = ZONE_TYPES[type];
-  return { id: type === 'main' ? 'main' : uid('z'), type, name: name || t.short, color: t.color, send: t.send };
+  return { id: type === 'main' ? 'main' : uid('z'), type, name: name || t.short, color: t.color };
 }
 
 export function makeSource(type, n, zones, name, stereo = SOURCE_TYPES[type].stereo) {
@@ -162,12 +179,24 @@ export function buildPlan(show) {
     return out;
   };
 
-  // Allocate zones: main is the stereo bus, every other zone gets a mix bus
-  let mixNo = firstMix;
+  // Allocate zones: main is the stereo bus, every other zone gets a mix bus, stereo zones an odd/even pair.
+  // On desks with fixed stereo mixes (TF: 9/10 up) stereo zones start there and mono zones fill the mono mixes.
+  const model = MODELS[show.options?.model] || MODELS.custom;
+  const used = new Set();
+  const take = (start, stereo) => {
+    let m = start;
+    while ((stereo && m % 2 === 0) || used.has(m) || (stereo && used.has(m + 1))) m++;
+    used.add(m);
+    if (stereo) used.add(m + 1);
+    return m;
+  };
   for (const zone of show.zones) {
     if (zone.type === 'main') continue;
-    mixes.push({ mix: mixNo++, zone });
+    const stereo = Boolean(ZONE_TYPES[zone.type].stereo);
+    const start = stereo && model.stereoMixFrom ? Math.max(firstMix, model.stereoMixFrom) : firstMix;
+    mixes.push({ mix: take(start, stereo), zone, stereo });
   }
+  mixes.sort((a, b) => a.mix - b.mix);
 
   // Allocate input channels: stereo sources take an L/R pair of mono channels.
   // With auto order on, pairs start on an odd channel so they line up with the desk's channel pairing.
@@ -181,9 +210,8 @@ export function buildPlan(show) {
     }
   }
 
-  const model = MODELS[show.options?.model] || MODELS.custom;
   const lastCh = ch - 1;
-  const lastMix = mixNo - 1;
+  const lastMix = Math.max(0, ...used);
   if (model.inputs && lastCh > model.inputs) {
     warnings.push(`Needs channels up to ${lastCh} but the ${model.label} has ${model.inputs} mono inputs`);
   }
@@ -191,8 +219,10 @@ export function buildPlan(show) {
     warnings.push(`Needs mixes up to ${lastMix} but the ${model.label} has ${model.mixes}`);
   }
   if (model.stereoMixFrom) {
-    const stereo = mixes.filter((m) => m.mix >= model.stereoMixFrom).map((m) => `${m.zone.name} (Mix ${m.mix})`);
+    const stereo = mixes.filter((m) => !m.stereo && m.mix >= model.stereoMixFrom).map((m) => `${m.zone.name} (Mix ${m.mix})`);
     if (stereo.length) warnings.push(`On the ${model.label}, mixes ${model.stereoMixFrom} and up are stereo pairs: ${stereo.join(', ')}`);
+  } else {
+    for (const m of mixes.filter((x) => x.stereo)) warnings.push(`Set Mix ${m.mix}/${m.mix + 1} as a stereo pair in the desk's Bus Setup for ${m.zone.name}`);
   }
 
   if (show.sources.some((s) => s.zones.length === 0)) {
@@ -204,14 +234,16 @@ export function buildPlan(show) {
   if (main) {
     set('St/Label/Name', 0, 0, `"${label(main.name)}"`);
   }
-  for (const { mix, zone } of mixes) {
-    const i = mix - 1;
-    set('Mix/Label/Name', i, 0, `"${label(zone.name)}"`);
-    set('Mix/Label/Color', i, 0, deskColor(model, zone.color));
-    set('Mix/ToSt/On', i, 0, 0); // zones never feed back into the main bus
-    if (setLevels) {
-      set('Mix/Fader/On', i, 0, 1);
-      set('Mix/Fader/Level', i, 0, 0);
+  const busIndexes = ({ mix, stereo }) => (stereo ? [mix - 1, mix] : [mix - 1]);
+  for (const m of mixes) {
+    for (const i of busIndexes(m)) {
+      set('Mix/Label/Name', i, 0, `"${label(m.zone.name)}"`);
+      set('Mix/Label/Color', i, 0, deskColor(model, m.zone.color));
+      set('Mix/ToSt/On', i, 0, 0); // zones never feed back into the main bus
+      if (setLevels) {
+        set('Mix/Fader/On', i, 0, 1);
+        set('Mix/Fader/Level', i, 0, 0);
+      }
     }
   }
 
@@ -230,12 +262,15 @@ export function buildPlan(show) {
     }
     set('InCh/ToSt/On', i, 0, main && source.zones.includes(main.id) ? 1 : 0);
     set('InCh/ToSt/Pan', i, 0, c.side === 'L' ? -63 : c.side === 'R' ? 63 : 0);
-    for (const { mix, zone } of mixes) {
-      const on = source.zones.includes(zone.id);
-      set('InCh/ToMix/On', i, mix - 1, on ? 1 : 0);
-      set('InCh/ToMix/PrePost', i, mix - 1, SEND_POINT[sendOf(zone)]);
-      // a stereo pair summed into a mono zone is pulled down 3 dB per side
-      set('InCh/ToMix/Level', i, mix - 1, on ? (c.side ? -300 : 0) : NEG_INF);
+    for (const m of mixes) {
+      const on = source.zones.includes(m.zone.id);
+      for (const bus of busIndexes(m)) {
+        set('InCh/ToMix/On', i, bus, on ? 1 : 0);
+        set('InCh/ToMix/PrePost', i, bus, SEND_POINT[sendOf(m.zone)]);
+        // a stereo pair summed into a mono zone is pulled down 3 dB per side; into a stereo zone it is panned
+        set('InCh/ToMix/Level', i, bus, on ? (c.side && !m.stereo ? -300 : 0) : NEG_INF);
+        if (m.stereo) set('InCh/ToMix/Pan', i, bus, c.side === 'L' ? -63 : c.side === 'R' ? 63 : 0);
+      }
     }
   }
 
@@ -252,7 +287,7 @@ export function patchSheetCsv(show, plan) {
   }
   const main = show.zones.find((z) => z.type === 'main');
   if (main) rows.push(['Output', 'Stereo L/R', main.name, 'Main PA', '', 'Post-fade']);
-  for (const m of plan.mixes) rows.push(['Output', `Mix ${m.mix}`, m.zone.name, ZONE_TYPES[m.zone.type].label, '', sendOf(m.zone) === 'pre' ? 'Pre-fade sends' : 'Post-fade sends']);
+  for (const m of plan.mixes) rows.push(['Output', m.stereo ? `Mix ${m.mix}/${m.mix + 1}` : `Mix ${m.mix}`, m.zone.name, ZONE_TYPES[m.zone.type].label, '', sendOf(m.zone) === 'pre' ? 'Pre-fade sends' : 'Post-fade sends']);
   return rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
 }
 
@@ -315,12 +350,13 @@ export const TRIGGERS = [
   { words: ['laptop'], source: 'laptop' },
   { words: ['playback', 'pb'], source: 'playback' },
   { words: ['background music', 'bgm'], source: 'bgm' },
-  { words: ['front fill'], zone: 'frontfill', name: 'FrntFil' },
-  { words: ['delay'], zone: 'delay', name: 'Delay' },
-  { words: ['ceiling'], zone: 'ceiling', name: 'Ceiling' },
-  { words: ['wedge', 'monitor', 'foldback'], zone: 'foldback', name: 'Wedge' },
-  { words: ['iem', 'in-ear', 'in ear'], zone: 'foldback', name: 'IEM' },
-  { words: ['record', 'stream'], zone: 'record', name: 'Record' },
+  { words: ['front fill'], zone: 'frontfill' },
+  { words: ['delay'], zone: 'delay' },
+  { words: ['ceiling'], zone: 'ceiling' },
+  { words: ['wedge', 'monitor', 'foldback'], zone: 'foldback' },
+  { words: ['mono iem', 'mono in-ear', 'mono in ear'], zone: 'iemMono' },
+  { words: ['stereo iem', 'stereo in-ear', 'stereo in ear', 'iem', 'in-ear', 'in ear'], zone: 'iemStereo' },
+  { words: ['record', 'stream'], zone: 'record' },
 ];
 
 const NUMBER_WORDS = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
@@ -333,7 +369,6 @@ export function parseRequest(text, show) {
   const sources = [];
   const zones = [];
   const summary = [];
-  const zoneCount = (type, name) => show.zones.filter((z) => z.type === type).length + zones.filter((z) => z.name.startsWith(name)).length;
 
   const entries = TRIGGERS.flatMap((t) => t.words.map((w) => ({ ...t, word: w }))).sort((a, b) => b.word.length - a.word.length);
   for (const t of entries) {
@@ -347,10 +382,13 @@ export function parseRequest(text, show) {
         sources.push({ type: t.source, name: SOURCE_TYPES[t.source].short, count });
         summary.push(`${count} × ${SOURCE_TYPES[t.source].label}`);
       } else {
-        const first = zoneCount(t.zone, t.name);
-        const numbered = count > 1 || first > 0 || t.zone === 'foldback' || t.zone === 'delay';
-        for (let i = 1; i <= count; i++) zones.push({ type: t.zone, name: numbered ? `${t.name} ${first + i}` : t.name });
-        summary.push(`${count} × ${ZONE_TYPES[t.zone].label.toLowerCase()} zone${count > 1 ? 's' : ''}`);
+        for (let i = 1; i <= count; i++) {
+          const taken = zones.map((z) => z.name);
+          let name = nextZoneName(show, t.zone, taken);
+          if (count > 1 && name === ZONE_TYPES[t.zone].short) name = `${name} 1`;
+          zones.push({ type: t.zone, name });
+        }
+        summary.push(`${count} × ${ZONE_TYPES[t.zone].label}`);
       }
       return ' ';
     });

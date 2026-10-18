@@ -36,6 +36,7 @@ button:hover, .button:hover { border-color: var(--muted); }
 .quick-add { display: flex; gap: 10px; align-items: start; }
 .chip-groups { display: grid; gap: 8px; }
 .chip-group { display: grid; grid-template-columns: 72px 1fr; gap: 8px; align-items: center; }
+.zone-group { grid-template-columns: 150px 1fr; }
 .chip-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
 .typein { display: grid; gap: 8px; margin-top: 16px; max-width: 760px; }
 .typein label { font-size: 14px; color: var(--muted); }
@@ -85,6 +86,7 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); }
 .log .bad { color: var(--bad); }
 
 @media (max-width: 600px) {
+  .chip-group, .zone-group { grid-template-columns: 1fr; }
   .show-name { font-size: 20px; }
   .quick-add { flex-direction: column; }
   .desk-row label input { width: 110px; }

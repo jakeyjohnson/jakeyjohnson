@@ -1,4 +1,4 @@
-import { sendOf, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
+import { sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
 const $ = (id) => document.getElementById(id);
@@ -38,7 +38,11 @@ function render() {
   $('autoOrder').checked = show.options.autoOrder !== false;
 
   // Routing grid
-  const busLabel = (zone) => zone.type === 'main' ? 'Stereo' : `Mix ${plan.mixes.find((m) => m.zone === zone).mix}`;
+  const busLabel = (zone) => {
+    if (zone.type === 'main') return 'Stereo';
+    const m = plan.mixes.find((x) => x.zone === zone);
+    return m.stereo ? `Mix ${m.mix}/${m.mix + 1}` : `Mix ${m.mix}`;
+  };
   const head = el('tr', {},
     el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }),
     ...show.zones.map((zone) => el('th', { className: 'zone' },
@@ -123,8 +127,7 @@ function changeType(source, type) {
 
 function addZone(type) {
   if (type === 'main' && show.zones.some((z) => z.type === 'main')) return alert('There is already a Main L/R zone.');
-  const same = show.zones.filter((z) => z.type === type).length;
-  const zone = makeZone(type, type === 'delay' ? `Delay ${same + 1}` : same ? `${ZONE_TYPES[type].short.slice(0, 6)} ${same + 1}` : undefined);
+  const zone = makeZone(type, nextZoneName(show, type));
   if (type === 'main') show.zones.unshift(zone); else show.zones.push(zone);
   // route existing inputs that this kind of zone would normally take
   for (const s of show.sources) {
@@ -217,8 +220,12 @@ for (const [type, t] of Object.entries(SOURCE_TYPES)) {
 for (const [name, chips] of Object.entries(groups)) {
   $('addButtons').append(el('div', { className: 'chip-group' }, el('span', { className: 'chip-label', textContent: name }), el('div', { className: 'chips' }, ...chips)));
 }
+const zoneGroups = { 'Speakers · post-fade': [], 'Monitors · pre-fade': [] };
 for (const [type, t] of Object.entries(ZONE_TYPES)) {
-  $('zoneButtons').append(el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addZone(type)) }));
+  zoneGroups[t.monitor ? 'Monitors · pre-fade' : 'Speakers · post-fade'].push(el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addZone(type)) }));
+}
+for (const [name, chips] of Object.entries(zoneGroups)) {
+  $('zoneButtons').append(el('div', { className: 'chip-group zone-group' }, el('span', { className: 'chip-label', textContent: name }), el('div', { className: 'chips' }, ...chips)));
 }
 const series = {};
 for (const [id, m] of Object.entries(MODELS)) (series[m.series || ''] ||= []).push(el('option', { value: id, textContent: m.label }));

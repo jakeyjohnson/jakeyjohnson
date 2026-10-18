@@ -55,7 +55,8 @@ The app talks to the desk using Yamaha's remote control protocol (TCP port 49280
 | Main L/R zone | The stereo bus. Inputs ticked for Main are assigned to it |
 | Other zones | One mix bus each (front fill = Mix 1, and so on). Named, coloured, master at 0 dB, not routed to the stereo bus |
 | Sends | 0 dB to each ticked zone (-3 dB per side for stereo sources into a mono zone), off and -∞ everywhere else |
-| Send point | Post-fade for speaker zones (front fills, delays, ceiling, record), pre-fade for monitor zones (wedges, IEMs). Click Post/Pre under a zone's name to switch it |
+| Send point | Pre-fade for monitor outputs (Foldback, Mono IEM, Stereo IEM, or any output with "monitor" in its name). Post-fade for everything else: Main L/R, front fills, delays, ceiling, record. Click Post/Pre under an output's name to override it |
+| Stereo IEM | Takes an odd/even pair of mixes. Stereo inputs are panned hard left/right into it, mono inputs centre. On a TF it goes on the stereo mixes (9/10 up) and mono outputs fill mixes 1–8; on other desks, set the pair as stereo in Bus Setup (the app reminds you) |
 
 Use **First channel** and **First mix** to start somewhere other than channel 1 or Mix 1.
 
@@ -108,7 +109,7 @@ Type into the box under the input buttons, for example *"full band, 4 wedges and
 | Speech | lectern, podium, headset, lapel, lav, handheld, radio mic, HH |
 | Band | kick, snare, hi hat, tom, overhead, OH, bass, guitar, gtr, acoustic, keys, keyboard, piano, synth, vocal, vox, singer, talkback, TB, instrument |
 | Playback | laptop, playback, PB, BGM, background music |
-| Zones | wedge, monitor, foldback, IEM, in-ear, delay, front fill, ceiling, record, stream |
+| Outputs | wedge, monitor, foldback, mono IEM, stereo IEM, IEM (stereo), in-ear, delay, front fill, ceiling, record, stream |
 
 - **Counts:** a number or number word in front sets how many: "4 wedges", "two handhelds", "a kick".
 - **Numbering:** new inputs carry on from ones already in the show (HH 5, HH 6).
