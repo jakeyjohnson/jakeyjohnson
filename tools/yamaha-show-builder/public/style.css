@@ -10,6 +10,8 @@
   --text: #f5f4f0;
   --fg-strong: #f5f4f0;
   --muted: #8e949b;
+  --context: #1e242c;      /* raised graphite: the product bar */
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --accent: #63cbe8;       /* Spectral */
   --accent-fg: #11151a;    /* text on Spectral */
   --accent-text: #63cbe8;  /* Spectral used as text or outline */
@@ -107,7 +109,6 @@ table.patch-table { min-width: 0; }
 .patch-cell select { max-width: 230px; }
 .port { width: 72px; }
 .foot-sep { color: var(--line); }
-#footProduct, #footLicence { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; text-transform: none; }
 .connect-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .connect-title { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .connect-bar #host { width: 210px; font-variant-numeric: tabular-nums; }
@@ -174,3 +175,18 @@ input.freq.fixed { border-color: var(--accent); }
 input.setup { width: 110px; }
 tr.spare td { color: var(--muted); }
 .steps { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 6px; max-width: 760px; }
+
+/* KobiKraken product bar, as on the guide's interface page: K, then KOBI / tool, on a raised graphite bar */
+.product-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 24px; background: var(--context); border-radius: 16px; }
+.product-bar .brand-k { color: #f5f4f0; }
+.product { font-size: 16px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: #f5f4f0; }
+.product .slash { color: var(--muted); margin: 0 6px; font-weight: 400; }
+.product-meta { margin-left: auto; font: 12px/1.4 var(--mono); color: var(--muted); }
+/* Values and units in the utility face; labels uppercase, never over-tracked */
+input[type="number"], input.ip, input.freq, #host, td.ch, .log { font-family: var(--mono); }
+thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; color: var(--muted); }
+/* Footer: maker's plate left, version and licence right */
+.maker { justify-content: space-between !important; border-top: 1px solid var(--line); }
+.foot-meta { display: flex; flex-wrap: wrap; gap: 8px; font: 12px/1.4 var(--mono); letter-spacing: normal; text-transform: none; color: var(--muted); }
+.top { padding: 16px 16px 0; }
+.maker { max-width: 1200px; margin: 24px auto 0; }
