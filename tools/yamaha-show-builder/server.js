@@ -9,6 +9,7 @@ import { DeskLink } from './desk-link.js';
 import { discover, localTargets } from './discover.js';
 import { allowedShureLine, shureSession, specteraRequest } from './rf-link.js';
 import { checkPassword, loadLock, tokenFor, tokenMatches } from './lock.js';
+import { readDevice } from './oca-link.js';
 import { shureMatches, shureReadback } from './public/rig.js';
 import { matchesReadback, readbackCommand } from './public/plan.js';
 
@@ -113,6 +114,12 @@ async function handleApi(req, res, path) {
       },
     });
     return res.end(JSON.stringify(error ? { error } : { done: true, total: lines.length, bad }) + '\n');
+  }
+
+  if (path === '/api/amp/read') {
+    // Reads an AES70 amp's whole control list (reading only, nothing is changed on the amp)
+    const { host } = target(body);
+    return json(res, await readDevice(host, { port: Number(body.port) || undefined }));
   }
 
   if (path === '/api/spectera/devices') {

@@ -134,6 +134,19 @@ const routes = {
       send({ done: true, total: lines.length });
     });
   },
+  async '/api/amp/read'({ host }) {
+    await wait(fast ? 0 : 900);
+    const objects = [];
+    'ABCD'.split('').forEach((ch, c) => {
+      const base = 1000 + c * 100;
+      objects.push(
+        { ono: base + 1, classId: '1.1.1.1.12', className: 'OcaStringActuator', container: base, role: 'Name', path: `Channel ${ch}/Name`, value: `Ch ${ch}` },
+        { ono: base + 2, classId: '1.1.1.2', className: 'OcaMute', container: base, role: 'Mute', path: `Channel ${ch}/Mute`, value: 'unmuted' },
+        { ono: base + 3, classId: '1.1.1.5', className: 'OcaGain', container: base, role: 'Gain', path: `Channel ${ch}/Gain`, value: { value: 0, min: -57.5, max: 6 } },
+        { ono: base + 4, classId: '1.1.1.4', className: 'OcaSwitch', container: base, role: 'Input', path: `Channel ${ch}/Input`, value: { position: c, min: 0, max: 7 }, positionNames: ['A1', 'A2', 'A3', 'A4', 'D1', 'D2', 'D3', 'D4'] });
+    });
+    return json({ readAt: new Date().toISOString(), pretend: true, device: { host, manufacturer: 'd&b audiotechnik', model: 'D80 (pretend)', name: 'Demo amp', serial: 'PRETEND' }, objects });
+  },
   async '/api/spectera/devices'({ host }) {
     await wait(fast ? 0 : 400);
     if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(host || '')) return json({ error: "Type the base station's IP first" });
