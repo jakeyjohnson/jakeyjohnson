@@ -45,6 +45,7 @@
           <div class="menu-list">
             <button id="newShow" type="button">Empty show</button>
             <button id="exampleShow" type="button">Conference example</button>
+            <button id="readShow" type="button">From the desk</button>
           </div>
         </details>
         <label class="button ghost">Open<input id="openFile" type="file" accept=".json" hidden></label>
@@ -180,6 +181,13 @@
           <div class="panel-tools"><span id="lcNote"></span><button id="lcClear" class="ghost small" type="button">Clear</button></div>
         </header>
         <div class="panel-body"><div class="table-wrap"><table id="lcTable"></table></div></div>
+      </section>
+
+      <section class="panel" id="checkPanel">
+        <header class="panel-head"><span class="step">07</span><h2>System check</h2><span id="checkMeta" class="panel-meta"></span>
+          <div class="panel-tools" id="checkTools"></div>
+        </header>
+        <div class="panel-body" id="checkBody"></div>
       </section>
     </div>
 

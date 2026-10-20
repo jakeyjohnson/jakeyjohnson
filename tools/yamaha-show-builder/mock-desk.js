@@ -5,6 +5,8 @@ import net from 'node:net';
 const PORT = Number(process.env.DESK_PORT || 49280);
 const MODEL = process.env.DESK_MODEL || 'MockDesk'; // e.g. DESK_MODEL=QL5 to test model detection
 const state = new Map();
+// What a fresh desk answers for anything not set: its own default names, 0 for the rest
+const fallback = (addr, x) => (addr.endsWith('InCh/Label/Name') ? `"ch ${+x + 1}"` : addr.endsWith('Mix/Label/Name') ? `"MX ${+x + 1}"` : addr.endsWith('St/Label/Name') ? '"ST L"' : '0');
 
 net.createServer((socket) => {
   console.log('Client connected');
@@ -24,7 +26,7 @@ net.createServer((socket) => {
       else if (verb === 'set' && (addr?.startsWith('MIXER:') || addr?.startsWith('IO:'))) {
         state.set(`${addr} ${x} ${y}`, rest.join(' '));
         socket.write(`OK ${line}\n`);
-      } else if (verb === 'get') socket.write(`OK ${line} ${state.get(`${addr} ${x} ${y}`) ?? 0}\n`);
+      } else if (verb === 'get') socket.write(`OK ${line} ${state.get(`${addr} ${x} ${y}`) ?? fallback(addr, x)}\n`);
       else socket.write(`ERROR ${verb} UnknownCommand\n`);
     }
   });
