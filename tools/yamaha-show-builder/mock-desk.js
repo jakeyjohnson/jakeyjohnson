@@ -23,10 +23,11 @@ net.createServer((socket) => {
       const [verb, addr, x, y, ...rest] = line.split(' ');
       if (verb === 'devinfo') socket.write(`OK devinfo ${addr} "${MODEL}"\n`);
       else if (verb.startsWith('ssupdate')) socket.write(`OK ${line}\n`);
-      else if (verb === 'set' && (addr?.startsWith('MIXER:') || addr?.startsWith('IO:'))) {
+      else if (verb === 'set' && (addr?.startsWith('MIXER:Current') || addr?.startsWith('IO:') || (addr?.startsWith('MIXER:Setup') && /RIVAGE|PM/.test(MODEL)))) {
         state.set(`${addr} ${x} ${y}`, rest.join(' '));
         socket.write(`OK ${line}\n`);
-      } else if (verb === 'get') socket.write(`OK ${line} ${state.get(`${addr} ${x} ${y}`) ?? fallback(addr, x)}\n`);
+      } else if (verb === 'get' && addr?.startsWith('MIXER:Setup/') && !/RIVAGE|PM/.test(MODEL)) socket.write(`ERROR get ${addr} UnknownAddress\n`); // only RIVAGE offers the oscillator
+      else if (verb === 'get') socket.write(`OK ${line} ${state.get(`${addr} ${x} ${y}`) ?? fallback(addr, x)}\n`);
       else socket.write(`ERROR ${verb} UnknownCommand\n`);
     }
   });

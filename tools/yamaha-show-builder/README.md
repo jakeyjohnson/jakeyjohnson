@@ -315,11 +315,12 @@ Section 6 lists every channel with its socket, mic note, 48V and gain, with a ti
 - **Your ticks** are saved with the show.
 
 ### System check
-Section 7 walks pink noise through every speaker, one at a time: Main L, Main R, then each mix (both sides of a stereo one). Each step shows the bus, the desk output socket and the amp channel it feeds, so you can listen at each box and tick it off.
-- **Noise on:** the channel you feed pink noise into (a playback channel by default). It starts at −40 dB; −3 and +3 move it.
-- **Next / Back**, or tap any speaker in the list. Only the noise channel's sends and the output under test change: its send and master go to 0 dB, everything else stays as it was.
-- **Stop** puts every setting the check touched back exactly as it was. It reads them all from the desk before starting, and keeps that list in the browser, so if the page closes mid-check it offers **Put it back** next time.
-- Nothing coming out? Check the noise channel's DCA and mute groups, and the amp.
+Section 7 walks pink noise through every speaker, one at a time: Main L, Main R, then each mix (both sides of a stereo one). Each step shows the bus, the desk output socket and the amp channel it feeds, so you can listen at each box and tick it off. The fader sets the level as you move it (arrow keys work too); all the way down is off.
+- **Input channel:** feed pink noise into a channel (a playback channel by default). Only that channel's sends change: it goes to the output under test, whose send and master go to 0 dB. The fader is the channel's fader, starting at −40 dB.
+- **Desk oscillator:** on the desk, turn the oscillator on (pink noise) and assign it to every output. The app opens one output master at a time with the rest down, and uses the output's balance for its L and R. The fader is that output's master, starting at −40 dB. CL/QL, TF and DM desks don't offer the oscillator over the network (it isn't in the parameter list they report), so it's switched on at the desk. RIVAGE does offer it, so there the app also switches it on and sets pink noise.
+- **Next / Back**, or tap any speaker in the list.
+- **Stop** puts every setting the check touched back exactly as it was, oscillator included. It reads them all from the desk before starting, and keeps that list in the browser, so if the page closes mid-check it offers **Put it back** next time.
+- Nothing coming out? Check DCAs, mute groups, and the amp.
 
 ### DCAs and mute groups
 Made automatically from the input types (Speech, Drums, Band, Vox, Playback, BGM), with only the groups that have channels. The pills under the routing grid show what each holds.
@@ -361,6 +362,8 @@ The scene store commands (`ssupdate_ex` / `ssupdatet_ex`) follow the Companion m
 
 - **New → Empty show:** wipes the page back to empty: no inputs, no outputs, every option back to default. The typing box, preview and push log clear too. Only the desk model and desk IP are kept, since they describe your hardware. It asks first unless the page is already empty.
 - **New → From the desk:** reads the connected desk into a new show: channel and mix names, colours, high-pass and routing, keeping the desk's channel and mix numbers. Only named channels and mixes come across ("ch 12" and "MX 4" are left out). Stereo pairs named "Keys L"/"Keys R" become one stereo input, and an IEM on an odd/even mix pair one stereo IEM. Input types are guessed from the names. Nothing on the desk changes.
+- **New → From the desk, amps and radio mics:** reads the desk as above, then every amp and Shure receiver that has an IP (and the Spectera packs, once the base station password is in). Amps: every control the amp reports (names, mutes, gains, inputs) is kept with the show and listed under **From the amps** on the Amplifiers tab. Receivers: each channel's name, frequency and gain. Each one goes to the mic with that name (else the mic on that receiver channel); its frequency is fixed in the RF plan and its gain kept as the mic's gain, and the RF tab shows what each receiver held. Without a desk connected, it reads just the amps and receivers into this show. **Save** then keeps the whole lot in one show file.
+- **Reading keeps your kit:** amps, receivers, transmitters, stage boxes and their IPs stay when a show is read from the desk.
 - **New → Conference example:** loads the conference example (2 lecterns, 4 handhelds, 4 playbacks, fills, delays and ceiling).
 - **Main L/R:** after a new show, add it with the Main L/R button, or type "main" or "PA".
 

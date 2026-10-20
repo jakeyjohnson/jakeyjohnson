@@ -162,7 +162,7 @@ async function handleApi(req, res, path) {
   if (path === '/api/push') {
     if (link.state !== 'connected') throw new Error('Connect to the desk first, at the top of the page.');
     // Settings and the scene backup only: nothing that could recall or delete anything on the desk
-    const commands = Array.isArray(body.commands) ? body.commands.filter((c) => /^(set (MIXER|IO):Current\/|ssupdatet?_ex )/.test(c)) : [];
+    const commands = Array.isArray(body.commands) ? body.commands.filter((c) => /^(set (MIXER|IO):Current\/|set MIXER:Setup\/Oscillator\/(On|Type) |ssupdatet?_ex )/.test(c)) : [];
     // Stream one JSON line per command so the page can show progress
     res.writeHead(200, { 'content-type': 'application/x-ndjson' });
     let errors = 0;
@@ -196,8 +196,8 @@ async function handleApi(req, res, path) {
 
   if (path === '/api/read') {
     if (link.state !== 'connected') throw new Error('Connect to the desk first, at the top of the page.');
-    // Reads only: channel, mix and main settings
-    const commands = Array.isArray(body.commands) ? body.commands.filter((c) => /^get MIXER:Current\/(InCh|Mix|St|DCA)\/[\w/]+ \d+ \d+$/.test(c)) : [];
+    // Reads only: channel, mix and main settings, and the oscillator
+    const commands = Array.isArray(body.commands) ? body.commands.filter((c) => /^get MIXER:(Current\/(InCh|Mix|St|DCA)\/[\w/]+|Setup\/Oscillator\/\w+) \d+ \d+$/.test(c)) : [];
     res.writeHead(200, { 'content-type': 'application/x-ndjson' });
     for (const [i, cmd] of commands.entries()) {
       const reply = await link.send(cmd);

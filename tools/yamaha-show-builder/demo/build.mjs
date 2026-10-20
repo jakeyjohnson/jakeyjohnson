@@ -7,7 +7,8 @@ const src = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8
 const open = /<body[^>]*>/.exec(src);
 const body = src.slice(open.index + open[0].length, src.indexOf('</body>'))
   .replace('<script type="module" src="boot.js"></script>', '<script type="module" src="demo-bridge.js"></script>');
-const page = `<title>KobiKraken Show Builder</title>
+const page = `<meta charset="utf-8">
+<title>KobiKraken Show Builder</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="style.css">
 ${body.trim()}

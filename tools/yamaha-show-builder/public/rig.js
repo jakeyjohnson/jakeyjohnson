@@ -282,3 +282,63 @@ export function rigPaperwork(show, plan) {
   if (dante.length) parts.push(`<h2 class="page">Dante patch</h2><p class="meta">Subscribe these in Dante Controller or the desk's Dante patch.</p><table><thead><tr><th>From</th><th>To</th><th>Signal</th></tr></thead><tbody>${dante.join('')}</tbody></table>`);
   return parts.join('\n');
 }
+
+// ---- Reading the kit back into the show ----
+// Every receiver channel's name, frequency and gain
+export function shureReadLines(device) {
+  const lines = [];
+  for (let ch = 1; ch <= (RECEIVER_MODELS[device.model]?.channels || 0); ch++) lines.push(`GET ${ch} CHAN_NAME`, `GET ${ch} FREQUENCY`, `GET ${ch} AUDIO_GAIN`);
+  return lines;
+}
+// REP lines into one entry per channel: { ch, name, freq (MHz), gain (dB) }
+export function parseShureReads(replies) {
+  const byCh = new Map();
+  for (const reply of replies) {
+    const m = /<\s*REP\s+(\d+)\s+(CHAN_NAME|FREQUENCY|AUDIO_GAIN)\s+(.*?)\s*>/.exec(reply || '');
+    if (!m) continue;
+    const entry = byCh.get(m[1]) || { ch: Number(m[1]) };
+    if (m[2] === 'CHAN_NAME') entry.name = m[3].replace(/^\{|\}$/g, '').trim();
+    if (m[2] === 'FREQUENCY' && /^\d+$/.test(m[3])) entry.freq = Number(m[3]) / 1000; // sent and read in kHz
+    if (m[2] === 'AUDIO_GAIN' && /^\d+$/.test(m[3])) entry.gain = Number(m[3]) + SHURE_GAIN.min;
+    byCh.set(m[1], entry);
+  }
+  return [...byCh.values()].sort((a, b) => a.ch - b.ch);
+}
+// Puts what a receiver holds into the show: each channel goes to the mic with its name, else the mic the
+// plan gives that channel. Its frequency is fixed in the plan and its gain becomes the mic's gain.
+export function applyShureReads(show, plan, device, reads) {
+  show.rf ||= defaultRf();
+  show.rf.read = { ...(show.rf.read || {}), [device.id]: { at: new Date().toISOString(), channels: reads } };
+  const rig = rfPlan(show, plan);
+  // Names first, then channel position for the rest, each mic taken once
+  const pairs = new Map();
+  for (const r of reads) {
+    const mic = r.name && rig.mics.find((m) => !pairs.has(m) && shureName(m.name).toLowerCase() === r.name.toLowerCase());
+    if (mic) pairs.set(mic, r);
+  }
+  const used = new Set(pairs.values());
+  for (const r of reads.filter((x) => !used.has(x))) {
+    const mic = rig.mics.find((m) => !pairs.has(m) && m.device?.id === device.id && m.channel === r.ch);
+    if (mic) pairs.set(mic, r);
+  }
+  for (const [mic, r] of pairs) {
+    if (r.freq) show.rf.fixed = { ...show.rf.fixed, [mic.key]: r.freq };
+    if (r.gain != null) mic.source.rfGain = r.gain;
+  }
+  const matched = pairs.size;
+  return matched;
+}
+// An amp's AES70 read, kept with the show: who it is and every control's current value
+export function ampReadSummary(dump) {
+  const value = (o) => {
+    const v = o.value;
+    if (v && typeof v === 'object' && 'position' in v) return o.positionNames?.[v.position] ?? v.position;
+    if (v && typeof v === 'object' && 'value' in v) return Math.round(v.value * 10) / 10;
+    return v;
+  };
+  return {
+    at: dump.readAt || new Date().toISOString(),
+    model: dump.device?.model || '', name: dump.device?.name || '', serial: dump.device?.serial || '',
+    controls: (dump.objects || []).filter((o) => o.value !== undefined).map((o) => ({ path: o.path, kind: String(o.className || '').replace(/^Oca/, ''), value: value(o) })),
+  };
+}

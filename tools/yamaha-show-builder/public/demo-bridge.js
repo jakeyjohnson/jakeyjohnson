@@ -120,7 +120,9 @@ const routes = {
       for (const [i, cmd] of commands.entries()) {
         const [, addr, x, y] = cmd.split(' ');
         const has = held.get(`set ${addr} ${x} ${y}`);
-        send({ i, total: commands.length, reply: `OK ${cmd} ${has ? has.split(' ').slice(4).join(' ') : fallback(addr, x)}` });
+        // Only RIVAGE offers the oscillator over the network
+        const reply = addr.startsWith('MIXER:Setup/') && !has && !/RIVAGE|PM/.test(link.product || '') ? `ERROR ${cmd} UnknownAddress` : `OK ${cmd} ${has ? has.split(' ').slice(4).join(' ') : fallback(addr, x)}`;
+        send({ i, total: commands.length, reply });
         if (!fast && i % 200 === 0) await wait(10);
       }
       send({ done: true, total: commands.length });
@@ -140,9 +142,10 @@ const routes = {
       const rx = (shure[host] ||= {});
       for (const [i, line] of lines.entries()) {
         await wait(fast ? 0 : 40);
-        const [, ch, param, value] = /^SET (\d) (\w+) (.*)$/.exec(line) || [];
-        if (!check) rx[`${ch} ${param}`] = value;
-        const now = rx[`${ch} ${param}`];
+        const [, verb, ch, param, value] = /^(SET|GET) (\d) (\w+) ?(.*)$/.exec(line) || [];
+        if (verb === 'SET' && !check) rx[`${ch} ${param}`] = value;
+        // A receiver nobody has set yet holds its own defaults
+        const now = rx[`${ch} ${param}`] ?? { CHAN_NAME: `{CH ${ch}}`, FREQUENCY: String(606600 + ch * 1150), AUDIO_GAIN: '018' }[param];
         send({ i, total: lines.length, line: check ? `GET ${ch} ${param}` : line, reply: now == null ? 'TIMEOUT' : `< REP ${ch} ${param} ${now} >`, ok: check ? now === value : true });
       }
       send({ done: true, total: lines.length });
