@@ -1,5 +1,5 @@
 // Sets the password that unlocks this copy of Show Builder.
-//   node set-password.mjs "your new password"   sets it (at least 8 characters)
+//   node set-password.mjs "your new password"   sets it (at least 4 characters)
 //   node set-password.mjs --off                 removes it, so the app opens unlocked
 // Only a scrypt hash is stored, in licence.json, with the licence number from public/about.js.
 // Rebuild the Mac app afterwards (mac: npm run build) so it carries the new password.
@@ -12,8 +12,8 @@ const arg = process.argv[2];
 if (arg === '--off') {
   rmSync(file, { force: true });
   console.log('Password removed. The app opens unlocked.');
-} else if (!arg || arg.length < 8) {
-  console.error('Give a password of at least 8 characters: node set-password.mjs "your new password"');
+} else if (!arg || arg.length < 4) {
+  console.error('Give a password of at least 4 characters: node set-password.mjs "your new password"');
   process.exit(1);
 } else {
   writeFileSync(file, JSON.stringify(makeLock(arg, LICENCE), null, 2) + '\n');
