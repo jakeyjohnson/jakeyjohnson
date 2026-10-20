@@ -12,8 +12,8 @@ export const MODELS = {
   TF1:     { label: 'TF1',            series: 'TF',     inputs: 32,  mixes: 20, stereoMixFrom: 9, io: { analogIn: 16, analogOut: 8, cards: 1, cardCh: 32, dante: 0 } }, // AUX 1-8 mono, 9/10-19/20 stereo
   TF3:     { label: 'TF3',            series: 'TF',     inputs: 40,  mixes: 20, stereoMixFrom: 9, io: { analogIn: 24, analogOut: 16, cards: 1, cardCh: 32, dante: 0 } },
   TF5:     { label: 'TF5',            series: 'TF',     inputs: 40,  mixes: 20, stereoMixFrom: 9, io: { analogIn: 32, analogOut: 16, cards: 1, cardCh: 32, dante: 0 } },
-  DM3:     { label: 'DM3',            series: 'DM3',    inputs: 16,  mixes: 6,  io: { analogIn: 16, analogOut: 8, cards: 0, cardCh: 0, dante: 16 } },
-  DM3S:    { label: 'DM3 Standard',   series: 'DM3',    inputs: 16,  mixes: 6,  io: { analogIn: 16, analogOut: 8, cards: 0, cardCh: 0, dante: 0 } }, // no Dante
+  DM3S:    { label: 'DM3',            series: 'DM3',    inputs: 16,  mixes: 6,  io: { analogIn: 16, analogOut: 8, cards: 0, cardCh: 0, dante: 0 } }, // analogue only (sold as DM3 Standard)
+  DM3:     { label: 'DM3 Dante',      series: 'DM3',    inputs: 16,  mixes: 6,  io: { analogIn: 16, analogOut: 8, cards: 0, cardCh: 0, dante: 16 } },
   QL1:     { label: 'QL1',            series: 'QL',     inputs: 32,  mixes: 16, io: { analogIn: 16, analogOut: 8, cards: 2, cardCh: 16, dante: 64 } },
   QL5:     { label: 'QL5',            series: 'QL',     inputs: 64,  mixes: 16, io: { analogIn: 32, analogOut: 16, cards: 2, cardCh: 16, dante: 64 } },
   CL1:     { label: 'CL1',            series: 'CL',     inputs: 48,  mixes: 24, io: { analogIn: 8, analogOut: 8, cards: 3, cardCh: 16, dante: 64 } },

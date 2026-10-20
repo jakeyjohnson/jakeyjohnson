@@ -58,7 +58,7 @@ test('model limits are checked', () => {
   show.options.model = 'DM3';
   assert.deepEqual(buildPlan(show).warnings, []); // 14 channels, 4 mixes fits a DM3
   addSources(show, 'handheld', 4);
-  assert.match(buildPlan(show).warnings.join('\n'), /needs 18 channels. The DM3 has 16/);
+  assert.match(buildPlan(show).warnings.join('\n'), /needs 18 channels. The DM3 Dante has 16/);
 
   show.options.model = 'TF5';
   show.options.firstMix = 7;
