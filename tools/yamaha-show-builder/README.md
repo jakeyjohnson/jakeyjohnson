@@ -27,8 +27,8 @@ Pick your desk from the **Desk model** dropdown at the top. The app then checks 
 |---|---|---|
 | TF1 | 32 | 20 (8 mono + 6 stereo pairs) |
 | TF3 / TF5 | 40 | 20 (8 mono + 6 stereo pairs) |
-| DM3 | 16 | 6 |
-| DM3 Standard (no Dante) | 16 | 6 |
+| DM3 (analogue only) | 16 | 6 |
+| DM3 Dante | 16 | 6 |
 | QL1 / QL5 | 32 / 64 | 16 |
 | CL1 / CL3 / CL5 | 48 / 64 / 72 | 24 |
 | DM7 Compact / DM7 | 72 / 120 | 48 |
@@ -262,8 +262,8 @@ The patch sheet now lists the port for every input and output, so it doubles as 
 | Desk | Analogue in / out | Cards | Dante |
 |---|---|---|---|
 | TF1 / TF3 / TF5 | 16/8, 24/16, 32/16 | 1 × 32 | via card |
-| DM3 | 16 / 8 | none | 16 |
-| DM3 Standard | 16 / 8 | none | none |
+| DM3 | 16 / 8 | none | none |
+| DM3 Dante | 16 / 8 | none | 16 |
 | QL1 / QL5 | 16/8, 32/16 | 2 × 16 | 64 |
 | CL1 / CL3 / CL5 | 8 / 8 (Omni) | 3 × 16 | 64 |
 | DM7 Compact / DM7 | 16/16, 32/16 | none | 144 |
