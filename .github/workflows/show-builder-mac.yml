@@ -1,5 +1,6 @@
 # Builds the KobiKraken Show Builder Mac app on a Mac: .dmg installers and zips for Apple Silicon and Intel,
-# ad-hoc signed. Download them from the run's Artifacts.
+# ad-hoc signed. Each build is published as a GitHub Release (Releases on the repo's front page) with one
+# download per Mac, and also kept in the run's Artifacts.
 name: Show Builder Mac app
 
 on:
@@ -8,6 +9,9 @@ on:
     paths:
       - 'tools/yamaha-show-builder/**'
       - '.github/workflows/show-builder-mac.yml'
+
+permissions:
+  contents: write # to publish the release
 
 jobs:
   mac:
@@ -44,3 +48,22 @@ jobs:
             tools/yamaha-show-builder/mac/dist/*.dmg
             tools/yamaha-show-builder/mac/dist/*.zip
           retention-days: 30
+      - name: Publish as a release (one download per Mac)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="show-builder-v$VERSION"
+          cd mac/dist
+          ls -la *.dmg *.zip
+          NOTES="KobiKraken Show Builder $VERSION, built from ${GITHUB_SHA::7}.
+
+          **Apple Silicon (M1–M4):** the arm64 .dmg. **Intel:** the x64 .dmg. Open it and drag the app into Applications.
+          First open: macOS 15+, open once, then System Settings → Privacy & Security → Open Anyway. macOS 14 and earlier, right-click → Open.
+          When it asks to find devices on your local network, press Allow."
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" *.dmg *.zip --clobber
+            gh release edit "$TAG" --notes "$NOTES"
+          else
+            gh release create "$TAG" *.dmg *.zip --target "$GITHUB_SHA" --title "Show Builder $VERSION" --notes "$NOTES" --prerelease
+          fi
