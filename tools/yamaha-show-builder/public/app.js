@@ -480,7 +480,8 @@ for (const [name, chips] of Object.entries(zoneGroups)) {
     el('div', { className: 'chips' }, ...chips)));
 }
 const series = {};
-for (const [id, m] of Object.entries(MODELS)) (series[m.series || ''] ||= []).push(el('option', { value: id, textContent: m.label }));
+const MENU_GROUP = { DM3: 'DM', DM7: 'DM' }; // one heading in the list; the desks still behave as their own families
+for (const [id, m] of Object.entries(MODELS)) (series[MENU_GROUP[m.series] || m.series || ''] ||= []).push(el('option', { value: id, textContent: m.label }));
 for (const [name, options] of Object.entries(series)) {
   $('model').append(name ? el('optgroup', { label: name === 'RIVAGE' ? 'RIVAGE PM' : `${name} series` }, ...options) : options[0]);
 }
