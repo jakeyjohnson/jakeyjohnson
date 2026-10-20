@@ -8,11 +8,14 @@ import { LICENCE, PRODUCT, VERSION } from './public/about.js';
 import { DeskLink } from './desk-link.js';
 import { discover, localTargets } from './discover.js';
 import { allowedShureLine, shureSession, specteraRequest } from './rf-link.js';
+import { checkPassword, loadLock, tokenFor, tokenMatches } from './lock.js';
 import { shureMatches, shureReadback } from './public/rig.js';
 import { matchesReadback, readbackCommand } from './public/plan.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const PUBLIC = fileURLToPath(new URL('./public/', import.meta.url));
+// The password for this copy, if one is set (licence.json beside this file)
+const LOCK = loadLock(fileURLToPath(new URL('.', import.meta.url)));
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.txt': 'text/plain' };
 
 // Only talk to devices on the local network, so the bridge can't be used as an open proxy
@@ -58,8 +61,19 @@ async function handleApi(req, res, path) {
     req.on('close', () => listeners.delete(res));
     return;
   }
+  if (req.method === 'GET' && path === '/api/lock') return json(res, { locked: Boolean(LOCK), licence: LOCK?.licence || LICENCE });
   if (req.method !== 'POST') return res.writeHead(404).end();
   const body = await readJson(req);
+
+  // Unlock: the password is checked here, and the page gets a key to send with every request after
+  if (path === '/api/unlock') {
+    if (checkPassword(LOCK, body.password)) return json(res, { token: tokenFor(LOCK) });
+    await new Promise((r) => setTimeout(r, 700)); // slows down guessing
+    return json(res, { error: "That password isn't right." }, 401);
+  }
+  // Nothing reaches the kit until this copy is unlocked
+  if (!tokenMatches(LOCK, req.headers['x-kk-key'])) return json(res, { error: 'Locked. Enter the password to use the app.' }, 401);
+  if (path === '/api/check') return json(res, { ok: true });
 
   if (path === '/api/connect') {
     const { host, port } = target(body);
