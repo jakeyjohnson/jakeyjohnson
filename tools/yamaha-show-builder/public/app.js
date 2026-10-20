@@ -13,7 +13,9 @@ import { modelFromProduct, patchBanks, portLabel, emptyShow, sendOf, nextZoneNam
 const host = window.kkHost || {};
 const SWATCH = { Blue: '#4d7cff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
 const $ = (id) => document.getElementById(id);
-const STORE = 'yamaha-show-builder';
+const STORE = host.store || 'yamaha-show-builder'; // demo mode keeps its own shows
+// Every request to the app's server carries the unlock key
+const api = (path, opts = {}) => fetch(path, { ...opts, headers: { ...(opts.headers || {}), 'x-kk-key': host.token || '' } });
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 let show = load() || defaultShow();
@@ -215,7 +217,7 @@ function matchModel(product) {
 }
 async function connectDesk() {
   if (link.state === 'connected') {
-    await fetch('/api/disconnect', { method: 'POST' });
+    await api('/api/disconnect', { method: 'POST' });
     return;
   }
   const hostIp = $('host').value.trim();
@@ -226,7 +228,7 @@ async function connectDesk() {
   try { localStorage.setItem(`${STORE}-host`, hostIp); } catch { /* ignore */ }
   showLink({ state: 'connecting', host: hostIp });
   try {
-    const res = await fetch('/api/connect', { method: 'POST', body: JSON.stringify({ host: hostIp, port: Number($('port').value) || 49280 }) });
+    const res = await api('/api/connect', { method: 'POST', body: JSON.stringify({ host: hostIp, port: Number($('port').value) || 49280 }) });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     showLink(data);
@@ -239,6 +241,7 @@ events.onmessage = (e) => showLink(JSON.parse(e.data));
 events.onerror = () => { if (link.state === 'connected') showLink({ state: 'lost', host: link.host, error: 'Lost touch with the app' }); };
 $('connectBtn').onclick = connectDesk;
 $('host').onkeydown = (e) => { if (e.key === 'Enter') connectDesk(); };
+if (host.lock) $('lockBtn').onclick = host.lock; else $('lockBtn').remove();
 $('linkPill').onclick = () => { showTab('desk'); $('host').disabled ? $('connectBtn').focus() : $('host').focus(); };
 
 // ---- Find devices on the network ----
@@ -250,7 +253,7 @@ async function findDevices() {
   $('findList').replaceChildren();
   $('findBtn').disabled = $('findAgain').disabled = true;
   try {
-    const res = await fetch('/api/discover', { method: 'POST', body: JSON.stringify({ subnet }) });
+    const res = await api('/api/discover', { method: 'POST', body: JSON.stringify({ subnet }) });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     showDevices(data);
@@ -278,7 +281,7 @@ function showDevices({ devices, subnets }) {
         li.append(el('button', {
           className: 'primary small', type: 'button', textContent: 'Connect',
           onclick: async () => {
-            if (link.state === 'connected') await fetch('/api/disconnect', { method: 'POST' });
+            if (link.state === 'connected') await api('/api/disconnect', { method: 'POST' });
             $('host').value = d.ip;
             $('port').value = d.port || 49280;
             link.state = 'idle';
@@ -327,13 +330,13 @@ const rigUi = mountRig({
       try { return await streamLines('/api/shure', { host: ip, lines, check }, onLine); } catch (err) { return { error: err.message }; }
     },
     specteraDevices: async (ip, password) => {
-      const res = await fetch('/api/spectera/devices', { method: 'POST', body: JSON.stringify({ host: ip, password }) });
+      const res = await api('/api/spectera/devices', { method: 'POST', body: JSON.stringify({ host: ip, password }) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       return data.devices;
     },
     specteraPush: async (ip, password, writes) => {
-      const res = await fetch('/api/spectera/push', { method: 'POST', body: JSON.stringify({ host: ip, password, writes }) });
+      const res = await api('/api/spectera/push', { method: 'POST', body: JSON.stringify({ host: ip, password, writes }) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       return data.results;
@@ -343,7 +346,7 @@ const rigUi = mountRig({
 
 // Streams one JSON line per command from the app server and hands each to onLine
 async function streamLines(path, body, onLine) {
-  const res = await fetch(path, { method: 'POST', body: JSON.stringify(body) });
+  const res = await api(path, { method: 'POST', body: JSON.stringify(body) });
   if (!res.ok) throw new Error((await res.json()).error);
   const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
   let buffer = '';
@@ -764,7 +767,7 @@ function renderLineCheck(plan, model) {
     !plan.channels.length ? el('tr', {}, el('td', { colSpan: 8, className: 'dim', textContent: 'No inputs yet' })) : null));
 }
 async function sendCue(commands) {
-  const res = await fetch('/api/cue', { method: 'POST', body: JSON.stringify({ commands }) });
+  const res = await api('/api/cue', { method: 'POST', body: JSON.stringify({ commands }) });
   const data = await res.json();
   if (data.error) throw new Error(data.error);
 }

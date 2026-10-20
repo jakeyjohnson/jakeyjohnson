@@ -4,6 +4,21 @@ Build a labelled, colour-coded, routed show on a Yamaha digital desk in a couple
 
 Pick your inputs (lectern mics, handhelds, playback…), pick your speaker zones (Main L/R, front fills, delays, ceiling…), tick what goes where, and push it to the desk.
 
+## Password and demo mode
+
+The app opens on a lock screen with the licence number.
+- **Password:** unlocks the real app. The app's own server checks it, and it won't talk to any desk, amp or radio mic until it's unlocked. **Remember on this computer** skips the lock screen next time. The lock button in the header bar locks it again.
+- **Try the demo:** opens the same app with a pretend desk, amps, radio mics and network. Demo shows are kept apart from real ones. **Demo · Exit** in the header goes back to the lock screen.
+
+To set or change the password:
+```bash
+node set-password.mjs "your new password"   # at least 8 characters
+node set-password.mjs --off                 # no password: the app opens unlocked
+```
+Only a scrypt hash is kept, in `licence.json` with the licence number, never the password itself. Rebuild the Mac app after changing it (the GitHub workflow does this on every push).
+
+This keeps people out of the app and away from your kit. It isn't copy protection: someone with the app's files and the know-how could take the lock out.
+
 ## Mac app
 
 There's a Mac app with the bridge built in: download, drag to Applications, open. See [`mac/README.md`](mac/README.md) for installing it, and for building it yourself.
@@ -349,7 +364,7 @@ The footer shows the version and licence number. Both live in `public/about.js`:
 
 ## Demo
 
-`demo/` runs the real app in a web page with nothing to install. `demo/bridge.js` stands in for the app's server: a pretend desk you can watch fill up, pretend Shure receivers, a pretend Spectera base station and a pretend network for Find devices. Build the page with `node demo/build.mjs`, which takes `public/index.html` and swaps in the bridge, then publish `demo/index.html` with `demo/bridge.js`, `demo/demo.css` and everything in `public/` alongside it.
+`demo/` runs the real app in a web page with nothing to install. `public/demo-bridge.js` (also used for the app's own demo mode) stands in for the app's server: a pretend desk you can watch fill up, pretend Shure receivers, a pretend Spectera base station and a pretend network for Find devices. Build the page with `node demo/build.mjs`, which takes `public/index.html` and swaps in the bridge, then publish `demo/index.html` with everything in `public/` alongside it. The web demo has no server, so it skips the lock screen.
 
 ## Testing without a desk
 

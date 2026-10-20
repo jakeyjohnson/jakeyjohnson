@@ -354,3 +354,23 @@ input.setup { width: 104px; }
   .link-dot.connecting { animation: none; }
   .toast { animation: none; }
 }
+
+/* Lock screen: the first thing a locked copy shows */
+body.booting .shell, body.locked .shell { visibility: hidden; }
+.lock-screen { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; overflow-y: auto; padding: max(24px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.lock-card { width: min(380px, 100%); display: grid; gap: 14px; justify-items: center; text-align: center; padding: 36px 32px 28px; border-radius: 20px; background: linear-gradient(180deg, rgba(37, 45, 55, .92), rgba(22, 27, 33, .92)); border: 1px solid var(--line-strong); box-shadow: inset 0 1px 0 rgba(245, 244, 240, .06), 0 30px 80px rgba(0, 0, 0, .55); }
+.lock-card .brand-k { margin-bottom: 4px; }
+.lock-card .product { font-size: 14px; }
+.lock-licence { font: 12px var(--mono); color: var(--muted); margin-top: -6px; }
+.lock-field { display: grid; gap: 6px; width: 100%; text-align: left; margin-top: 8px; }
+.lock-field span { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.lock-field input { height: 42px; font: 15px var(--mono); letter-spacing: .04em; }
+.lock-error { min-height: 18px; font-size: 13px; color: var(--bad); }
+.lock-card .primary.big { width: 100%; justify-content: center; }
+.lock-or { display: flex; align-items: center; gap: 10px; width: 100%; color: var(--faint); font-size: 12px; }
+.lock-or::before, .lock-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.lock-card .ghost { width: 100%; justify-content: center; }
+.lock-note { margin: -4px 0 0; font-size: 12px; color: var(--muted); }
+.lock-btn { color: var(--muted); }
+.demo-exit { cursor: pointer; height: 22px; gap: 4px; }
+.demo-exit span { color: var(--muted); }

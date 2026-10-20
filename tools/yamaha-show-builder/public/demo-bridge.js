@@ -1,4 +1,4 @@
-// Demo only: stands in for the app's server so the real app runs in a web page with nothing to install.
+// Demo mode: stands in for the app's server so the real app runs in a web page with nothing to install.
 // It answers the same /api calls with a pretend desk, pretend Shure receivers and a pretend Spectera
 // base station, and draws the pretend desk so you can watch a show land. Then it loads the real app.
 import { el, panel, tag } from './ui.js';
@@ -63,8 +63,9 @@ const network = () => [
   { kind: 'amp', make: 'd&b', model: 'D40', name: 'Fills', ip: '192.168.0.61', via: ['port 30013'] },
   { kind: 'playback', make: 'Figure 53', model: 'QLab', name: 'Show Mac', ip: '192.168.0.70', via: ['announces _qlab._tcp'] },
 ];
+const STORE = 'kk-demo';
 function currentModel() {
-  try { return JSON.parse(localStorage.getItem('yamaha-show-builder'))?.options?.model || 'QL5'; } catch { return 'QL5'; }
+  try { return JSON.parse(localStorage.getItem(STORE))?.options?.model || 'QL5'; } catch { return 'QL5'; }
 }
 
 // ---- The fake server ----
@@ -171,7 +172,9 @@ function sheet(title, body, tools = []) {
   box.addEventListener('keydown', (e) => { if (e.key === 'Escape') box.remove(); });
 }
 window.kkHost = {
+  ...(window.kkHost || {}),
   demo: true,
+  store: STORE,
   download(name, text) {
     const pre = el('pre', { className: 'log sheet-text', textContent: text });
     sheet(name, el('div', { className: 'panel-body' }, el('p', { className: 'muted', textContent: 'The app saves this as a file. Here in the demo it is shown instead.' }), pre),
@@ -229,7 +232,12 @@ function drawDesk(flash) {
 }
 
 function mountDemo() {
-  document.querySelector('.product')?.after(tag('Demo', 'on', 'Everything here is pretend: the desk, the network, the radio mics and amps. The real app talks to real kit.'));
+  const tip = 'Everything here is pretend: the desk, the network, the radio mics and amps. The real app talks to real kit.';
+  const exit = window.kkHost.exitDemo;
+  document.querySelector('.product-bar .product')?.after(exit
+    ? el('button', { className: 'tag on demo-exit', type: 'button', title: `${tip} Click to leave the demo.`, onclick: exit }, 'Demo', el('span', { textContent: '· Exit' }))
+    : tag('Demo', 'on', tip));
+  document.getElementById('lockBtn')?.remove();
   const hostInput = document.getElementById('host');
   if (hostInput && !hostInput.value) hostInput.value = '192.168.0.128';
   deskBox = el('div', { className: 'surface' });
@@ -237,6 +245,8 @@ function mountDemo() {
   drawDesk();
 }
 
-try { if (!localStorage.getItem('yamaha-show-builder-host')) localStorage.setItem('yamaha-show-builder-host', '192.168.0.128'); } catch { /* storage off */ }
+try { if (!localStorage.getItem(`${STORE}-host`)) localStorage.setItem(`${STORE}-host`, '192.168.0.128'); } catch { /* storage off */ }
+document.head.append(el('link', { rel: 'stylesheet', href: 'demo.css' }));
+document.body.classList.remove('booting', 'locked');
 await import('./app.js');
 mountDemo();
