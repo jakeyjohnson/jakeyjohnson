@@ -194,6 +194,19 @@ async function handleApi(req, res, path) {
     return res.end(JSON.stringify({ done: true, total: commands.length, wrong }) + '\n');
   }
 
+  if (path === '/api/read') {
+    if (link.state !== 'connected') throw new Error('Connect to the desk first, at the top of the page.');
+    // Reads only: channel, mix and main settings
+    const commands = Array.isArray(body.commands) ? body.commands.filter((c) => /^get MIXER:Current\/(InCh|Mix|St|DCA)\/[\w/]+ \d+ \d+$/.test(c)) : [];
+    res.writeHead(200, { 'content-type': 'application/x-ndjson' });
+    for (const [i, cmd] of commands.entries()) {
+      const reply = await link.send(cmd);
+      if (reply === 'NOT CONNECTED') return res.end(JSON.stringify({ error: 'Lost the desk while reading. Reconnect and read again.' }) + '\n');
+      res.write(JSON.stringify({ i, total: commands.length, reply }) + '\n');
+    }
+    return res.end(JSON.stringify({ done: true, total: commands.length }) + '\n');
+  }
+
   if (path === '/api/cue') {
     if (link.state !== 'connected') throw new Error('Connect to the desk first, at the top of the page.');
     const commands = Array.isArray(body.commands) ? body.commands.filter((c) => /^set MIXER:Current\/Cue\/InCh\/On \d+ \d+ [01]$/.test(c)).slice(0, 4) : [];

@@ -346,10 +346,12 @@ export function buildPlan(show) {
     if (stereo) used.add(m + 1);
     return m;
   };
-  for (const zone of show.zones) {
+  // Outputs with a fixed mix (read off a desk) take theirs first; the rest fill in around them
+  const fixedFirst = [...show.zones.filter((z) => z.mix > 0), ...show.zones.filter((z) => !(z.mix > 0))];
+  for (const zone of fixedFirst) {
     if (zone.type === 'main') continue;
     const stereo = Boolean(ZONE_TYPES[zone.type].stereo);
-    const start = stereo && model.stereoMixFrom ? Math.max(firstMix, model.stereoMixFrom) : firstMix;
+    const start = zone.mix > 0 ? zone.mix : stereo && model.stereoMixFrom ? Math.max(firstMix, model.stereoMixFrom) : firstMix;
     mixes.push({ mix: take(start, stereo), zone, stereo });
   }
   mixes.sort((a, b) => a.mix - b.mix);
@@ -359,6 +361,7 @@ export function buildPlan(show) {
   let ch = firstChannel;
   for (const source of autoOrder ? orderSources(show.sources) : show.sources) {
     if (autoOrder && source.stereo && ch % 2 === 0) spares.push(ch++);
+    if (!autoOrder && source.deskCh > ch) ch = source.deskCh; // a show read from a desk keeps its channel numbers
     const sides = source.stereo ? ['L', 'R'] : [null];
     for (const side of sides) {
       const name = side ? `${clean(source.name, maxNameLength - 2)} ${side}` : source.name;
@@ -849,4 +852,109 @@ ${extra}
 <footer>KobiKraken · Show Builder ${esc(version ? 'v' + version : '')}${licence ? ' · Licence ' + esc(licence) : ''}</footer>
 </div>`;
   return { title: `${show.name} paperwork`, css, body };
+}
+
+// ---- Read a desk into a show ----
+// Two passes, so big desks stay quick: first every channel's and mix's name, colour and HPF, then the
+// routing of only the channels and mixes that have been named.
+const g = (addr, x, y = 0) => `get MIXER:Current/${addr} ${x} ${y}`;
+const isDefaultChannel = (n) => !n || /^(ch|ch\.|channel)\s*\d+$/i.test(n.trim());
+const isDefaultMix = (n) => !n || /^(mx|mix|aux|mtx)\s*\d+$/i.test(n.trim());
+export function readDeskFirst(model) {
+  const lines = [g('St/Label/Name', 0)];
+  for (let i = 0; i < model.inputs; i++) lines.push(g('InCh/Label/Name', i), g('InCh/Label/Color', i), g('InCh/HPF/On', i), g('InCh/HPF/Freq', i), g('InCh/ToSt/On', i));
+  for (let m = 0; m < model.mixes; m++) lines.push(g('Mix/Label/Name', m), g('Mix/Label/Color', m));
+  return lines;
+}
+// The reply value for "addr x y" from the desk's "OK get addr x y value" lines
+export function readReplies(replies) {
+  const values = new Map();
+  for (const line of replies) {
+    const m = /^OK get MIXER:Current\/(\S+) (\d+) (\d+) (.*)$/.exec(String(line).trim());
+    if (m) values.set(`${m[1]} ${m[2]} ${m[3]}`, m[4].startsWith('"') ? m[4].slice(1, -1) : Number.isNaN(Number(m[4])) ? m[4] : Number(m[4]));
+  }
+  return values;
+}
+const namedChannels = (model, v) => [...Array(model.inputs).keys()].filter((i) => !isDefaultChannel(String(v.get(`InCh/Label/Name ${i} 0`) ?? '')));
+const namedMixes = (model, v) => [...Array(model.mixes).keys()].filter((m) => !isDefaultMix(String(v.get(`Mix/Label/Name ${m} 0`) ?? '')));
+export function readDeskSecond(model, values) {
+  const lines = [];
+  const mixes = namedMixes(model, values);
+  for (const m of mixes) lines.push(g('InCh/ToMix/PrePost', 0, m));
+  for (const i of namedChannels(model, values)) for (const m of mixes) lines.push(g('InCh/ToMix/On', i, m));
+  return lines;
+}
+export function typeFromName(name) {
+  const lower = ` ${String(name).toLowerCase()} `;
+  const byWord = SOURCE_WORDS.find(({ word }) => new RegExp(`\\b${escape(word)}(?:e?s)?\\b`).test(lower))?.type;
+  // Desk names are short, so also know this app's own short names (Lect 1, AcGtr, Lap)
+  const first = lower.trim().split(/[\s\d]+/)[0];
+  return byWord || Object.keys(SOURCE_TYPES).find((t) => SOURCE_TYPES[t].short.toLowerCase() === first) || 'instrument';
+}
+function zoneTypeFromName(name, pre) {
+  const n = String(name).toLowerCase();
+  if (/\biem|\bear/.test(n)) return 'iemMono';
+  if (/wedge|wdg|\bmon|foldback|\bfb\b|side ?fill|drum ?fill/.test(n)) return 'foldback';
+  if (/front ?fill|\bff\b|lip|\bfill/.test(n)) return 'frontfill';
+  if (/delay|\bdly/.test(n)) return 'delay';
+  if (/ceil|bgm|foyer|lobby|zone|bar\b/.test(n)) return 'ceiling';
+  if (/rec|stream|broadcast|\bbc\b|\bob\b|press|camera|video/.test(n)) return 'record';
+  return pre ? 'foldback' : 'frontfill';
+}
+// Builds a show from everything read. Keeps the desk's channel order and mix numbers.
+export function showFromDesk(modelId, values, name = 'Read from desk') {
+  const model = MODELS[modelId] || MODELS.custom;
+  const show = emptyShow(modelId);
+  show.name = name;
+  show.options.autoOrder = false;
+  const v = (k) => values.get(k);
+  const zones = [];
+  const chs = namedChannels(model, values);
+  const st = String(v('St/Label/Name 0 0') ?? '');
+  if (chs.some((i) => v(`InCh/ToSt/On ${i} 0`) === 1) || (st && !/^st\s*[lr]?$/i.test(st))) {
+    const main = makeZone('main', st && !/^st\s*[lr]?$/i.test(st) ? st : 'Main LR');
+    zones.push({ zone: main, mix: null });
+  }
+  const mixList = namedMixes(model, values);
+  const sideless = (n) => n.replace(/\s*(L|R|Left|Right)$/i, '').trim();
+  for (let k = 0; k < mixList.length; k++) {
+    const m = mixList[k];
+    let mixName = String(v(`Mix/Label/Name ${m} 0`)).trim();
+    let type = zoneTypeFromName(mixName, v(`InCh/ToMix/PrePost 0 ${m}`) === 0);
+    // An IEM on an odd/even pair named "Gtr IEM L" / "Gtr IEM R" (or the same name twice) is one stereo IEM
+    const pair = mixList[k + 1] === m + 1 && m % 2 === 0 ? String(v(`Mix/Label/Name ${m + 1} 0`)).trim() : null;
+    if (type === 'iemMono' && pair && sideless(pair) === sideless(mixName) && (pair === mixName || pair !== sideless(pair))) {
+      type = 'iemStereo';
+      mixName = sideless(mixName);
+      k++;
+    }
+    const zone = makeZone(type, mixName);
+    zone.mix = m + 1;
+    const color = v(`Mix/Label/Color ${m} 0`);
+    if (color) zone.color = normalizeColor(String(color));
+    zone.send = v(`InCh/ToMix/PrePost 0 ${m}`) === 0 ? 'pre' : 'post';
+    zones.push({ zone, mix: m });
+  }
+  show.zones = zones.map((z) => z.zone);
+  const routeOf = (i) => zones.filter(({ zone, mix }) => (zone.type === 'main' ? v(`InCh/ToSt/On ${i} 0`) === 1 : v(`InCh/ToMix/On ${i} ${mix}`) === 1)).map((z) => z.zone.id);
+  for (let k = 0; k < chs.length; k++) {
+    const i = chs[k];
+    const nameL = String(v(`InCh/Label/Name ${i} 0`)).trim();
+    const next = chs[k + 1] === i + 1 ? String(v(`InCh/Label/Name ${i + 1} 0`)).trim() : null;
+    const base = nameL.replace(/\s*(L|Left)$/i, '');
+    const stereo = base !== nameL && next && next.replace(/\s*(R|Right)$/i, '') === base && next !== next.replace(/\s*(R|Right)$/i, '');
+    const type = typeFromName(stereo ? base : nameL);
+    const src = makeSource(type, 1, [], stereo ? base.trim() : nameL, Boolean(stereo));
+    const color = v(`InCh/Label/Color ${i} 0`);
+    if (color) src.color = normalizeColor(String(color));
+    src.hpf = v(`InCh/HPF/On ${i} 0`) === 1 ? Math.round(Number(v(`InCh/HPF/Freq ${i} 0`)) / 10) || SOURCE_TYPES[type].hpf : 0;
+    src.zones = routeOf(i);
+    src.patch = undefined;
+    src.deskCh = i + 1;
+    show.sources.push(src);
+    if (stereo) k++;
+  }
+  const first = chs[0];
+  if (first > 0) show.options.firstChannel = first + 1;
+  return show;
 }

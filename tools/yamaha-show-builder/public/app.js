@@ -1,12 +1,13 @@
 import { LICENCE, PRODUCT, VERSION } from './about.js';
-import { rigPaperwork } from './rig.js';
+import { CHECK_LEVELS, checkKeys, checkState, checkSteps, levelText, noiseChannel, readLines, restoreLines, stateLines } from './check.js';
+import { ampPlan, rigPaperwork } from './rig.js';
 import { mountRig } from './rig-ui.js';
 import { ask, el, info, tag, toast, toggle, wireMenus } from './ui.js';
 import {
   applyTemplate, changedCommands, cueCommand, deskCaps, gainOf, makeTemplate, monitorShow, pairMonitors, paperwork, parseInputList, phantomOf,
   rememberPush, sceneStoreCommand,
 } from './plan.js';
-import { modelFromProduct, patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
+import { modelFromProduct, patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, readDeskFirst, readDeskSecond, readReplies, showFromDesk, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 // The page can run inside the Mac app, a browser, or the demo. The demo hands in its own way to save
 // files and show paperwork, since it can't download or open windows.
@@ -62,6 +63,7 @@ function render() {
   renderGroups(plan, model);
   renderSendOptions(plan, model);
   renderLineCheck(plan, model);
+  renderCheck(plan);
   rigUi.renderRios($('rioBox'));
   const counts = rigUi.counts();
   $('countAmps').textContent = counts.amps || '';
@@ -465,6 +467,36 @@ async function verifyDesk() {
   }
 }
 
+// Reads names, colours, high-pass and routing off the connected desk into a new show
+async function readDesk() {
+  if (needDesk()) return;
+  const modelId = modelFromProduct(link.product) || show.options.model;
+  const model = MODELS[modelId];
+  if (!model?.inputs) return setStatus('Pick the desk model first', 'bad');
+  if (show.sources.length || show.zones.length) {
+    if (!await ask($('askHost'), { text: `Read the show off ${link.product || 'the desk'}? It replaces this one. Nothing on the desk changes.`, yes: 'Read', danger: true })) return;
+  }
+  $('progress').hidden = false;
+  $('progress').value = 0;
+  setStatus('Reading the desk…');
+  try {
+    const replies = [];
+    const pass = async (commands, from, share) => {
+      await streamLines('/api/read', { commands }, (msg) => { replies.push(msg.reply); $('progress').value = from + share * (msg.i + 1) / msg.total; });
+    };
+    await pass(readDeskFirst(model), 0, 0.6);
+    const second = readDeskSecond(model, readReplies(replies));
+    if (second.length) await pass(second, 0.6, 0.4);
+    const next = showFromDesk(modelId, readReplies(replies), `${link.product || model.label} show`);
+    startShow(next);
+    if (!next.sources.length && !next.zones.length) setStatus('Nothing named on the desk yet, so the show is empty', 'bad');
+    else toast(`Read ${plural(next.sources.length, 'input')} and ${plural(next.zones.length, 'output')} from ${link.product || 'the desk'}`, 'ok');
+  } catch (err) {
+    setStatus(err.message, 'bad');
+    $('progress').hidden = true;
+  }
+}
+
 // ---- Static controls: add buttons, desk list, file actions ----
 const GROUP_OF = { speech: 'Speech', band: 'Band', talkback: 'Band', program: 'Playback', bgm: 'Playback' };
 const chipGroups = { Packages: Object.entries(PACKAGES).map(([key, pkg]) => el('button', {
@@ -525,6 +557,7 @@ async function askToReplace(next, text, yes) {
 }
 $('newShow').onclick = () => askToReplace(emptyShow(show.options.model), 'Start an empty show? Everything on this page goes.', 'Start empty');
 $('exampleShow').onclick = () => askToReplace({ ...defaultShow(), options: { ...defaultShow().options, model: show.options.model } }, 'Load the conference example? It replaces this show.', 'Load example');
+$('readShow').onclick = readDesk;
 $('saveShow').onclick = () => download(`${fileBase()}.show.json`, JSON.stringify(show, null, 2), 'application/json');
 $('exportCsv').onclick = () => download(`${fileBase()}-patch.csv`, patchSheetCsv(show, buildPlan(show)), 'text/csv');
 $('openFile').onchange = async (e) => {
@@ -772,6 +805,89 @@ function renderLineCheck(plan, model) {
         el('td', {}, canSolo && el('button', { className: `solo ${soloKey === key ? 'on' : ''}`, type: 'button', textContent: 'Solo', 'aria-pressed': String(soloKey === key), onclick: () => solo(plan, c) })));
     }),
     !plan.channels.length ? el('tr', {}, el('td', { colSpan: 8, className: 'dim', textContent: 'No inputs yet' })) : null));
+}
+// ---- System check: noise through each output in turn, everything put back on Stop ----
+let check = null; // { plan, ch, steps, i, level, snapshot, last } while running
+let checkCh = null;
+let checkBusy = false;
+const CHECK_KEY = `${STORE}-check`; // what to put back, kept until Stop in case the page closes mid-check
+const leftover = () => { try { return JSON.parse(localStorage.getItem(CHECK_KEY)); } catch { return null; } };
+async function sendLines(commands) {
+  if (!commands.length) return;
+  const result = await streamLines('/api/push', { commands }, () => {});
+  if (result?.errors) throw new Error(`The desk refused ${plural(result.errors, 'line')}`);
+}
+async function checkDo(work) {
+  if (checkBusy) return;
+  checkBusy = true;
+  try { await work(); } catch (err) { toast(err.message, 'bad'); }
+  checkBusy = false;
+  render();
+}
+function startCheck(plan) {
+  return checkDo(async () => {
+    if (needDesk()) return;
+    const ch = checkCh || noiseChannel(plan);
+    const keys = checkKeys(plan, ch);
+    const replies = [];
+    await streamLines('/api/read', { commands: readLines(keys) }, (msg) => replies.push(msg.reply));
+    const snapshot = readReplies(replies);
+    const missing = keys.filter((k) => snapshot.get(k) == null);
+    if (missing.length) throw new Error(`The desk didn't answer for ${plural(missing.length, 'setting')}, so nothing was changed`);
+    try { localStorage.setItem(CHECK_KEY, JSON.stringify(restoreLines(plan, ch, snapshot))); } catch { /* storage off */ }
+    check = { plan, ch, steps: checkSteps(plan, ampPlan(show, plan).rows), i: 0, level: CHECK_LEVELS.start, snapshot, last: snapshot };
+    await checkGo(0);
+  });
+}
+async function checkGo(i, level = check.level) {
+  const next = checkState(check.plan, check.ch, check.steps[i], level, check.snapshot);
+  await sendLines(stateLines(next, check.last));
+  Object.assign(check, { i, level, last: next });
+}
+function stopCheck() {
+  return checkDo(async () => {
+    const lines = check ? restoreLines(check.plan, check.ch, check.snapshot) : leftover();
+    check = null;
+    await sendLines(lines || []);
+    try { localStorage.removeItem(CHECK_KEY); } catch { /* storage off */ }
+    toast('Desk put back as it was', 'ok');
+  });
+}
+function renderCheck(plan) {
+  const steps = check ? check.steps : checkSteps(plan, ampPlan(show, plan).rows);
+  $('checkMeta').textContent = steps.length ? plural(steps.length, 'speaker') : '';
+  const connected = link.state === 'connected';
+  if (!check && (!checkCh || !plan.channels.some((c) => c.ch === checkCh))) checkCh = noiseChannel(plan);
+  const left = !check && leftover();
+  $('checkTools').replaceChildren(check ? tag('Running', 'on') : connected ? '' : tag('Connect to run'));
+  const pick = el('label', { className: 'mini' }, 'Noise on',
+    el('select', { 'aria-label': 'Noise channel', disabled: Boolean(check), onchange: (e) => { checkCh = Number(e.target.value); } },
+      ...plan.channels.map((c) => el('option', { value: c.ch, textContent: `${c.ch} ${c.name}`, selected: c.ch === (check?.ch ?? checkCh) }))),
+    info('Feed pink noise into this channel. It starts at −40 dB and goes to one speaker at a time. Stop puts the desk back.'));
+  const busy = checkBusy || !connected;
+  const level = check && el('div', { className: 'check-level' },
+    el('button', { className: 'ghost small', type: 'button', textContent: '−3', 'aria-label': 'Noise down 3 dB', disabled: busy || check.level <= CHECK_LEVELS.min, onclick: () => checkDo(() => checkGo(check.i, Math.max(CHECK_LEVELS.min, check.level - CHECK_LEVELS.step))) }),
+    el('span', { className: 'mono', textContent: levelText(check.level) }),
+    el('button', { className: 'ghost small', type: 'button', textContent: '+3', 'aria-label': 'Noise up 3 dB', disabled: busy || check.level >= CHECK_LEVELS.max, onclick: () => checkDo(() => checkGo(check.i, Math.min(CHECK_LEVELS.max, check.level + CHECK_LEVELS.step))) }));
+  const now = check && check.steps[check.i];
+  $('checkBody').replaceChildren(...[
+    !steps.length || !plan.channels.length ? el('p', { className: 'dim', textContent: 'Add inputs and outputs first' }) : null,
+    left ? el('div', { className: 'ask danger' }, el('span', { textContent: 'The desk was left mid-check.' }),
+      el('button', { className: 'primary', type: 'button', textContent: 'Put it back', disabled: busy, onclick: stopCheck })) : null,
+    steps.length && plan.channels.length ? el('div', { className: 'actionbar' }, pick,
+      check ? null : el('button', { className: 'primary', type: 'button', textContent: 'Start', disabled: busy || Boolean(left), onclick: () => startCheck(plan) }),
+      level,
+      check ? el('button', { className: 'ghost', type: 'button', textContent: 'Stop', disabled: checkBusy, onclick: stopCheck }) : null) : null,
+    now ? el('div', { className: 'check-now' },
+      el('div', { className: 'check-name' }, el('span', { className: 'step', textContent: `${check.i + 1}/${check.steps.length}` }), el('strong', { textContent: now.name })),
+      el('div', { className: 'mono dim', textContent: [now.bus, now.out, now.amp].filter(Boolean).join(' · ') }),
+      el('div', { className: 'check-nav' },
+        el('button', { className: 'ghost', type: 'button', textContent: 'Back', disabled: busy || check.i === 0, onclick: () => checkDo(() => checkGo(check.i - 1)) }),
+        el('button', { className: 'primary big', type: 'button', textContent: check.i === check.steps.length - 1 ? 'Last one' : 'Next', disabled: busy || check.i === check.steps.length - 1, onclick: () => checkDo(() => checkGo(check.i + 1)) }))) : null,
+    steps.length && plan.channels.length ? el('ol', { className: 'check-steps' }, ...steps.map((st, k) => el('li', {},
+      el('button', { type: 'button', className: check?.i === k ? 'on' : '', 'aria-current': check?.i === k ? 'step' : null, disabled: !check || busy, onclick: () => checkDo(() => checkGo(k)) },
+        el('span', { textContent: st.name }), el('small', { className: 'mono', textContent: [st.bus, st.amp].filter(Boolean).join(' · ') }))))) : null,
+  ].filter(Boolean));
 }
 async function sendCue(commands) {
   const res = await api('/api/cue', { method: 'POST', body: JSON.stringify({ commands }) });

@@ -112,6 +112,20 @@ const routes = {
       send({ done: true, total: commands.length, wrong: commands.filter((c) => held.get(c.split(' ').slice(0, 4).join(' ')) !== c).length });
     });
   },
+  async '/api/read'({ commands = [] }) {
+    if (link.state !== 'connected') return json({ error: 'Connect the desk first' }, 400);
+    // Whatever was sent, else what a fresh desk says: its default names, 0 for the rest
+    const fallback = (addr, x) => (addr.endsWith('InCh/Label/Name') ? `"ch ${+x + 1}"` : addr.endsWith('Mix/Label/Name') ? `"MX ${+x + 1}"` : addr.endsWith('St/Label/Name') ? '"ST L"' : '0');
+    return stream(async (send) => {
+      for (const [i, cmd] of commands.entries()) {
+        const [, addr, x, y] = cmd.split(' ');
+        const has = held.get(`set ${addr} ${x} ${y}`);
+        send({ i, total: commands.length, reply: `OK ${cmd} ${has ? has.split(' ').slice(4).join(' ') : fallback(addr, x)}` });
+        if (!fast && i % 200 === 0) await wait(10);
+      }
+      send({ done: true, total: commands.length });
+    });
+  },
   async '/api/cue'({ commands = [] }) {
     for (const c of commands) apply(c);
     drawDesk();

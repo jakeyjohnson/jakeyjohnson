@@ -314,6 +314,13 @@ Section 6 lists every channel with its socket, mic note, 48V and gain, with a ti
 - **Ticking a soloed channel** moves the solo on to the next unticked one, so you can walk the stage.
 - **Your ticks** are saved with the show.
 
+### System check
+Section 7 walks pink noise through every speaker, one at a time: Main L, Main R, then each mix (both sides of a stereo one). Each step shows the bus, the desk output socket and the amp channel it feeds, so you can listen at each box and tick it off.
+- **Noise on:** the channel you feed pink noise into (a playback channel by default). It starts at −40 dB; −3 and +3 move it.
+- **Next / Back**, or tap any speaker in the list. Only the noise channel's sends and the output under test change: its send and master go to 0 dB, everything else stays as it was.
+- **Stop** puts every setting the check touched back exactly as it was. It reads them all from the desk before starting, and keeps that list in the browser, so if the page closes mid-check it offers **Put it back** next time.
+- Nothing coming out? Check the noise channel's DCA and mute groups, and the amp.
+
 ### DCAs and mute groups
 Made automatically from the input types (Speech, Drums, Band, Vox, Playback, BGM), with only the groups that have channels. The pills under the routing grid show what each holds.
 
@@ -353,12 +360,13 @@ The scene store commands (`ssupdate_ex` / `ssupdatet_ex`) follow the Companion m
 ## Starting over
 
 - **New → Empty show:** wipes the page back to empty: no inputs, no outputs, every option back to default. The typing box, preview and push log clear too. Only the desk model and desk IP are kept, since they describe your hardware. It asks first unless the page is already empty.
+- **New → From the desk:** reads the connected desk into a new show: channel and mix names, colours, high-pass and routing, keeping the desk's channel and mix numbers. Only named channels and mixes come across ("ch 12" and "MX 4" are left out). Stereo pairs named "Keys L"/"Keys R" become one stereo input, and an IEM on an odd/even mix pair one stereo IEM. Input types are guessed from the names. Nothing on the desk changes.
 - **New → Conference example:** loads the conference example (2 lecterns, 4 handhelds, 4 playbacks, fills, delays and ceiling).
 - **Main L/R:** after a new show, add it with the Main L/R button, or type "main" or "PA".
 
 ## Version and licence
 
-The footer shows the version and licence number. Both live in `public/about.js`: change `VERSION` there for each release (and the `version` in `package.json` to match; a test checks they agree), and `LICENCE` for each copy you hand out.
+The footer shows the version and the licence number of the key that unlocked it. `VERSION` lives in `public/about.js`: change it for each release (and the `version` in `package.json` to match; a test checks they agree).
 
 ## Files
 

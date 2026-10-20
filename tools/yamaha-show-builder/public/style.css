@@ -374,3 +374,21 @@ body.booting .shell, body.locked .shell { visibility: hidden; }
 .lock-btn { color: var(--muted); }
 .demo-exit { cursor: pointer; height: 22px; gap: 4px; }
 .demo-exit span { color: var(--muted); }
+
+/* System check */
+.check-level { display: inline-flex; align-items: center; gap: 6px; }
+.check-level .mono { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
+.check-now { margin: 16px 0 0; padding: 18px 20px; border-radius: 14px; border: 1px solid rgba(99, 203, 232, .45); background: linear-gradient(180deg, rgba(99, 203, 232, .12), rgba(99, 203, 232, .04)); display: grid; gap: 6px; }
+.check-name { display: flex; align-items: baseline; gap: 12px; }
+.check-name strong { font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
+.check-nav { display: flex; gap: 8px; margin-top: 10px; }
+.check-nav .primary { flex: 1; max-width: 280px; justify-content: center; }
+.check-steps { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; }
+.check-steps button { width: 100%; height: auto; min-height: 44px; display: grid; justify-items: start; gap: 2px; padding: 8px 12px; text-align: left; background: transparent; border-color: var(--line); }
+.check-steps button small { color: var(--muted); font-size: 11px; }
+.check-steps button.on { border-color: var(--accent); background: var(--accent-soft); }
+.check-steps button:disabled { opacity: 1; cursor: default; }
+@media (max-width: 600px) {
+  .check-nav .primary { max-width: none; }
+  .check-steps { grid-template-columns: 1fr 1fr; }
+}
