@@ -12,7 +12,7 @@ The app opens on a lock screen with the licence number.
 
 To set or change the password:
 ```bash
-node set-password.mjs "your new password"   # at least 8 characters
+node set-password.mjs "your new password"   # at least 4 characters
 node set-password.mjs --off                 # no password: the app opens unlocked
 ```
 Only a scrypt hash is kept, in `licence.json` with the licence number, never the password itself. Rebuild the Mac app after changing it (the GitHub workflow does this on every push).
