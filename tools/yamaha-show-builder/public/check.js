@@ -130,5 +130,25 @@ export function noiseChannel(plan) {
   return (pb || plan.channels[plan.channels.length - 1])?.ch || null;
 }
 export const levelText = (v) => (v <= NEG_INF ? '−∞' : v === 0 ? '0 dB' : `−${Math.abs(v / 100).toFixed(1).replace(/\.0$/, '')} dB`);
-// The fader: below its lowest mark it is -inf
-export const faderToLevel = (pos) => (pos < CHECK_LEVELS.min ? NEG_INF : pos);
+// The fader, as on a desk: travel (0 bottom, 1 top) to level, with more travel near 0 dB than at the
+// bottom. The very bottom is off.
+const LAW = [[0.04, -6000], [0.15, -4000], [0.3, -3000], [0.5, -2000], [0.75, -1000], [1, 0]];
+export function faderLevel(pos) {
+  if (pos < LAW[0][0]) return NEG_INF;
+  for (let i = 1; i < LAW.length; i++) {
+    const [p0, l0] = LAW[i - 1];
+    const [p1, l1] = LAW[i];
+    if (pos <= p1) return Math.round((l0 + ((pos - p0) / (p1 - p0)) * (l1 - l0)) / 50) * 50; // 0.5 dB steps
+  }
+  return 0;
+}
+export function faderPos(level) {
+  if (level <= NEG_INF || level < LAW[0][1]) return 0;
+  for (let i = 1; i < LAW.length; i++) {
+    const [p0, l0] = LAW[i - 1];
+    const [p1, l1] = LAW[i];
+    if (level <= l1) return p0 + ((level - l0) / (l1 - l0)) * (p1 - p0);
+  }
+  return 1;
+}
+export const FADER_MARKS = [0, -1000, -2000, -3000, -4000];

@@ -101,7 +101,8 @@ In step 4 (Patch), add your Rio or Tio units in the order they sit on the desk's
 
 ## Racks: the right settings to the right unit
 
-Amps (Amplifiers tab) and Shure receivers and IEM transmitters (RF tab) live in **racks**, drawn the way they sit in the real rack, top to bottom.
+Amps (Amplifiers tab) and Shure receivers and IEM transmitters (RF tab) live in **racks**, drawn the way they sit in the real rack, top to bottom. One rack can hold amps, RF units and everything else in it.
+- **Racks tab:** the whole rack at true height (amps 2U, Shure units 1U, change any unit's height beside it), with each unit's IP labelled beside it. Drag anything to where it sits. **Add to rack** puts in the rest of the rack: blank and vent panels, power distro, network switch, patch panel, shelf, drawer, or anything else (click its name to rename it). Set each rack's height (or **Fit**) to see the free space, and drop units into it. Each rack has a **logo plate** at the top (2U) with the KobiKraken K and wordmark, the K alone, or no plate. On a phone the plate shows the K, since the wordmark needs more width than a phone has.
 - **The order matters:** units fill in rack order. The top amp of the first rack takes the first speaker outputs (Main L/R first), the next amp the next ones, and so on; receivers take the radio mics in desk channel order the same way. Under each unit you can see what each of its channels carries (A Main L, B Main R…, or 1 HH 1, 2 HH 2…), so the screen matches the rack.
 - **Arranging:** drag a unit by its face to where it sits (onto another unit puts it above that one; onto the dashed line puts it at the bottom), or use ↑ ↓. **Add rack** for a second rack; drag units across. Rename a rack by clicking its name.
 - **From Find devices:** amps and Shure units that were found and aren't racked yet sit under **On the network** below the racks: drag one into a rack at its height, or **Add** puts it at the bottom. In the Find devices list, **Rack it…** does the same, or says which unit it is (**Is Amp 2**) for a unit already in the rack without its IP.
@@ -324,7 +325,8 @@ Section 6 lists every channel with its socket, mic note, 48V and gain, with a ti
 - **Your ticks** are saved with the show.
 
 ### System check
-Section 7 walks pink noise through every speaker, one at a time: Main L, Main R, then each mix (both sides of a stereo one). Each step shows the bus, the desk output socket and the amp channel it feeds, so you can listen at each box and tick it off. The fader sets the level as you move it (arrow keys work too); all the way down is off.
+Section 7 walks pink noise through every speaker, one at a time: Main L, Main R, then each mix (both sides of a stereo one). Each step shows the bus, the desk output socket and the amp channel it feeds, so you can listen at each box and tick it off. The fader sets the level as you move it.
+- **The fader** is vertical, like a desk fader: 0 dB at the top, more travel near the top than the bottom, off at the very bottom. Drag the cap, click the track, scroll, or use the arrow keys (Page Up/Down for bigger steps).
 - **Input channel:** feed pink noise into a channel (a playback channel by default). Only that channel's sends change: it goes to the output under test, whose send and master go to 0 dB. The fader is the channel's fader, starting at −40 dB.
 - **Desk oscillator:** on the desk, turn the oscillator on (pink noise) and assign it to every output. The app opens one output master at a time with the rest down, and uses the output's balance for its L and R. The fader is that output's master, starting at −40 dB. CL/QL, TF and DM desks don't offer the oscillator over the network (it isn't in the parameter list they report), so it's switched on at the desk. RIVAGE does offer it, so there the app also switches it on and sets pink noise.
 - **Next / Back**, or tap any speaker in the list.

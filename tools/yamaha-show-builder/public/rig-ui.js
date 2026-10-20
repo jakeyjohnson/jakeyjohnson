@@ -369,6 +369,15 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     ].filter(Boolean));
   }
 
+  // ---- Racks tab ----
+  function renderRacks(main) {
+    const s = show();
+    const plan = buildPlan(s);
+    const amps = racks.ampFeeds(ampPlan(s, plan).rows);
+    const radios = rfFeeds(rfPlan(s, plan));
+    racks.rackRoom(main, { feedsOf: (family, u) => (family === 'amp' ? amps(u) : radios(u)) });
+  }
+
   // What Find devices can do with a device: rack an amp or Shure unit, or say which unit or base station it is
   function foundOptions(d) {
     if (d.kind === 'amp' || d.make === 'Shure') return racks.foundOptions(d);
@@ -381,10 +390,10 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     const s = show();
     const plan = buildPlan(s);
     const rig = rfPlan(s, plan);
-    return { amps: (s.amps || []).length, rf: rig.mics.length + rig.iems.length };
+    return { amps: (s.amps || []).length, rf: rig.mics.length + rig.iems.length, racks: (s.racks || []).length };
   }
 
-  return { renderRios, renderAmps, renderRf, foundOptions, setFound: racks.setFound, counts, isRadio, readKit };
+  return { renderRios, renderAmps, renderRf, renderRacks, foundOptions, setFound: racks.setFound, counts, isRadio, readKit };
 }
 
 function plural(n, one, many = `${one}s`) {

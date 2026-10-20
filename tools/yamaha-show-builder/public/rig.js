@@ -344,29 +344,65 @@ export function ampReadSummary(dump) {
 }
 
 // ---- Racks: the order units sit in, top to bottom. That order is the fill order, so the first amp in
-// the first rack takes the first speaker outputs, and the first receiver the first radio mics. ----
-// kind 'amp' holds show.amps; kind 'rf' holds the Shure receivers and transmitters.
-const rackLists = (show, kind) => (kind === 'amp' ? [show.amps || []] : [show.rf?.receivers || [], show.rf?.transmitters || []]);
+// the first rack takes the first speaker outputs, and the first receiver the first radio mics. A rack can
+// hold amps, Shure units and anything else that's in it (blanks, power, a switch). ----
+// Families: 'amp' (show.amps), 'rf' (Shure receivers and transmitters), 'item' (show.rackItems)
+export const RACK_ITEMS = {
+  blank: { label: 'Blank panel', u: 1 },
+  vent: { label: 'Vent panel', u: 1 },
+  power: { label: 'Power distro', u: 1 },
+  switch: { label: 'Network switch', u: 1 },
+  patch: { label: 'Patch panel', u: 1 },
+  shelf: { label: 'Shelf', u: 1 },
+  drawer: { label: 'Drawer', u: 2 },
+  other: { label: 'Other', u: 1 },
+};
+export const RACK_SIZES = [0, 4, 6, 8, 10, 12, 14, 16, 20, 24, 30, 42]; // 0: as tall as what's in it
+const familyLists = (show, family) => (family === 'amp' ? [show.amps || []] : family === 'rf' ? [show.rf?.receivers || [], show.rf?.transmitters || []] : [show.rackItems || []]);
+const FAMILIES = ['amp', 'rf', 'item'];
 export function makeRack(kind, n) {
-  return { id: `rack${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind, name: `${kind === 'amp' ? 'Amp' : 'RF'} rack ${n}`, units: [] };
+  return { id: `rack${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind, name: `${{ amp: 'Amp rack', rf: 'RF rack' }[kind] || 'Rack'} ${n}`, units: [], size: 0, plate: 'logo' };
 }
-export const racksOf = (show, kind) => (show.racks || []).filter((r) => r.kind === kind);
-// Every unit in exactly one rack (new ones go at the bottom of the last rack), gone ones dropped, and
-// the unit lists put in rack order
+export function makeRackItem(type, n) {
+  return { id: `item${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, type, name: RACK_ITEMS[type]?.label || 'Other', u: RACK_ITEMS[type]?.u || 1, n };
+}
+// Every racked thing, with its family: { unit, family }
+export function rackEntries(show) {
+  return FAMILIES.flatMap((family) => familyLists(show, family).flat().map((unit) => ({ unit, family })));
+}
+// How many rack units tall: what was set, else d&b amps 2U, Shure units 1U, items by type
+export function unitHeight(unit, family) {
+  if (unit.u) return unit.u;
+  if (family === 'amp') return 2;
+  if (family === 'item') return RACK_ITEMS[unit.type]?.u || 1;
+  return 1;
+}
+// Racks a tab shows: ones holding that family, or made on that tab and still empty
+export const racksOf = (show, kind) => {
+  const ids = new Set(familyLists(show, kind).flat().map((u) => u.id));
+  return (show.racks || []).filter((r) => r.units.some((id) => ids.has(id)) || (r.kind === kind && !r.units.length));
+};
+// Every unit in exactly one rack (a new one goes at the bottom of the last rack holding its family), gone
+// ones dropped, and the amp and RF lists put in rack order
 export function normalizeRacks(show) {
   show.racks ||= [];
-  for (const kind of ['amp', 'rf']) {
-    const units = rackLists(show, kind).flat();
-    if (!units.length && !racksOf(show, kind).length) continue;
-    if (!racksOf(show, kind).length) show.racks.push(makeRack(kind, 1));
-    const racks = racksOf(show, kind);
-    const ids = new Set(units.map((u) => u.id));
-    const seen = new Set();
-    for (const r of racks) r.units = r.units.filter((id) => ids.has(id) && !seen.has(id) && seen.add(id));
-    for (const u of units) if (!seen.has(u.id)) racks.at(-1).units.push(u.id);
-    const pos = new Map(racks.flatMap((r) => r.units).map((id, i) => [id, i]));
-    for (const list of rackLists(show, kind)) list.sort((a, b) => pos.get(a.id) - pos.get(b.id));
+  const entries = rackEntries(show);
+  if (!entries.length && !show.racks.length) return show;
+  const ids = new Set(entries.map((e) => e.unit.id));
+  const seen = new Set();
+  for (const r of show.racks) {
+    r.units = r.units.filter((id) => ids.has(id) && !seen.has(id) && seen.add(id));
+    r.size ??= 0;
+    r.plate ||= 'logo';
   }
+  for (const { unit, family } of entries) {
+    if (seen.has(unit.id)) continue;
+    const home = [...racksOf(show, family)].pop() || show.racks.at(-1) || (show.racks.push(makeRack(family, 1)), show.racks.at(-1));
+    home.units.push(unit.id);
+    seen.add(unit.id);
+  }
+  const pos = new Map(show.racks.flatMap((r) => r.units).map((id, i) => [id, i]));
+  for (const family of FAMILIES) for (const list of familyLists(show, family)) list.sort((a, b) => pos.get(a.id) - pos.get(b.id));
   return show;
 }
 // Moves a unit to a rack, above `beforeId` (or at the bottom)
@@ -377,13 +413,21 @@ export function moveUnit(show, unitId, rackId, beforeId = null) {
   rack.units.splice(at < 0 ? rack.units.length : at, 0, unitId);
   return normalizeRacks(show);
 }
-// Moves a unit one place up or down, across into the next rack at the ends
-export function nudgeUnit(show, unitId, dir) {
+// Moves a unit one place up or down, across into the next rack at the ends. With `only`, it steps past
+// units that aren't in that list (a tab that shows only amps moves an amp past the next amp).
+export function nudgeUnit(show, unitId, dir, only = null) {
   const rack = show.racks.find((r) => r.units.includes(unitId));
-  const racks = racksOf(show, rack.kind);
-  const i = rack.units.indexOf(unitId);
-  const j = i + dir;
-  if (j >= 0 && j < rack.units.length) { rack.units.splice(i, 1); rack.units.splice(j, 0, unitId); return normalizeRacks(show); }
+  const visible = (id) => !only || only.has(id);
+  const order = rack.units.filter((id) => id === unitId || visible(id));
+  const j = order.indexOf(unitId) + dir;
+  if (j >= 0 && j < order.length) {
+    const target = order[j];
+    rack.units.splice(rack.units.indexOf(unitId), 1);
+    const at = rack.units.indexOf(target) + (dir > 0 ? 1 : 0);
+    rack.units.splice(at, 0, unitId);
+    return normalizeRacks(show);
+  }
+  const racks = show.racks;
   const next = racks[racks.indexOf(rack) + dir];
   if (!next) return show;
   return moveUnit(show, unitId, next.id, dir > 0 ? next.units[0] || null : null);

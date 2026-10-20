@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildPlan, defaultShow, makeZone, readReplies } from '../public/plan.js';
-import { OSC_KEYS, checkKeys, checkState, checkSteps, faderToLevel, levelText, noiseChannel, readLines, restoreLines, stateLines } from '../public/check.js';
+import { OSC_KEYS, checkKeys, checkState, checkSteps, faderLevel, faderPos, levelText, noiseChannel, readLines, restoreLines, stateLines } from '../public/check.js';
 
 const showWithIem = () => {
   const show = defaultShow();
@@ -91,9 +91,14 @@ test('Stop puts every setting back as it was, the noise fader last', () => {
   assert.deepEqual(held, snap);
 });
 
-test('the fader reads in dB, and its bottom is off', () => {
-  assert.equal(faderToLevel(-6050), -32768);
-  assert.equal(faderToLevel(-2550), -2550);
+test('the fader works like a desk fader: 0 dB at the top, off at the bottom, finer near the top', () => {
+  assert.equal(faderLevel(1), 0);
+  assert.equal(faderLevel(0), -32768);
+  assert.equal(faderLevel(0.5), -2000);
+  assert.equal(faderLevel(0.15), -4000);
+  for (const level of [0, -550, -1000, -2550, -4000, -6000]) assert.equal(faderLevel(faderPos(level)), level);
+  assert.equal(faderPos(-32768), 0);
+  assert.ok(faderPos(-1000) - faderPos(-2000) > faderPos(-4000) - faderPos(-6000)); // 10 dB at the top is more travel than 20 dB at the bottom
   assert.deepEqual([levelText(-32768), levelText(0), levelText(-2550), levelText(-4000)], ['−∞', '0 dB', '−25.5 dB', '−40 dB']);
   assert.deepEqual(OSC_KEYS, ['Setup/Oscillator/On 0 0', 'Setup/Oscillator/Type 0 0']);
 });

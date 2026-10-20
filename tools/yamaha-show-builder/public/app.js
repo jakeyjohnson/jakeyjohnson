@@ -1,8 +1,8 @@
 import { LICENCE, PRODUCT, VERSION } from './about.js';
-import { CHECK_LEVELS, OSC_KEYS, checkKeys, checkState, checkSteps, faderToLevel, levelText, noiseChannel, readLines, restoreLines, stateLines } from './check.js';
+import { CHECK_LEVELS, FADER_MARKS, OSC_KEYS, checkKeys, checkState, checkSteps, faderLevel, faderPos, levelText, noiseChannel, readLines, restoreLines, stateLines } from './check.js';
 import { ampPlan, normalizeRacks, rigPaperwork } from './rig.js';
 import { mountRig } from './rig-ui.js';
-import { ask, el, info, segmented, tag, toast, toggle, wireMenus } from './ui.js';
+import { ask, el, info, segmented, tag, toast, toggle, vfader, wireMenus } from './ui.js';
 import {
   applyTemplate, changedCommands, cueCommand, deskCaps, gainOf, makeTemplate, monitorShow, pairMonitors, paperwork, parseInputList, phantomOf,
   rememberPush, sceneStoreCommand,
@@ -81,6 +81,8 @@ function draw() {
   $('countRf').textContent = counts.rf || '';
   if (activeTab === 'amps') rigUi.renderAmps($('ampsMain'));
   if (activeTab === 'rf') rigUi.renderRf($('rfMain'));
+  if (activeTab === 'racks') rigUi.renderRacks($('racksMain'));
+  $('countRacks').textContent = counts.racks || '';
   save();
   return plan;
 }
@@ -326,16 +328,17 @@ $('findClose').onclick = () => { $('findPanel').hidden = true; };
 // ---- Desk / Amplifiers / RF tabs ----
 const TAB_KEY = `${STORE}-tab`;
 let activeTab = (() => { try { return localStorage.getItem(TAB_KEY) || 'desk'; } catch { return 'desk'; } })();
+const TABS = ['desk', 'amps', 'rf', 'racks'];
 function showTab(tab) {
-  activeTab = ['desk', 'amps', 'rf'].includes(tab) ? tab : 'desk';
+  activeTab = TABS.includes(tab) ? tab : 'desk';
   try { localStorage.setItem(TAB_KEY, activeTab); } catch { /* storage off */ }
-  for (const t of ['desk', 'amps', 'rf']) {
+  for (const t of TABS) {
     $(`tab-${t}`).hidden = t !== activeTab;
     $(`tabBtn-${t}`).setAttribute('aria-selected', String(t === activeTab));
   }
   render();
 }
-for (const t of ['desk', 'amps', 'rf']) $(`tabBtn-${t}`).onclick = () => showTab(t);
+for (const t of TABS) $(`tabBtn-${t}`).onclick = () => showTab(t);
 
 // How the Amplifiers and RF tabs reach the kit: through this app's server
 const rigUi = mountRig({
@@ -906,9 +909,9 @@ function stopCheck() {
 }
 // The fader sends as it moves, skipping to the latest position whenever the desk is behind
 let faderSending = false;
-function moveFader(pos, readout) {
-  check.want = faderToLevel(pos);
-  readout.textContent = levelText(check.want);
+function moveFader(level, readout) {
+  check.want = level;
+  readout.textContent = levelText(level);
   if (faderSending) return;
   faderSending = true;
   queued(async () => {
@@ -920,16 +923,14 @@ function moveFader(pos, readout) {
 }
 function fader(label) {
   const readout = el('output', { className: 'fader-value mono', textContent: levelText(check.level) });
-  const marks = [-5000, -4000, -3000, -2000, -1000, 0];
-  const span = CHECK_LEVELS.max - (CHECK_LEVELS.min - 100);
-  return el('div', { className: 'fader' },
-    el('div', { className: 'fader-head' }, el('span', { textContent: label }), readout),
-    el('input', {
-      type: 'range', min: CHECK_LEVELS.min - 100, max: CHECK_LEVELS.max, step: 50, value: Math.max(check.level, CHECK_LEVELS.min - 100),
-      'aria-label': label, disabled: link.state !== 'connected', oninput: (e) => moveFader(Number(e.target.value), readout),
+  return el('div', { className: 'check-fader' },
+    vfader({
+      pos: faderPos(check.level), label, disabled: link.state !== 'connected',
+      valueText: (p) => levelText(faderLevel(p)),
+      marks: [...FADER_MARKS.map((m) => [faderPos(m), m ? String(m / 100).replace('-', '−') : '0']), [0, '−∞']],
+      onmove: (p) => moveFader(faderLevel(p), readout),
     }),
-    el('div', { className: 'fader-marks', 'aria-hidden': 'true' }, el('span', { style: 'left:0', textContent: '−∞' }),
-      ...marks.map((m) => el('span', { style: `left:${((m - (CHECK_LEVELS.min - 100)) / span) * 100}%`, textContent: m ? String(m / 100).replace('-', '−') : '0' }))));
+    el('div', { className: 'fader-head' }, readout, el('span', { textContent: label })));
 }
 function renderCheck(plan) {
   const steps = check ? check.steps : checkSteps(plan, ampPlan(show, plan).rows);
@@ -960,12 +961,13 @@ function renderCheck(plan) {
       check ? el('button', { className: 'ghost', type: 'button', textContent: 'Stop', disabled: checkBusy, onclick: stopCheck })
         : el('button', { className: 'primary', type: 'button', textContent: 'Start', disabled: busy || Boolean(left), onclick: () => startCheck(plan) })) : null,
     now ? el('div', { className: 'check-now' },
-      el('div', { className: 'check-name' }, el('span', { className: 'step', textContent: `${check.i + 1}/${check.steps.length}` }), el('strong', { textContent: now.name })),
-      el('div', { className: 'mono dim', textContent: [now.bus, now.out, now.amp].filter(Boolean).join(' · ') }),
-      fader(check.src.kind === 'osc' ? `${now.st ? 'ST' : now.bus} master` : 'Noise'),
-      el('div', { className: 'check-nav' },
+      el('div', { className: 'check-info' },
+        el('div', { className: 'check-name' }, el('span', { className: 'step', textContent: `${check.i + 1}/${check.steps.length}` }), el('strong', { textContent: now.name })),
+        el('div', { className: 'mono dim', textContent: [now.bus, now.out, now.amp].filter(Boolean).join(' · ') }),
+        el('div', { className: 'check-nav' },
         el('button', { className: 'ghost', type: 'button', textContent: 'Back', disabled: busy || check.i === 0, onclick: () => checkDo(() => checkTo(check.i - 1)) }),
-        el('button', { className: 'primary big', type: 'button', textContent: check.i === check.steps.length - 1 ? 'Last one' : 'Next', disabled: busy || check.i === check.steps.length - 1, onclick: () => checkDo(() => checkTo(check.i + 1)) }))) : null,
+          el('button', { className: 'primary big', type: 'button', textContent: check.i === check.steps.length - 1 ? 'Last one' : 'Next', disabled: busy || check.i === check.steps.length - 1, onclick: () => checkDo(() => checkTo(check.i + 1)) }))),
+      fader(check.src.kind === 'osc' ? `${now.st ? 'ST' : now.bus} master` : 'Noise')) : null,
     ready ? el('ol', { className: 'check-steps' }, ...steps.map((st, k) => el('li', {},
       el('button', { type: 'button', className: check?.i === k ? 'on' : '', 'aria-current': check?.i === k ? 'step' : null, disabled: !check || busy, onclick: () => checkDo(() => checkTo(k)) },
         el('span', { textContent: st.name }), el('small', { className: 'mono', textContent: [st.bus, st.amp].filter(Boolean).join(' · ') }))))) : null,
