@@ -46,7 +46,7 @@ These figures come from Yamaha's spec tables and reference manuals (checked Octo
 2. At the top of the app, type the desk's IP into **Desk** and press **Connect** (or Enter). The port is 49280 unless you've changed it on the desk.
 3. When the light goes green, it says which desk it found, and the **Desk model** dropdown switches to match. RIVAGE desks need you to pick the DSP engine yourself.
 4. **Store a backup scene first.** Pushing changes the current scene's names, colours, sends and faders.
-5. Press **Push show to desk**, then store the result as a new scene.
+5. Press **Send to desk** and confirm, then store the result as a new scene.
 
 **The connection light:**
 - **Grey:** not connected.
@@ -83,7 +83,7 @@ In step 4 (Patch), add your Rio or Tio units in the order they sit on the desk's
 
 ## Amplifiers (d&b)
 
-1. Pick an amp model and press **Add amps for every speaker output**, or add them one at a time. Supported: D80, D40, D20, D90, 40D, 30D, 10D, 5D, D12 and D6.
+1. Pick an amp model and press **Fill from outputs**, or add them one at a time with **Add amp**. Supported: D80, D40, D20, D90, 40D, 30D, 10D, 5D, D12 and D6.
 2. Each speaker output gets its own channel, filled in order: one per side for Main L/R, then front fills, delays, ceiling and wedges. IEM and record outputs don't need one.
 3. The table shows which desk socket feeds each amp channel, the amp input (A1–A4 for analogue, D1–D4 for AES, Network for Dante/Milan), a guessed speaker setup (Y10P for main, 44S for fills, M4 for wedges; type any d&b setup) and a target gain.
 4. Set each amp's IP, or pick it up with **Find devices** (d&b amps answer on AES70, port 30013).
@@ -93,7 +93,7 @@ The app **can't send settings to d&b amps**: d&b doesn't publish the control lis
 ## RF (Shure and Sennheiser Spectera)
 
 **Radio mics:** handhelds and headsets count as radio by default; tick or untick **Radio** for any mic. Then pick the system:
-- **Shure receivers** (ULXD4, ULXD4D, ULXD4Q, QLXD4, AD4D, AD4Q, SLXD4, SLXD4D): **Add receivers for every radio mic** fills their channels in desk channel order. Give each receiver its IP, or pick it up with Find devices.
+- **Shure receivers** (ULXD4, ULXD4D, ULXD4Q, QLXD4, AD4D, AD4Q, SLXD4, SLXD4D): **Fill** adds receivers for every radio mic, filling their channels in desk channel order. Give each receiver its IP, or pick it up with Find devices.
 - **Spectera:** handhelds go on SKMs, headsets on SEK bodypacks.
 
 **IEMs:** each mono or stereo IEM output on the Desk tab goes on either:
@@ -114,7 +114,7 @@ It's a starting plan only. Scan the room and check the plan in Wireless Workbenc
   - **Check receivers** reads them back.
 - **Spectera:**
   1. Turn on third-party access on the base station and set its password.
-  2. Put in the base station's IP and password, then press **Read the base station**.
+  2. Put in the base station's IP and password, then press **Read packs**.
   3. Match each mic or IEM to a paired pack.
   4. Press **Send names and safe gains**.
 
@@ -123,7 +123,7 @@ It's a starting plan only. Scan the room and check the plan in Wireless Workbenc
 
 ## Find devices
 
-Press **Find devices** in the Desk bar to see what's on the network, grouped as Desks, Stage boxes, Radio mics, Amps, Playback and Other. On a Yamaha desk, **Use this desk** fills in its IP and connects.
+Press **Find devices** (right of the tabs) to see what's on the network, grouped as Desks, Stage boxes, Radio mics, Amps, Playback and Other. On a Yamaha desk, **Connect** fills in its IP and connects.
 
 It works offline and only looks at local addresses:
 - **Control ports:** it checks every address in this computer's network (the /24 around each local IP, plus this computer) for:
@@ -132,7 +132,7 @@ It works offline and only looks at local addresses:
   - QLab (53000) and AES70 (30013, d&b and others): an open port only, so these say "probably".
 - **Announcements (mDNS/Bonjour):** Dante devices, QLab, OSC, AES70 and Sennheiser Sound Control. Dante only gives a name, so the type is guessed from it (ULXD4Q-…, Rio3224-…, LabGruppen-D20…); anything it can't place goes under Other.
 
-A scan takes around 10 seconds. If the laptop is on more than one network, or the kit is on another range, type it into **Other network** (like 192.168.1) and press **Scan again**. Hover a device to see how it was found. Devices with remote control turned off, or on a different network with no route, won't show up.
+A scan takes around 10 seconds. If the laptop is on more than one network, or the kit is on another range, type it into **Other range** (like 192.168.1) and press **Scan**. Hover a device to see how it was found. Devices with remote control turned off, or on a different network with no route, won't show up.
 
 ## Routing to everything
 
@@ -213,7 +213,7 @@ Type into the box under the input buttons, for example *"full band, 4 wedges and
 
 ## Channel order
 
-With **Auto order channels** on (the default), inputs are grouped by type:
+With **Auto order** on (the default, in the Routing header), inputs are grouped by type:
 
 1. Lectern mics
 2. Headset mics
@@ -228,7 +228,7 @@ Turn auto order off to set the order by hand with the ↑ ↓ arrows on each row
 
 ## What you still do on the desk
 
-- **Physical patching.** Input sockets and Dante patching to channels, and mix buses to output sockets or amps. The **Patch sheet** button exports a CSV listing what goes where.
+- **Physical patching.** Input sockets and Dante patching to channels, and mix buses to output sockets or amps. **Export → Patch sheet** exports a CSV listing what goes where.
 - **Bus type.** Set the zone mixes as FIXED or post-fader in Bus Setup so the input faders drive every zone.
 - **Speaker processing.** Delay times, EQ and limiting for the fills, delays and ceiling (on the bus or in the amp or DSP).
 
@@ -272,20 +272,20 @@ The DM7 Compact figures come from Yamaha's spec page. The others are from memory
 ## Prep tools
 
 ### Paste an input list
-Open **Paste an input list** under the typing box and paste the band's or client's list from a rider, spreadsheet or email: one line per channel.
+Press **Paste input list** next to the typing box and paste the band's or client's list from a rider, spreadsheet or email: one line per channel.
 - **Names** stay as written.
 - **Channel numbers** at the start of a line are ignored.
 - **Other columns** (mic model, stand) become the channel's note.
 - **48V** or "phantom" on a line switches phantom power on.
 - **Stereo:** neighbouring "Keys L" / "Keys R" lines become one stereo input.
-- **Order:** tick **Keep the list's channel order** (the default) to keep the rider's order; it turns auto order off.
+- **Order:** **Keep the list's order** (on by default) to keep the rider's order; it turns auto order off.
 
 ### Your templates
-**Save as template** (top of the page) saves the whole show, routing included, as a chip under **Yours** next to the packages. Click it to add it to any show. Templates are saved in the browser on this computer, and × deletes one.
+**Export → Save as template** saves the whole show, routing included, as a chip under **Yours** next to the packages. Click it to add it to any show. Templates are saved in the browser on this computer, and × deletes one.
 
 ### Back up, then check
 - **Back up first:** under **Send to desk**, **Back up the desk's current scene to scene N** stores the desk's state before every push. The default is the desk's last scene number (300 on CL/QL, 100 on the others), and it overwrites that scene. If the desk refuses the backup, nothing else is sent.
-- **Check the desk** reads every setting back after a push and lists any that don't match.
+- **Check desk** reads every setting back after a push and lists any that don't match.
 
 ### Line check
 Section 6 lists every channel with its socket, mic note, 48V and gain, with a tick box for each.
@@ -297,7 +297,7 @@ Section 6 lists every channel with its socket, mic note, 48V and gain, with a ti
 Made automatically from the input types (Speech, Drums, Band, Vox, Playback, BGM), with only the groups that have channels. The pills under the routing grid show what each holds.
 
 ### Only send what's changed
-After the first push to a desk, later pushes send only the lines that changed, so a rename mid-show takes one line. **Send everything next time** forgets the last push.
+After the first push to a desk, later pushes send only the lines that changed, so a rename mid-show takes one line. **Reset** (next to Only changes) forgets the last push.
 
 ### Gain and 48V
 Every input type has a target gain and a 48V setting, which you can change per row in the routing grid. With safe start (the default) the desk gets the lowest gain and you bring it up to the target at line check:
@@ -305,11 +305,11 @@ Every input type has a target gain and a 48V setting, which you can change per r
 - **48V off:** radio mic receivers and dynamic mics.
 
 ### Monitors
-- **Give each singer their own monitor:** pairs the vocal mics (then speech mics) with the monitor outputs in order, so Vox 1 starts in Wedge 1.
-- **Monitor desk show:** saves a second show file with the same inputs and input patch but only the monitor outputs, ready to open on the monitor desk's laptop.
+- **Pair singers with monitors:** pairs the vocal mics (then speech mics) with the monitor outputs in order, so Vox 1 starts in Wedge 1.
+- **Export → Monitor desk show:** saves a second show file with the same inputs and input patch but only the monitor outputs, ready to open on the monitor desk's laptop.
 
 ### Paperwork
-**Paperwork** opens a print-ready page:
+**Export → Paperwork** opens a print-ready page:
 - the input list (socket, mic, 48V, HPF, group, outputs)
 - the outputs and their sockets
 - a line-check sheet with tick boxes
@@ -331,8 +331,8 @@ The scene store commands (`ssupdate_ex` / `ssupdatet_ex`) follow the Companion m
 
 ## Starting over
 
-- **New show:** wipes the page back to empty: no inputs, no outputs, every option back to default. The typing box, preview and push log clear too. Only the desk model and desk IP are kept, since they describe your hardware. It asks first unless the page is already empty.
-- **Example:** loads the conference example (2 lecterns, 4 handhelds, 4 playbacks, fills, delays and ceiling).
+- **New → Empty show:** wipes the page back to empty: no inputs, no outputs, every option back to default. The typing box, preview and push log clear too. Only the desk model and desk IP are kept, since they describe your hardware. It asks first unless the page is already empty.
+- **New → Conference example:** loads the conference example (2 lecterns, 4 handhelds, 4 playbacks, fills, delays and ceiling).
 - **Main L/R:** after a new show, add it with the Main L/R button, or type "main" or "PA".
 
 ## Version and licence
@@ -342,8 +342,12 @@ The footer shows the version and licence number. Both live in `public/about.js`:
 ## Files
 
 - **Save / Open**: the show as a `.show.json` file, so you can reuse templates between jobs. The page also autosaves in the browser.
-- **Patch sheet**: a CSV of every input channel and output bus.
-- **Paperwork**: adds Amplifiers, RF and Dante patch pages when the show has them.
+- **Export → Patch sheet**: a CSV of every input channel and output bus.
+- **Export → Paperwork**: adds Amplifiers, RF and Dante patch pages when the show has them.
+
+## Demo
+
+`demo/` runs the real app in a web page with nothing to install. `demo/bridge.js` stands in for the app's server: a pretend desk you can watch fill up, pretend Shure receivers, a pretend Spectera base station and a pretend network for Find devices. Build the page with `node demo/build.mjs`, which takes `public/index.html` and swaps in the bridge, then publish `demo/index.html` with `demo/bridge.js`, `demo/demo.css` and everything in `public/` alongside it.
 
 ## Testing without a desk
 

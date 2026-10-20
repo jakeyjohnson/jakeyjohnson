@@ -1,1242 +1,167 @@
 <title>KobiKraken Show Builder</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
-<style>
-@font-face { font-family: "Inter"; font-weight: 400; font-display: swap; src: url("fonts/Inter-Regular.woff2") format("woff2"); }
-@font-face { font-family: "Inter"; font-weight: 500; font-display: swap; src: url("fonts/Inter-Medium.woff2") format("woff2"); }
-@font-face { font-family: "Inter"; font-weight: 600; font-display: swap; src: url("fonts/Inter-SemiBold.woff2") format("woff2"); }
-@font-face { font-family: "Inter"; font-weight: 700; font-display: swap; src: url("fonts/Inter-Bold.woff2") format("woff2"); }
-/* Layout: one working column; builder on top, a simulated desk surface below it */
-:root {
-  /* One look: the guide's calm control room. Ink surfaces, Shell White text, Spectral for function only */
-  --bg: #11151a; --panel: #1a1f25; --sunk: #0b0e12; --line: #2a3039; --fg: #f5f4f0; --fg-strong: #f5f4f0; --muted: #8e949b;
-  --accent: #63cbe8; --accent-fg: #11151a; --accent-text: #63cbe8; --ok: #4cd08a; --bad: #ff6b6b; --warn: #ff8a4c;
-  --surface: #0b0e12; --surface-line: #232a32; --strip: #141920; --lcd-fg: #f5f4f0; --lamp-off: #353a40;   --context: #1e242c;
-  --f-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; --f-strip: "Inter", system-ui, sans-serif; --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
-  color-scheme: dark;
-}
-
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-body { background: var(--bg); color: var(--fg); font: 15px/1.45 var(--f-body); }
-.wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-header { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: end; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
-.eyebrow { margin: 0 0 2px; color: var(--muted); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; }
-.demo-tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--sunk); color: var(--muted); letter-spacing: .04em; }
-.show-name { font: 700 26px/1.2 var(--f-body); background: none; border: 0; border-bottom: 1px dashed transparent; padding: 0; color: var(--fg); width: min(420px, 80vw); }
-.show-name:focus { outline: none; border-color: var(--line); }
-.model { display: flex; align-items: center; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 14px; }
-.model select { font-weight: 600; }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; }
-section { padding: 20px 0; border-bottom: 1px solid var(--line); }
-h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 18px; text-wrap: balance; }
-h2 .n { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--sunk); font-size: 13px; }
-.hint { color: var(--muted); margin: -4px 0 12px; font-size: 14px; max-width: 70ch; }
-
-button { font: inherit; font-weight: 500; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
-button:hover { border-color: var(--muted); }
-button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 1px; }
-.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
-.primary:disabled { opacity: .55; cursor: wait; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { border-radius: 999px; padding: 6px 12px; }
-.chip::before { content: "+ "; color: var(--muted); }
-.quick-add { display: flex; gap: 10px; align-items: start; }
-.chip-groups { display: grid; gap: 8px; min-width: 0; }
-.chip-group { display: grid; grid-template-columns: 72px 1fr; gap: 8px; align-items: center; }
-.zone-group { grid-template-columns: 180px 1fr; }
-.zone-group .chip-label { white-space: nowrap; }
-.chip-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
-.typein { display: grid; gap: 8px; margin-top: 16px; max-width: 760px; }
-.typein label { font-size: 14px; color: var(--muted); }
-.typein textarea { resize: vertical; padding: 8px 10px; border-radius: 8px; }
-.type-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.type-preview { border: 1px solid var(--accent); border-radius: 10px; padding: 12px; display: grid; gap: 10px; background: var(--panel); }
-.type-preview p { margin: 0; }
-.pills { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.pill { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 13px; }
-.zone-pill { border-style: dashed; }
-.send-point { display: block; margin: 4px auto 0; padding: 1px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-.send-point.pre { border-color: var(--accent); color: var(--accent-text); }
-.brand { display: flex; align-items: center; gap: 12px; }
-.brand-k { flex: none; color: var(--fg-strong, currentColor); }
-.brand-word { display: block; color: var(--fg-strong, currentColor); }
-.plate { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; font: 600 12px var(--f-strip); letter-spacing: .18em; text-transform: uppercase; color: #8e949b; }
-.plate .brand-word { color: #f5f4f0; opacity: .85; }
-.send-tag { font: 600 10px/1 var(--f-strip); letter-spacing: .08em; color: #8e949b; }
-.send-tag.pre { color: #63cbe8; }
-.patch-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
-table.patch-table { min-width: 0; }
-.patch-cell { display: flex; gap: 6px; align-items: center; }
-.patch-cell select { max-width: 230px; }
-.port { width: 72px; }
-.maker { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 8px; padding-top: 28px; color: var(--muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
-.foot-sep { color: var(--line); }
-.connect-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-.connect-title { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.connect-bar #host { width: 240px; font-variant-numeric: tabular-nums; }
-.connect-bar .port { width: 88px; }
-
-/* Desk / Amplifiers / RF */
-.tabs { display: flex; flex-wrap: wrap; align-items: end; gap: 4px; margin-top: 16px; border-bottom: 1px solid var(--line); }
-.tabs [role="tab"] { background: none; border: 0; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 16px 9px; font-weight: 600; color: var(--muted); }
-.tabs [role="tab"]:hover { color: var(--fg); }
-.tabs [role="tab"][aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
-.tabs .find-btn { margin: 0 0 8px auto; }
-.rio-box { display: grid; gap: 8px; margin-bottom: 16px; }
-.rio-box .chip-group { grid-template-columns: 110px 1fr; }
-input.ip { width: 140px; font-variant-numeric: tabular-nums; }
-input.freq { width: 96px; font-variant-numeric: tabular-nums; }
-input.freq.fixed { border-color: var(--accent); }
-input.setup { width: 110px; }
-tr.spare td { color: var(--muted); }
-.steps { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 6px; max-width: 760px; }
-.find-panel { margin-top: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-.find-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; margin-bottom: 10px; }
-.find-other { display: flex; flex-wrap: wrap; gap: 8px; }
-.find-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.find-group h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-.find-group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.find-group li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
-.find-group li .who { flex: 1; min-width: 0; }
-.find-group li select { flex: 1 0 100%; }
-.find-group li .who b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.find-group li .who small { color: var(--muted); font-variant-numeric: tabular-nums; }
-.link-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--line); flex: none; }
-.link-dot.connecting { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
-.link-dot.connected { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-@keyframes pulse { 50% { opacity: .35; } }
-@media (prefers-reduced-motion: reduce) { .link-dot.connecting { animation: none; } }
-.paste { margin-top: 14px; max-width: 760px; }
-.paste summary { cursor: pointer; font-weight: 600; color: var(--accent-text, var(--accent)); padding: 6px 0; }
-.paste textarea { width: 100%; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; margin-bottom: 8px; }
-.pair-row { margin-top: 12px; }
-.groups-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; font-size: 14px; }
-.group-pill { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; margin: 2px; font-size: 13px; }
-.group-pill b { color: var(--accent-text, var(--accent)); font-variant-numeric: tabular-nums; }
-.send-opts { font-size: 14px; }
-td.gain input { width: 64px; }
-td.lc-tick input { width: 22px; height: 22px; accent-color: var(--accent); }
-tr.lc-done td { opacity: .55; }
-tr.lc-solo td { background: color-mix(in srgb, var(--accent) 14%, transparent); }
-.solo { padding: 4px 10px; font-size: 13px; }
-.solo.on { background: var(--accent); border-color: var(--accent); color: var(--accent-fg, #11151a); font-weight: 600; }
-.tpl-chip { display: inline-flex; align-items: center; gap: 2px; }
-.tpl-chip .remove { padding: 2px 6px; }
-.paper-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--line); padding: 16px; background: #fff; }
-.strip.soloed { box-shadow: 0 0 0 2px #63cbe8; }
-.strip .gain-tag { font: 500 10px var(--f-mono); color: #8e949b; min-height: 12px; }
-.all-col { border-right: 2px solid var(--line); }
-.type-help { margin: 0; font-size: 13px; }
-td.hpf input { width: 72px; }
-.hpf-tag { font: 600 10px/1 var(--f-strip); color: #8a939d; letter-spacing: .04em; }
-.hpf-tag.on { color: #63cbe8; }
-.quick-add input { width: 64px; }
-input, select, textarea { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
-
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-table { border-collapse: collapse; width: 100%; min-width: 660px; }
-th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
-tbody tr:last-child td { border-bottom: 0; }
-thead th { background: var(--sunk); font-size: 13px; font-weight: 600; vertical-align: bottom; }
-th.zone { text-align: center; min-width: 88px; }
-th.zone input { width: 84px; text-align: center; font-weight: 600; }
-th.zone small { display: block; color: var(--muted); font-weight: 400; margin-top: 2px; }
-td.route { text-align: center; }
-td.route input { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; }
-td.ch { color: var(--muted); font: 13px var(--f-mono); }
-td.name input { width: 120px; }
-.remove { background: none; border: 0; color: var(--muted); padding: 4px 8px; }
-.remove:hover { color: var(--bad); }
-.order { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; font-size: 14px; }
-.order input { accent-color: var(--accent); }
-.summary { margin: 10px 0 0; padding: 0; list-style: none; font-size: 14px; display: grid; gap: 4px; }
-.summary .count { color: var(--muted); font-variant-numeric: tabular-nums; }
-.summary .warn { color: var(--warn); }
-.summary .warn::before { content: "⚠ "; }
-
-.desk-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-bottom: 12px; }
-.desk-row label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
-.desk-row label input { width: 120px; }
-.desk-row label.check { display: flex; align-items: center; gap: 8px; color: var(--fg); font-size: 14px; }
-.desk-row label.check input { width: auto; }
-.status { font-size: 14px; color: var(--muted); }
-.status.ok { color: var(--ok); }
-.status.bad { color: var(--bad); }
-#newConfirm { margin-top: 16px; }
-.confirm { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px; border: 1px solid var(--warn); border-radius: 10px; margin-bottom: 12px; font-size: 14px; }
-progress { width: 100%; height: 6px; accent-color: var(--accent); }
-.log { background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 12px; max-height: 220px; overflow: auto; font: 12px/1.55 var(--f-mono); color: var(--muted); margin: 10px 0 0; white-space: pre; }
-
-/* Simulated desk surface */
-.surface { background: var(--surface); border-radius: 14px; padding: 14px; color: var(--lcd-fg); }
-.surface-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 10px; font: 600 13px var(--f-strip); letter-spacing: .08em; text-transform: uppercase; color: #8e949b; }
-.bank { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; }
-.bank + .surface-head { margin-top: 14px; }
-.strip { flex: 0 0 74px; background: var(--strip); border: 1px solid var(--surface-line); border-radius: 8px; padding: 6px; display: grid; gap: 6px; justify-items: center; transition: box-shadow .3s; }
-.strip.flash { box-shadow: 0 0 0 2px #63cbe8; }
-.strip .num { font: 500 11px var(--f-mono); color: #8a939d; }
-.lcd { width: 100%; height: 34px; border-radius: 4px; display: grid; place-items: center; font: 600 14px/1 var(--f-strip); color: #0d0f12; background: #50565e; text-align: center; padding: 0 2px; overflow: hidden; white-space: nowrap; }
-.lcd.blank { color: #8e949b; font-weight: 500; }
-.lamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; min-height: 30px; }
-.lamp { font: 600 10px/1 var(--f-strip); padding: 3px 4px; border-radius: 3px; background: var(--lamp-off); color: #8a939d; }
-.lamp.on { background: #e8a531; color: #17110a; }
-.lamp.st.on { background: #4cc274; color: #08170e; }
-.fader { position: relative; width: 8px; height: 90px; border-radius: 4px; background: #0a0b0d; }
-.fader .cap { position: absolute; left: 50%; width: 30px; height: 14px; margin-left: -15px; border-radius: 3px; background: linear-gradient(#d9dde2, #9aa1a9); transition: bottom .4s ease; }
-.db { font: 500 11px var(--f-mono); color: #8e949b; font-variant-numeric: tabular-nums; }
-.outs .strip { flex-basis: 110px; }
-.feeds { font: 500 11px/1.35 var(--f-strip); color: #b7c0c9; text-align: center; min-height: 30px; }
-.empty-desk { color: #8a939d; font-size: 14px; padding: 10px 0; }
-
-.sheet { display: grid; gap: 10px; }
-.sheet textarea { width: 100%; min-height: 160px; font: 12px/1.5 var(--f-mono); }
-@media (prefers-reduced-motion: reduce) { .fader .cap, .strip { transition: none; } }
-@media (max-width: 600px) { .show-name { font-size: 21px; } .quick-add { flex-direction: column; } .chip-group { grid-template-columns: 1fr; } }
-input, td, .status, .pill, .group-pill { font-variant-numeric: tabular-nums; }
-
-/* KobiKraken product bar, as on the guide's interface page: K, then KOBI / tool, on a raised graphite bar */
-.product-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 24px; background: var(--context); border-radius: 16px; }
-.product-bar .brand-k { color: #f5f4f0; }
-.product { font-size: 16px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: #f5f4f0; }
-.product .slash { color: var(--muted); margin: 0 6px; font-weight: 400; }
-.product-meta { margin-left: auto; font: 12px/1.4 var(--f-mono); color: var(--muted); }
-/* Values and units in the utility face; labels uppercase, never over-tracked */
-input[type="number"], input.ip, input.freq, #host, td.ch, .log { font-family: var(--f-mono); }
-thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; color: var(--muted); }
-/* Footer: maker's plate left, version and licence right */
-.maker { justify-content: space-between !important; border-top: 1px solid var(--line); }
-.foot-meta { display: flex; flex-wrap: wrap; gap: 8px; font: 12px/1.4 var(--f-mono); letter-spacing: normal; text-transform: none; color: var(--muted); }
-.product-bar { margin-bottom: 16px; }
-
-/* Lighting: graphite light falling from the top centre, a faint Spectral glow, darker towards the floor */
-body {
-  background-color: var(--bg);
-  background-image:
-    radial-gradient(900px 520px at 50% -8%, rgba(99, 203, 232, .10), transparent 65%),
-    radial-gradient(1100px 760px at 50% 42%, rgba(30, 36, 44, .9), transparent 72%),
-    linear-gradient(180deg, #151a20 0%, #11151a 45%, #0c0f13 100%);
-  background-attachment: fixed;
-}
-/* The K as a watermark, centred behind everything. Solid white at low opacity, never a gradient on the mark */
-.watermark { position: fixed; inset: 0; z-index: -1; display: grid; place-items: center; pointer-events: none; }
-.watermark svg { width: min(72vw, 760px); height: auto; color: #f5f4f0; opacity: .04; }
-/* Raised surfaces catch the light from above */
-.product-bar { background: linear-gradient(135deg, #252d37 0%, #1e242c 55%, #191e25 100%); box-shadow: inset 0 1px 0 rgba(245, 244, 240, .06); }
-.connect-bar, .find-panel, .table-wrap { background: linear-gradient(180deg, rgba(30, 36, 44, .78), rgba(22, 27, 33, .78)); }
-thead th { background: rgba(26, 31, 37, .96); }
-.primary { background: linear-gradient(180deg, #7ad5ee 0%, #63cbe8 55%, #4fbcdc 100%); border-color: #57c2e1; }
-.tabs [role="tab"][aria-selected="true"] { background: linear-gradient(180deg, transparent 40%, rgba(99, 203, 232, .10)); }
-</style>
-
-<div class="wrap">
-  <div class="watermark" aria-hidden="true"><svg class="watermark-k" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 944 847"><path fill="currentColor" fill-rule="evenodd" d="M673.0 846.0C612.6 843.5 584.3 839.4 550.6 828.5C535.7 823.7 513.1 813.1 501.0 805.2C482.0 792.9 459.2 771.5 445.2 752.8C430.0 732.3 415.5 705.2 395.6 659.5C375.1 612.7 363.5 592.4 348.6 577.7C322.7 552.0 291.5 543.9 252.0 552.7C237.9 555.8 215.7 566.0 204.0 574.9C177.9 594.5 159.1 625.0 151.6 659.5C151.2 661.4 152.4 659.8 154.9 655.2C166.1 634.9 179.3 618.9 196.5 604.8C203.9 598.7 217.7 590.0 218.1 591.2C218.1 591.4 218.4 647.0 218.7 714.8L219.2 838.0 L109.5 838.0L-0.2 838.0 L0.3 776.8C0.7 730.8 1.2 712.0 2.3 701.5C8.8 643.7 20.7 600.9 42.5 557.0C79.9 481.8 137.0 425.4 229.5 372.2C245.1 363.2 274.6 347.0 300.0 333.5C310.2 328.1 321.6 321.8 325.5 319.5C329.4 317.2 336.8 312.9 342.0 310.0C368.4 295.0 392.9 277.1 413.4 258.0C436.3 236.5 462.8 200.2 485.5 159.0C511.6 111.7 527.3 88.1 545.4 69.3C561.6 52.3 577.9 40.5 600.3 29.7C635.2 12.7 674.3 3.9 727.4 1.0C749.6 -0.2 944.2 -0.3 942.0 0.9C941.2 1.4 935.3 3.0 929.0 4.5C922.7 6.0 911.9 9.1 905.0 11.5C864.9 25.0 836.4 42.3 808.4 70.4C780.3 98.6 760.3 130.8 741.2 178.5C732.8 199.3 726.4 216.0 725.5 219.0C724.5 222.4 707.8 264.0 704.5 271.5C694.4 294.2 679.3 321.7 665.1 343.5C628.8 399.2 591.2 432.3 542.0 451.8C508.9 465.0 489.1 469.1 426.5 476.0C364.5 482.9 329.7 490.6 293.5 505.5C283.5 509.6 266.7 518.0 267.3 518.6C267.5 518.8 273.0 517.9 279.6 516.6C325.7 507.1 381.6 506.5 435.5 514.9C534.2 530.3 608.5 570.4 674.3 644.0C685.8 656.8 702.4 677.1 721.4 701.3C749.1 736.8 777.3 767.4 794.8 781.0C808.8 791.9 822.8 800.7 839.3 809.1C864.4 821.8 890.4 831.0 926.0 839.5C934.5 841.6 942.1 843.6 942.8 844.0C945.8 845.5 704.8 847.3 673.0 846.0ZM681.0 834.0C684.8 831.3 687.3 825.6 686.6 821.4C684.6 811.0 668.8 807.2 661.3 815.4C653.1 824.4 661.2 838.0 673.8 836.5C676.2 836.2 679.4 835.1 681.0 834.0ZM613.8 828.5C627.5 824.4 633.7 810.5 627.6 797.4C619.2 779.5 591.2 780.0 583.6 798.2C578.2 810.9 586.4 825.5 600.7 828.9C606.3 830.2 608.1 830.2 613.8 828.5ZM554.7 799.6C566.2 794.4 572.9 784.4 573.8 771.4C574.4 762.1 572.3 754.9 566.6 747.2C557.9 735.4 547.4 729.8 533.4 729.8C526.8 729.7 524.3 730.2 519.8 732.2C507.6 737.8 501.0 747.2 500.2 760.1C499.7 769.2 501.5 775.8 506.7 783.7C517.9 800.7 537.8 807.3 554.7 799.6ZM485.4 732.7C502.6 724.8 509.9 700.6 501.4 679.6C497.7 670.4 488.4 660.3 479.4 655.9C473.5 653.0 472.5 652.8 464.8 653.2C449.4 654.0 438.8 662.5 434.4 677.6C426.2 705.9 448.1 737.7 474.4 735.5C477.7 735.2 482.6 733.9 485.4 732.7ZM133.0 714.5C125.3 667.0 134.7 616.9 158.8 578.3C177.8 547.7 211.1 518.4 250.1 498.1C290.1 477.3 329.5 466.1 416.5 450.5C454.8 443.7 476.6 437.6 484.6 431.5C492.8 425.2 494.1 418.3 488.5 410.1L485.1 404.9 L487.8 403.8C489.3 403.2 496.2 400.0 503.3 396.8C510.3 393.6 516.4 391.0 516.8 391.0C517.2 391.0 519.6 393.5 522.3 396.5C531.0 406.5 547.5 412.1 562.8 410.5C572.2 409.5 579.2 407.5 588.4 403.1C620.8 387.6 639.3 355.5 631.1 329.1C627.1 316.3 620.0 308.3 607.2 302.2C599.6 298.5 599.4 298.5 587.0 298.5C576.2 298.6 573.4 299.0 566.5 301.3C554.0 305.5 542.7 312.4 533.7 321.3C521.9 333.0 516.9 342.0 513.1 357.5L511.4 364.5 L496.0 372.2C463.2 388.6 434.2 398.8 386.5 410.4C342.0 421.3 337.3 422.5 319.0 428.2C272.8 442.5 235.6 460.8 205.5 484.0C159.5 519.6 132.4 561.3 121.4 613.3C117.9 630.1 117.0 659.1 119.4 676.0C121.2 688.3 123.7 699.0 126.9 708.3C129.1 714.6 134.1 726.2 134.5 725.8C134.7 725.6 134.0 720.5 133.0 714.5ZM432.0 647.8C435.1 646.2 437.4 644.0 439.5 640.6C442.2 636.1 442.5 634.9 442.5 627.1C442.5 617.0 440.2 611.1 433.6 604.5C428.2 599.2 422.8 596.7 415.5 596.2C407.8 595.8 401.8 598.6 397.5 604.8C394.7 608.9 394.5 609.8 394.5 618.3C394.5 626.9 394.7 627.9 397.9 633.8C401.5 640.4 407.2 645.9 413.1 648.4C418.3 650.7 426.8 650.4 432.0 647.8ZM390.6 586.6C394.3 582.9 395.0 579.2 392.8 574.6C391.1 570.7 382.5 565.4 372.5 562.1C363.4 559.1 349.0 556.7 349.0 558.2C349.0 558.6 349.4 559.0 349.8 559.0C351.8 559.0 368.6 574.5 374.6 581.8C382.5 591.5 384.9 592.3 390.6 586.6ZM0.0 295.6C0.0 154.6 0.3 37.8 0.6 36.1C2.0 29.1 -5.5 29.5 114.2 29.2L221.9 29.0 L222.2 43.2C222.4 51.1 222.6 113.8 222.8 182.6C223.0 281.1 222.8 308.3 221.8 310.4C221.1 312.2 215.9 316.4 208.0 321.8C140.4 368.3 101.1 404.1 59.0 457.5C44.2 476.4 21.8 512.2 7.8 539.6C4.3 546.4 1.2 552.0 0.8 552.0C0.3 552.0 0.0 436.6 0.0 295.6ZM663.5 291.0C674.4 285.5 683.9 274.4 689.2 261.1C691.1 256.3 691.4 253.6 691.5 242.5C691.5 230.4 691.3 229.1 688.8 223.8C685.3 216.2 678.1 208.7 671.1 205.3C666.3 202.9 664.3 202.5 657.0 202.6C646.5 202.7 639.8 205.1 631.5 211.8C617.0 223.4 608.7 244.9 611.9 262.7C614.1 275.1 619.4 283.8 628.7 290.2C634.9 294.4 637.2 295.0 647.6 294.7C655.8 294.4 657.5 294.0 663.5 291.0ZM703.8 189.5C711.0 187.3 719.8 179.1 723.6 170.8C726.2 165.2 726.5 163.5 726.5 154.5C726.4 142.1 724.6 137.6 716.6 129.7C709.3 122.5 704.5 120.6 694.8 121.2C686.2 121.7 681.6 123.6 675.5 129.5C660.4 144.2 660.6 169.5 676.0 183.3C684.2 190.7 693.1 192.6 703.8 189.5ZM746.7 117.1C755.3 113.1 759.2 99.9 754.1 91.7C751.5 87.5 748.0 85.4 742.2 84.4C731.8 82.7 720.5 94.7 722.5 105.3C724.7 116.8 735.6 122.1 746.7 117.1Z"/></svg></div>
-  <div class="product-bar"><svg class="brand-k" height="40" width="45" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 944 847"><path fill="currentColor" fill-rule="evenodd" d="M673.0 846.0C612.6 843.5 584.3 839.4 550.6 828.5C535.7 823.7 513.1 813.1 501.0 805.2C482.0 792.9 459.2 771.5 445.2 752.8C430.0 732.3 415.5 705.2 395.6 659.5C375.1 612.7 363.5 592.4 348.6 577.7C322.7 552.0 291.5 543.9 252.0 552.7C237.9 555.8 215.7 566.0 204.0 574.9C177.9 594.5 159.1 625.0 151.6 659.5C151.2 661.4 152.4 659.8 154.9 655.2C166.1 634.9 179.3 618.9 196.5 604.8C203.9 598.7 217.7 590.0 218.1 591.2C218.1 591.4 218.4 647.0 218.7 714.8L219.2 838.0 L109.5 838.0L-0.2 838.0 L0.3 776.8C0.7 730.8 1.2 712.0 2.3 701.5C8.8 643.7 20.7 600.9 42.5 557.0C79.9 481.8 137.0 425.4 229.5 372.2C245.1 363.2 274.6 347.0 300.0 333.5C310.2 328.1 321.6 321.8 325.5 319.5C329.4 317.2 336.8 312.9 342.0 310.0C368.4 295.0 392.9 277.1 413.4 258.0C436.3 236.5 462.8 200.2 485.5 159.0C511.6 111.7 527.3 88.1 545.4 69.3C561.6 52.3 577.9 40.5 600.3 29.7C635.2 12.7 674.3 3.9 727.4 1.0C749.6 -0.2 944.2 -0.3 942.0 0.9C941.2 1.4 935.3 3.0 929.0 4.5C922.7 6.0 911.9 9.1 905.0 11.5C864.9 25.0 836.4 42.3 808.4 70.4C780.3 98.6 760.3 130.8 741.2 178.5C732.8 199.3 726.4 216.0 725.5 219.0C724.5 222.4 707.8 264.0 704.5 271.5C694.4 294.2 679.3 321.7 665.1 343.5C628.8 399.2 591.2 432.3 542.0 451.8C508.9 465.0 489.1 469.1 426.5 476.0C364.5 482.9 329.7 490.6 293.5 505.5C283.5 509.6 266.7 518.0 267.3 518.6C267.5 518.8 273.0 517.9 279.6 516.6C325.7 507.1 381.6 506.5 435.5 514.9C534.2 530.3 608.5 570.4 674.3 644.0C685.8 656.8 702.4 677.1 721.4 701.3C749.1 736.8 777.3 767.4 794.8 781.0C808.8 791.9 822.8 800.7 839.3 809.1C864.4 821.8 890.4 831.0 926.0 839.5C934.5 841.6 942.1 843.6 942.8 844.0C945.8 845.5 704.8 847.3 673.0 846.0ZM681.0 834.0C684.8 831.3 687.3 825.6 686.6 821.4C684.6 811.0 668.8 807.2 661.3 815.4C653.1 824.4 661.2 838.0 673.8 836.5C676.2 836.2 679.4 835.1 681.0 834.0ZM613.8 828.5C627.5 824.4 633.7 810.5 627.6 797.4C619.2 779.5 591.2 780.0 583.6 798.2C578.2 810.9 586.4 825.5 600.7 828.9C606.3 830.2 608.1 830.2 613.8 828.5ZM554.7 799.6C566.2 794.4 572.9 784.4 573.8 771.4C574.4 762.1 572.3 754.9 566.6 747.2C557.9 735.4 547.4 729.8 533.4 729.8C526.8 729.7 524.3 730.2 519.8 732.2C507.6 737.8 501.0 747.2 500.2 760.1C499.7 769.2 501.5 775.8 506.7 783.7C517.9 800.7 537.8 807.3 554.7 799.6ZM485.4 732.7C502.6 724.8 509.9 700.6 501.4 679.6C497.7 670.4 488.4 660.3 479.4 655.9C473.5 653.0 472.5 652.8 464.8 653.2C449.4 654.0 438.8 662.5 434.4 677.6C426.2 705.9 448.1 737.7 474.4 735.5C477.7 735.2 482.6 733.9 485.4 732.7ZM133.0 714.5C125.3 667.0 134.7 616.9 158.8 578.3C177.8 547.7 211.1 518.4 250.1 498.1C290.1 477.3 329.5 466.1 416.5 450.5C454.8 443.7 476.6 437.6 484.6 431.5C492.8 425.2 494.1 418.3 488.5 410.1L485.1 404.9 L487.8 403.8C489.3 403.2 496.2 400.0 503.3 396.8C510.3 393.6 516.4 391.0 516.8 391.0C517.2 391.0 519.6 393.5 522.3 396.5C531.0 406.5 547.5 412.1 562.8 410.5C572.2 409.5 579.2 407.5 588.4 403.1C620.8 387.6 639.3 355.5 631.1 329.1C627.1 316.3 620.0 308.3 607.2 302.2C599.6 298.5 599.4 298.5 587.0 298.5C576.2 298.6 573.4 299.0 566.5 301.3C554.0 305.5 542.7 312.4 533.7 321.3C521.9 333.0 516.9 342.0 513.1 357.5L511.4 364.5 L496.0 372.2C463.2 388.6 434.2 398.8 386.5 410.4C342.0 421.3 337.3 422.5 319.0 428.2C272.8 442.5 235.6 460.8 205.5 484.0C159.5 519.6 132.4 561.3 121.4 613.3C117.9 630.1 117.0 659.1 119.4 676.0C121.2 688.3 123.7 699.0 126.9 708.3C129.1 714.6 134.1 726.2 134.5 725.8C134.7 725.6 134.0 720.5 133.0 714.5ZM432.0 647.8C435.1 646.2 437.4 644.0 439.5 640.6C442.2 636.1 442.5 634.9 442.5 627.1C442.5 617.0 440.2 611.1 433.6 604.5C428.2 599.2 422.8 596.7 415.5 596.2C407.8 595.8 401.8 598.6 397.5 604.8C394.7 608.9 394.5 609.8 394.5 618.3C394.5 626.9 394.7 627.9 397.9 633.8C401.5 640.4 407.2 645.9 413.1 648.4C418.3 650.7 426.8 650.4 432.0 647.8ZM390.6 586.6C394.3 582.9 395.0 579.2 392.8 574.6C391.1 570.7 382.5 565.4 372.5 562.1C363.4 559.1 349.0 556.7 349.0 558.2C349.0 558.6 349.4 559.0 349.8 559.0C351.8 559.0 368.6 574.5 374.6 581.8C382.5 591.5 384.9 592.3 390.6 586.6ZM0.0 295.6C0.0 154.6 0.3 37.8 0.6 36.1C2.0 29.1 -5.5 29.5 114.2 29.2L221.9 29.0 L222.2 43.2C222.4 51.1 222.6 113.8 222.8 182.6C223.0 281.1 222.8 308.3 221.8 310.4C221.1 312.2 215.9 316.4 208.0 321.8C140.4 368.3 101.1 404.1 59.0 457.5C44.2 476.4 21.8 512.2 7.8 539.6C4.3 546.4 1.2 552.0 0.8 552.0C0.3 552.0 0.0 436.6 0.0 295.6ZM663.5 291.0C674.4 285.5 683.9 274.4 689.2 261.1C691.1 256.3 691.4 253.6 691.5 242.5C691.5 230.4 691.3 229.1 688.8 223.8C685.3 216.2 678.1 208.7 671.1 205.3C666.3 202.9 664.3 202.5 657.0 202.6C646.5 202.7 639.8 205.1 631.5 211.8C617.0 223.4 608.7 244.9 611.9 262.7C614.1 275.1 619.4 283.8 628.7 290.2C634.9 294.4 637.2 295.0 647.6 294.7C655.8 294.4 657.5 294.0 663.5 291.0ZM703.8 189.5C711.0 187.3 719.8 179.1 723.6 170.8C726.2 165.2 726.5 163.5 726.5 154.5C726.4 142.1 724.6 137.6 716.6 129.7C709.3 122.5 704.5 120.6 694.8 121.2C686.2 121.7 681.6 123.6 675.5 129.5C660.4 144.2 660.6 169.5 676.0 183.3C684.2 190.7 693.1 192.6 703.8 189.5ZM746.7 117.1C755.3 113.1 759.2 99.9 754.1 91.7C751.5 87.5 748.0 85.4 742.2 84.4C731.8 82.7 720.5 94.7 722.5 105.3C724.7 116.8 735.6 122.1 746.7 117.1Z"/></svg><span class="product">Kobi<span class="slash">/</span>Show Builder</span><span class="product-meta">Demo · pretend desk, amps and RF</span></div>
-  <header>
-    <div>
-      <input id="showName" class="show-name" aria-label="Show name">
-      <label class="model">Desk model <select id="model"></select></label>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="demo.css">
+<div class="watermark" aria-hidden="true"><svg class="watermark-k" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 944 847"><path fill="currentColor" fill-rule="evenodd" d="M673.0 846.0C612.6 843.5 584.3 839.4 550.6 828.5C535.7 823.7 513.1 813.1 501.0 805.2C482.0 792.9 459.2 771.5 445.2 752.8C430.0 732.3 415.5 705.2 395.6 659.5C375.1 612.7 363.5 592.4 348.6 577.7C322.7 552.0 291.5 543.9 252.0 552.7C237.9 555.8 215.7 566.0 204.0 574.9C177.9 594.5 159.1 625.0 151.6 659.5C151.2 661.4 152.4 659.8 154.9 655.2C166.1 634.9 179.3 618.9 196.5 604.8C203.9 598.7 217.7 590.0 218.1 591.2C218.1 591.4 218.4 647.0 218.7 714.8L219.2 838.0 L109.5 838.0L-0.2 838.0 L0.3 776.8C0.7 730.8 1.2 712.0 2.3 701.5C8.8 643.7 20.7 600.9 42.5 557.0C79.9 481.8 137.0 425.4 229.5 372.2C245.1 363.2 274.6 347.0 300.0 333.5C310.2 328.1 321.6 321.8 325.5 319.5C329.4 317.2 336.8 312.9 342.0 310.0C368.4 295.0 392.9 277.1 413.4 258.0C436.3 236.5 462.8 200.2 485.5 159.0C511.6 111.7 527.3 88.1 545.4 69.3C561.6 52.3 577.9 40.5 600.3 29.7C635.2 12.7 674.3 3.9 727.4 1.0C749.6 -0.2 944.2 -0.3 942.0 0.9C941.2 1.4 935.3 3.0 929.0 4.5C922.7 6.0 911.9 9.1 905.0 11.5C864.9 25.0 836.4 42.3 808.4 70.4C780.3 98.6 760.3 130.8 741.2 178.5C732.8 199.3 726.4 216.0 725.5 219.0C724.5 222.4 707.8 264.0 704.5 271.5C694.4 294.2 679.3 321.7 665.1 343.5C628.8 399.2 591.2 432.3 542.0 451.8C508.9 465.0 489.1 469.1 426.5 476.0C364.5 482.9 329.7 490.6 293.5 505.5C283.5 509.6 266.7 518.0 267.3 518.6C267.5 518.8 273.0 517.9 279.6 516.6C325.7 507.1 381.6 506.5 435.5 514.9C534.2 530.3 608.5 570.4 674.3 644.0C685.8 656.8 702.4 677.1 721.4 701.3C749.1 736.8 777.3 767.4 794.8 781.0C808.8 791.9 822.8 800.7 839.3 809.1C864.4 821.8 890.4 831.0 926.0 839.5C934.5 841.6 942.1 843.6 942.8 844.0C945.8 845.5 704.8 847.3 673.0 846.0ZM681.0 834.0C684.8 831.3 687.3 825.6 686.6 821.4C684.6 811.0 668.8 807.2 661.3 815.4C653.1 824.4 661.2 838.0 673.8 836.5C676.2 836.2 679.4 835.1 681.0 834.0ZM613.8 828.5C627.5 824.4 633.7 810.5 627.6 797.4C619.2 779.5 591.2 780.0 583.6 798.2C578.2 810.9 586.4 825.5 600.7 828.9C606.3 830.2 608.1 830.2 613.8 828.5ZM554.7 799.6C566.2 794.4 572.9 784.4 573.8 771.4C574.4 762.1 572.3 754.9 566.6 747.2C557.9 735.4 547.4 729.8 533.4 729.8C526.8 729.7 524.3 730.2 519.8 732.2C507.6 737.8 501.0 747.2 500.2 760.1C499.7 769.2 501.5 775.8 506.7 783.7C517.9 800.7 537.8 807.3 554.7 799.6ZM485.4 732.7C502.6 724.8 509.9 700.6 501.4 679.6C497.7 670.4 488.4 660.3 479.4 655.9C473.5 653.0 472.5 652.8 464.8 653.2C449.4 654.0 438.8 662.5 434.4 677.6C426.2 705.9 448.1 737.7 474.4 735.5C477.7 735.2 482.6 733.9 485.4 732.7ZM133.0 714.5C125.3 667.0 134.7 616.9 158.8 578.3C177.8 547.7 211.1 518.4 250.1 498.1C290.1 477.3 329.5 466.1 416.5 450.5C454.8 443.7 476.6 437.6 484.6 431.5C492.8 425.2 494.1 418.3 488.5 410.1L485.1 404.9 L487.8 403.8C489.3 403.2 496.2 400.0 503.3 396.8C510.3 393.6 516.4 391.0 516.8 391.0C517.2 391.0 519.6 393.5 522.3 396.5C531.0 406.5 547.5 412.1 562.8 410.5C572.2 409.5 579.2 407.5 588.4 403.1C620.8 387.6 639.3 355.5 631.1 329.1C627.1 316.3 620.0 308.3 607.2 302.2C599.6 298.5 599.4 298.5 587.0 298.5C576.2 298.6 573.4 299.0 566.5 301.3C554.0 305.5 542.7 312.4 533.7 321.3C521.9 333.0 516.9 342.0 513.1 357.5L511.4 364.5 L496.0 372.2C463.2 388.6 434.2 398.8 386.5 410.4C342.0 421.3 337.3 422.5 319.0 428.2C272.8 442.5 235.6 460.8 205.5 484.0C159.5 519.6 132.4 561.3 121.4 613.3C117.9 630.1 117.0 659.1 119.4 676.0C121.2 688.3 123.7 699.0 126.9 708.3C129.1 714.6 134.1 726.2 134.5 725.8C134.7 725.6 134.0 720.5 133.0 714.5ZM432.0 647.8C435.1 646.2 437.4 644.0 439.5 640.6C442.2 636.1 442.5 634.9 442.5 627.1C442.5 617.0 440.2 611.1 433.6 604.5C428.2 599.2 422.8 596.7 415.5 596.2C407.8 595.8 401.8 598.6 397.5 604.8C394.7 608.9 394.5 609.8 394.5 618.3C394.5 626.9 394.7 627.9 397.9 633.8C401.5 640.4 407.2 645.9 413.1 648.4C418.3 650.7 426.8 650.4 432.0 647.8ZM390.6 586.6C394.3 582.9 395.0 579.2 392.8 574.6C391.1 570.7 382.5 565.4 372.5 562.1C363.4 559.1 349.0 556.7 349.0 558.2C349.0 558.6 349.4 559.0 349.8 559.0C351.8 559.0 368.6 574.5 374.6 581.8C382.5 591.5 384.9 592.3 390.6 586.6ZM0.0 295.6C0.0 154.6 0.3 37.8 0.6 36.1C2.0 29.1 -5.5 29.5 114.2 29.2L221.9 29.0 L222.2 43.2C222.4 51.1 222.6 113.8 222.8 182.6C223.0 281.1 222.8 308.3 221.8 310.4C221.1 312.2 215.9 316.4 208.0 321.8C140.4 368.3 101.1 404.1 59.0 457.5C44.2 476.4 21.8 512.2 7.8 539.6C4.3 546.4 1.2 552.0 0.8 552.0C0.3 552.0 0.0 436.6 0.0 295.6ZM663.5 291.0C674.4 285.5 683.9 274.4 689.2 261.1C691.1 256.3 691.4 253.6 691.5 242.5C691.5 230.4 691.3 229.1 688.8 223.8C685.3 216.2 678.1 208.7 671.1 205.3C666.3 202.9 664.3 202.5 657.0 202.6C646.5 202.7 639.8 205.1 631.5 211.8C617.0 223.4 608.7 244.9 611.9 262.7C614.1 275.1 619.4 283.8 628.7 290.2C634.9 294.4 637.2 295.0 647.6 294.7C655.8 294.4 657.5 294.0 663.5 291.0ZM703.8 189.5C711.0 187.3 719.8 179.1 723.6 170.8C726.2 165.2 726.5 163.5 726.5 154.5C726.4 142.1 724.6 137.6 716.6 129.7C709.3 122.5 704.5 120.6 694.8 121.2C686.2 121.7 681.6 123.6 675.5 129.5C660.4 144.2 660.6 169.5 676.0 183.3C684.2 190.7 693.1 192.6 703.8 189.5ZM746.7 117.1C755.3 113.1 759.2 99.9 754.1 91.7C751.5 87.5 748.0 85.4 742.2 84.4C731.8 82.7 720.5 94.7 722.5 105.3C724.7 116.8 735.6 122.1 746.7 117.1Z"/></svg></div>
+  <div class="shell">
+    <div class="product-bar">
+      <svg class="brand-k" height="40" width="45" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 944 847"><path fill="currentColor" fill-rule="evenodd" d="M673.0 846.0C612.6 843.5 584.3 839.4 550.6 828.5C535.7 823.7 513.1 813.1 501.0 805.2C482.0 792.9 459.2 771.5 445.2 752.8C430.0 732.3 415.5 705.2 395.6 659.5C375.1 612.7 363.5 592.4 348.6 577.7C322.7 552.0 291.5 543.9 252.0 552.7C237.9 555.8 215.7 566.0 204.0 574.9C177.9 594.5 159.1 625.0 151.6 659.5C151.2 661.4 152.4 659.8 154.9 655.2C166.1 634.9 179.3 618.9 196.5 604.8C203.9 598.7 217.7 590.0 218.1 591.2C218.1 591.4 218.4 647.0 218.7 714.8L219.2 838.0 L109.5 838.0L-0.2 838.0 L0.3 776.8C0.7 730.8 1.2 712.0 2.3 701.5C8.8 643.7 20.7 600.9 42.5 557.0C79.9 481.8 137.0 425.4 229.5 372.2C245.1 363.2 274.6 347.0 300.0 333.5C310.2 328.1 321.6 321.8 325.5 319.5C329.4 317.2 336.8 312.9 342.0 310.0C368.4 295.0 392.9 277.1 413.4 258.0C436.3 236.5 462.8 200.2 485.5 159.0C511.6 111.7 527.3 88.1 545.4 69.3C561.6 52.3 577.9 40.5 600.3 29.7C635.2 12.7 674.3 3.9 727.4 1.0C749.6 -0.2 944.2 -0.3 942.0 0.9C941.2 1.4 935.3 3.0 929.0 4.5C922.7 6.0 911.9 9.1 905.0 11.5C864.9 25.0 836.4 42.3 808.4 70.4C780.3 98.6 760.3 130.8 741.2 178.5C732.8 199.3 726.4 216.0 725.5 219.0C724.5 222.4 707.8 264.0 704.5 271.5C694.4 294.2 679.3 321.7 665.1 343.5C628.8 399.2 591.2 432.3 542.0 451.8C508.9 465.0 489.1 469.1 426.5 476.0C364.5 482.9 329.7 490.6 293.5 505.5C283.5 509.6 266.7 518.0 267.3 518.6C267.5 518.8 273.0 517.9 279.6 516.6C325.7 507.1 381.6 506.5 435.5 514.9C534.2 530.3 608.5 570.4 674.3 644.0C685.8 656.8 702.4 677.1 721.4 701.3C749.1 736.8 777.3 767.4 794.8 781.0C808.8 791.9 822.8 800.7 839.3 809.1C864.4 821.8 890.4 831.0 926.0 839.5C934.5 841.6 942.1 843.6 942.8 844.0C945.8 845.5 704.8 847.3 673.0 846.0ZM681.0 834.0C684.8 831.3 687.3 825.6 686.6 821.4C684.6 811.0 668.8 807.2 661.3 815.4C653.1 824.4 661.2 838.0 673.8 836.5C676.2 836.2 679.4 835.1 681.0 834.0ZM613.8 828.5C627.5 824.4 633.7 810.5 627.6 797.4C619.2 779.5 591.2 780.0 583.6 798.2C578.2 810.9 586.4 825.5 600.7 828.9C606.3 830.2 608.1 830.2 613.8 828.5ZM554.7 799.6C566.2 794.4 572.9 784.4 573.8 771.4C574.4 762.1 572.3 754.9 566.6 747.2C557.9 735.4 547.4 729.8 533.4 729.8C526.8 729.7 524.3 730.2 519.8 732.2C507.6 737.8 501.0 747.2 500.2 760.1C499.7 769.2 501.5 775.8 506.7 783.7C517.9 800.7 537.8 807.3 554.7 799.6ZM485.4 732.7C502.6 724.8 509.9 700.6 501.4 679.6C497.7 670.4 488.4 660.3 479.4 655.9C473.5 653.0 472.5 652.8 464.8 653.2C449.4 654.0 438.8 662.5 434.4 677.6C426.2 705.9 448.1 737.7 474.4 735.5C477.7 735.2 482.6 733.9 485.4 732.7ZM133.0 714.5C125.3 667.0 134.7 616.9 158.8 578.3C177.8 547.7 211.1 518.4 250.1 498.1C290.1 477.3 329.5 466.1 416.5 450.5C454.8 443.7 476.6 437.6 484.6 431.5C492.8 425.2 494.1 418.3 488.5 410.1L485.1 404.9 L487.8 403.8C489.3 403.2 496.2 400.0 503.3 396.8C510.3 393.6 516.4 391.0 516.8 391.0C517.2 391.0 519.6 393.5 522.3 396.5C531.0 406.5 547.5 412.1 562.8 410.5C572.2 409.5 579.2 407.5 588.4 403.1C620.8 387.6 639.3 355.5 631.1 329.1C627.1 316.3 620.0 308.3 607.2 302.2C599.6 298.5 599.4 298.5 587.0 298.5C576.2 298.6 573.4 299.0 566.5 301.3C554.0 305.5 542.7 312.4 533.7 321.3C521.9 333.0 516.9 342.0 513.1 357.5L511.4 364.5 L496.0 372.2C463.2 388.6 434.2 398.8 386.5 410.4C342.0 421.3 337.3 422.5 319.0 428.2C272.8 442.5 235.6 460.8 205.5 484.0C159.5 519.6 132.4 561.3 121.4 613.3C117.9 630.1 117.0 659.1 119.4 676.0C121.2 688.3 123.7 699.0 126.9 708.3C129.1 714.6 134.1 726.2 134.5 725.8C134.7 725.6 134.0 720.5 133.0 714.5ZM432.0 647.8C435.1 646.2 437.4 644.0 439.5 640.6C442.2 636.1 442.5 634.9 442.5 627.1C442.5 617.0 440.2 611.1 433.6 604.5C428.2 599.2 422.8 596.7 415.5 596.2C407.8 595.8 401.8 598.6 397.5 604.8C394.7 608.9 394.5 609.8 394.5 618.3C394.5 626.9 394.7 627.9 397.9 633.8C401.5 640.4 407.2 645.9 413.1 648.4C418.3 650.7 426.8 650.4 432.0 647.8ZM390.6 586.6C394.3 582.9 395.0 579.2 392.8 574.6C391.1 570.7 382.5 565.4 372.5 562.1C363.4 559.1 349.0 556.7 349.0 558.2C349.0 558.6 349.4 559.0 349.8 559.0C351.8 559.0 368.6 574.5 374.6 581.8C382.5 591.5 384.9 592.3 390.6 586.6ZM0.0 295.6C0.0 154.6 0.3 37.8 0.6 36.1C2.0 29.1 -5.5 29.5 114.2 29.2L221.9 29.0 L222.2 43.2C222.4 51.1 222.6 113.8 222.8 182.6C223.0 281.1 222.8 308.3 221.8 310.4C221.1 312.2 215.9 316.4 208.0 321.8C140.4 368.3 101.1 404.1 59.0 457.5C44.2 476.4 21.8 512.2 7.8 539.6C4.3 546.4 1.2 552.0 0.8 552.0C0.3 552.0 0.0 436.6 0.0 295.6ZM663.5 291.0C674.4 285.5 683.9 274.4 689.2 261.1C691.1 256.3 691.4 253.6 691.5 242.5C691.5 230.4 691.3 229.1 688.8 223.8C685.3 216.2 678.1 208.7 671.1 205.3C666.3 202.9 664.3 202.5 657.0 202.6C646.5 202.7 639.8 205.1 631.5 211.8C617.0 223.4 608.7 244.9 611.9 262.7C614.1 275.1 619.4 283.8 628.7 290.2C634.9 294.4 637.2 295.0 647.6 294.7C655.8 294.4 657.5 294.0 663.5 291.0ZM703.8 189.5C711.0 187.3 719.8 179.1 723.6 170.8C726.2 165.2 726.5 163.5 726.5 154.5C726.4 142.1 724.6 137.6 716.6 129.7C709.3 122.5 704.5 120.6 694.8 121.2C686.2 121.7 681.6 123.6 675.5 129.5C660.4 144.2 660.6 169.5 676.0 183.3C684.2 190.7 693.1 192.6 703.8 189.5ZM746.7 117.1C755.3 113.1 759.2 99.9 754.1 91.7C751.5 87.5 748.0 85.4 742.2 84.4C731.8 82.7 720.5 94.7 722.5 105.3C724.7 116.8 735.6 122.1 746.7 117.1Z"/></svg>
+      <span class="product">Kobi<span class="slash">/</span>Show Builder</span>
+      <button id="linkPill" class="link-pill" type="button" title="Desk connection"><span id="linkDot" class="link-dot" aria-hidden="true"></span><span id="linkPillText">No desk</span></button>
     </div>
-    <div class="actions">
-      <button id="newShow">New show</button>
-      <button id="exampleShow">Example</button>
-      <button id="exportJson">Show file</button>
-      <button id="exportCsv">Patch sheet</button>
-      <button id="saveTemplate">Save as template</button>
-      <button id="monitorShow">Monitor desk show</button>
-      <button id="paperworkBtn">Paperwork</button>
-    </div>
-  </header>
-  <nav class="tabs" role="tablist" aria-label="Sections">
-    <button role="tab" id="tabBtn-desk" data-tab="desk" aria-controls="tab-desk">Desk</button>
-    <button role="tab" id="tabBtn-amps" data-tab="amps" aria-controls="tab-amps">Amplifiers</button>
-    <button role="tab" id="tabBtn-rf" data-tab="rf" aria-controls="tab-rf">RF</button>
-    <button id="findBtn" class="find-btn">Find devices</button>
-  </nav>
-  <div id="findPanel" class="find-panel" hidden>
-    <div class="find-head">
-      <span id="findStatus" class="status" role="status"></span>
-      <span class="find-other">
-        <button id="findAgain">Scan again</button>
-        <button id="findClose">Close</button>
-      </span>
-    </div>
-    <div id="findList" class="find-list"></div>
-  </div>
-  <div id="tab-desk" role="tabpanel" aria-labelledby="tabBtn-desk">
-  <div class="connect-bar" role="group" aria-label="Desk connection">
-    <span id="linkDot" class="link-dot" aria-hidden="true"></span>
-    <span class="connect-title">Desk</span>
-    <input id="host" value="192.168.0.128" inputmode="decimal" autocomplete="off" aria-label="Desk IP address">
-    <input id="port" class="port" type="number" value="49280" aria-label="Port">
-    <button id="connectBtn" class="primary">Connect</button>
-    <span id="linkStatus" class="status" role="status">Not connected. In the demo, any IP connects to the pretend desk below.</span>
-  </div>
-  <div id="newConfirm" class="confirm" hidden>
-    <span id="newText"></span>
-    <button id="newYes" class="primary">Wipe and start</button>
-    <button id="newNo">Cancel</button>
-  </div>
-  <div id="tplBar" class="confirm" hidden>
-    <label for="tplName">Save this show as a template called</label>
-    <input id="tplName" placeholder="Corporate, 8 radio mics">
-    <button id="tplSave" class="primary">Save template</button>
-    <button id="tplCancel">Cancel</button>
-  </div>
 
-  <div id="paperPanel" class="sheet" hidden>
-    <section>
-      <h2>Paperwork</h2>
-      <p class="hint">In the real app this opens a print-ready page. Here it shows below.</p>
-      <div class="desk-row"><button id="closePaper">Close</button></div>
-      <div id="paperBody" class="paper-wrap"></div>
-    </section>
-  </div>
-  <div id="sheetPanel" class="sheet" hidden>
-    <section>
-      <h2 id="sheetTitle"></h2>
-      <p class="hint" id="sheetHint"></p>
-      <textarea id="sheetText" readonly aria-label="Export"></textarea>
-      <div class="desk-row" style="margin-top:10px"><button id="copySheet" class="primary">Copy</button><button id="closeSheet">Close</button><span id="copyStatus" class="status"></span></div>
-    </section>
-  </div>
-
-  <section>
-    <h2><span class="n">1</span>Inputs</h2>
-    <div class="quick-add">
-      <input id="addCount" type="number" min="1" max="32" value="1" aria-label="How many to add">
-      <div id="addButtons" class="chip-groups"></div>
-    </div>
-    <div class="typein">
-      <label for="typeText">Or type what you need</label>
-      <textarea id="typeText" rows="2" placeholder="full band, 4 wedges and 2 handhelds"></textarea>
-      <p class="hint type-help">No internet needed. Write it how you&#39;d say it, like &quot;4 wedges&quot; or &quot;two handhelds&quot;. Words it knows: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, talkback, laptop, playback, BGM, main, PA, wedge, mono IEM, stereo IEM, delay, front fill, ceiling, record.</p>
-      <div class="type-row"><button id="typeGo" class="primary">Preview</button><span id="typeStatus" class="status"></span></div>
-      <div id="typePreview" class="type-preview" hidden>
-        <p id="typeSummary"></p>
-        <ul id="typeList" class="pills"></ul>
-        <div class="type-row"><button id="typeAdd" class="primary">Add to show</button><button id="typeDiscard">Discard</button></div>
+    <header class="show-head">
+      <div class="show-title">
+        <input id="showName" class="show-name" aria-label="Show name" spellcheck="false">
+        <label class="desk-pick"><span>Desk</span><select id="model" aria-label="Desk model"></select></label>
       </div>
-    <details class="paste" id="pasteBox">
-      <summary>Paste an input list</summary>
-      <p class="hint">Paste it from a rider, spreadsheet or email, one line per channel. Names stay as you wrote them. It picks up &quot;48V&quot; and mic models, and turns &quot;Keys L&quot; and &quot;Keys R&quot; into one stereo input.</p>
-      <textarea id="pasteText" rows="7" aria-label="Input list" placeholder="1  Kick In  Beta 91&#10;2  Snare Top  SM57&#10;3  OH L  KM184  48V&#10;4  OH R  KM184  48V"></textarea>
-      <div class="type-row"><button id="pasteGo" class="primary">Preview</button><label class="check"><input id="pasteKeepOrder" type="checkbox" checked>Keep the list&#39;s channel order</label></div>
-    </details>
+      <div class="toolbar">
+        <details class="menu">
+          <summary class="button ghost">New</summary>
+          <div class="menu-list">
+            <button id="newShow" type="button">Empty show</button>
+            <button id="exampleShow" type="button">Conference example</button>
+          </div>
+        </details>
+        <label class="button ghost">Open<input id="openFile" type="file" accept=".json" hidden></label>
+        <button id="saveShow" class="ghost" type="button">Save</button>
+        <details class="menu">
+          <summary class="button ghost">Export</summary>
+          <div class="menu-list right">
+            <button id="paperworkBtn" type="button">Paperwork <small>print</small></button>
+            <button id="exportCsv" type="button">Patch sheet <small>CSV</small></button>
+            <button id="monitorShow" type="button">Monitor desk show</button>
+            <button id="saveTemplate" type="button">Save as template</button>
+          </div>
+        </details>
+      </div>
+    </header>
+    <div id="askHost" class="ask-host"></div>
+    <div id="tplBar" class="inline-form" hidden>
+      <label for="tplName">Template name</label>
+      <input id="tplName" placeholder="Corporate, 8 radio mics">
+      <button id="tplCancel" class="ghost" type="button">Cancel</button>
+      <button id="tplSave" class="primary" type="button">Save template</button>
     </div>
-  </section>
 
-  <section>
-    <h2><span class="n">2</span>Outputs</h2>
-    <div id="zoneButtons" class="chip-groups"></div>
-    <div class="type-row pair-row"><button id="pairMon">Give each singer their own monitor</button><span id="monStatus" class="status"></span></div>
-  </section>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" id="tabBtn-desk" data-tab="desk" aria-controls="tab-desk" type="button">Desk <span class="count" id="countDesk"></span></button>
+      <button role="tab" id="tabBtn-amps" data-tab="amps" aria-controls="tab-amps" type="button">Amplifiers <span class="count" id="countAmps"></span></button>
+      <button role="tab" id="tabBtn-rf" data-tab="rf" aria-controls="tab-rf" type="button">RF <span class="count" id="countRf"></span></button>
+      <button id="findBtn" class="ghost find-btn" type="button">Find devices</button>
+    </nav>
 
-  <section>
-    <h2><span class="n">3</span>Routing</h2>
-    <p class="hint">Tick where each input goes. Click any name to change it; the desk shows the first <span id="maxLen"></span> letters. The example is a conference: 2 lecterns, 4 handhelds and 4 playbacks, with playback 3 as background music in the ceiling. Vocal mics start with the HPF at 180; clear the box to turn it off. Tick St to make an input stereo.</p>
-    <label class="check order"><input id="autoOrder" type="checkbox">Auto order channels (speech mics, band, playback, background music last)</label>
-    <div class="table-wrap"><table id="grid"></table></div>
-    <div class="groups-line">
-      <label class="check"><input id="autoGroups" type="checkbox">DCAs and mute groups</label>
-      <span id="groupsList"></span>
-      <span id="groupsNote" class="status"></span>
-    </div>
-    <ul id="summary" class="summary"></ul>
-  </section>
-
-  <section>
-    <h2><span class="n">4</span>Patch</h2>
-    <p id="patchNote" class="hint"></p>
-    <div class="desk-row">
-      <label>Inputs start at<span class="patch-cell"><select id="inStartBank" aria-label="Input patch starts at bank"></select><input id="inStartPort" class="port" type="number" min="1" aria-label="Input patch starts at port"></span></label>
-      <label>Outputs start at<span class="patch-cell"><select id="outStartBank" aria-label="Output patch starts at bank"></select><input id="outStartPort" class="port" type="number" min="1" aria-label="Output patch starts at port"></span></label>
-      <label class="check" id="sendPatchRow"><input id="sendPatch" type="checkbox">Send the output patch to the desk</label>
-    </div>
-    <div id="rioBox" class="rio-box"></div>
-    <div class="patch-tables">
-      <div class="table-wrap"><table id="patchIn" class="patch-table"></table></div>
-      <div class="table-wrap"><table id="patchOut" class="patch-table"></table></div>
-    </div>
-  </section>
-
-  <section>
-    <h2><span class="n">5</span>Send to desk</h2>
-    <div class="desk-row">
-      <label>First channel<input id="firstChannel" type="number" min="1"></label>
-      <label>First mix<input id="firstMix" type="number" min="1"></label>
-      <label>Name length<input id="maxNameLength" type="number" min="4" max="32"></label>
-      <label class="check"><input id="setLevels" type="checkbox">Reset faders</label>
-      <label class="check"><input id="safeStart" type="checkbox">Safe start: head-amps at their lowest, every fader at -∞</label>
-    </div>
-    <div class="desk-row send-opts">
-      <label class="check"><input id="setGain" type="checkbox">Set gain and 48V <span id="gainNote" class="status"></span></label>
-      <label class="check"><input id="backupOn" type="checkbox">Back up the desk&#39;s current scene to scene</label>
-      <input id="backupScene" class="port" type="number" min="1" aria-label="Backup scene number">
-      <span id="backupNote" class="status">This overwrites that scene.</span>
-    </div>
-    <div class="desk-row send-opts">
-      <label class="check"><input id="onlyChanges" type="checkbox">Only send what&#39;s changed since the last push</label>
-      <button id="forgetPush">Send everything next time</button>
-      <span id="changesNote" class="status"></span>
-    </div>
-    <div id="confirmBox" class="confirm" hidden>
-      <span id="confirmText"></span>
-      <button id="confirmYes" class="primary">Send</button>
-      <button id="confirmNo">Cancel</button>
-    </div>
-    <div class="desk-row">
-      <button id="pushDesk" class="primary">Push show to desk</button>
-      <button id="verifyDesk">Check the desk</button>
-      <button id="resetDesk">Wipe simulated desk</button>
-      <button id="toggleCommands">Show commands</button>
-      <span id="status" class="status">In the real app this goes straight to the desk.</span>
-    </div>
-    <progress id="progress" value="0" max="1" hidden></progress>
-    <pre id="log" class="log" hidden></pre>
-  </section>
-
-  <section>
-    <h2><span class="n">6</span>Line check</h2>
-    <p id="lcNote" class="hint"></p>
-    <div class="desk-row"><span id="lcCount" class="status"></span><button id="lcClear">Clear ticks</button></div>
-    <div class="table-wrap"><table id="lcTable" class="patch-table"></table></div>
+    <section id="findPanel" class="panel find-panel" hidden>
+      <header class="panel-head">
+        <h2>On the network</h2>
+        <span id="findStatus" class="panel-meta" role="status"></span>
+        <div class="panel-tools">
+          <input id="findSubnet" class="subnet" placeholder="Other range: 192.168.1" inputmode="decimal" autocomplete="off" aria-label="Other network to scan">
+          <button id="findAgain" class="ghost" type="button">Scan</button>
+          <button id="findClose" class="icon" type="button" aria-label="Close">×</button>
+        </div>
+      </header>
+      <div class="panel-body"><div id="findList" class="find-list"></div></div>
     </section>
 
-  <section>
-    <h2><span class="n">7</span>Desk</h2>
-    <p class="hint">A pretend desk. It reads the same commands a real one gets. The lamps show where each channel goes: ST is Main L/R, numbers are mixes.</p>
-    <div class="surface">
-      <div class="surface-head"><span>Input channels</span><span id="deskModel"></span></div>
-      <div id="inputs" class="bank"></div>
-      <div class="surface-head"><span>Outputs</span></div>
-      <div id="outputs" class="bank outs"></div>
-      <div class="plate"><svg class="brand-word" width="160" height="24" role="img" aria-label="KobiKraken" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1237 186"><path fill="currentColor" fill-rule="evenodd" d="M194.0 184.9C170.0 180.3 153.0 163.7 146.4 138.5C143.7 127.9 143.9 108.0 146.8 97.6C150.3 85.4 154.7 77.4 162.4 69.3C188.7 41.4 237.9 46.5 257.3 79.1C265.0 92.1 268.6 110.5 266.9 127.6C265.2 144.4 259.6 157.1 249.1 168.3C236.1 182.1 214.0 188.8 194.0 184.9ZM345.2 184.9C335.2 183.0 325.2 176.4 318.8 167.6L316.0 163.7 L316.0 173.3L316.0 183.0 L303.5 183.0L291.0 183.0 L291.0 92.0L291.0 1.0 L303.5 1.0L316.0 1.0 L316.0 37.2L316.1 73.5 L318.2 70.5C336.2 45.6 377.8 46.2 397.2 71.7C419.4 100.9 415.6 153.3 389.7 174.1C377.5 183.9 360.7 188.0 345.2 184.9ZM1031.0 184.5C1009.4 179.6 993.1 163.3 986.8 140.3C983.8 129.2 983.8 108.8 986.8 97.7C990.1 85.7 995.3 76.6 1004.0 67.9C1018.3 53.5 1036.8 48.2 1057.5 52.5C1085.7 58.4 1104.0 83.8 1104.0 117.0L1104.0 126.0 L1057.0 126.0L1010.0 126.0 L1010.0 129.2C1010.1 141.7 1018.5 155.7 1029.1 160.8C1038.1 165.2 1053.8 165.2 1062.7 160.9C1068.4 158.2 1074.5 152.0 1076.2 147.4L1077.4 144.0 L1089.8 144.0L1102.2 144.0 L1101.6 147.2C1098.6 162.1 1084.3 176.6 1066.5 182.6C1056.5 185.9 1041.0 186.8 1031.0 184.5ZM759.5 183.5C750.6 181.6 744.1 178.2 738.4 172.5C731.2 165.3 728.6 158.4 728.6 146.0C728.5 137.6 728.9 135.8 731.3 130.8C738.2 116.8 750.7 111.1 784.0 107.0C803.9 104.6 807.5 103.6 809.6 100.4C812.0 96.8 811.1 88.2 807.7 83.2C800.5 72.3 779.1 69.9 766.0 78.6C761.6 81.5 757.0 88.3 757.0 91.8C757.0 93.9 756.6 94.0 744.7 94.0C737.9 94.0 732.1 93.8 731.8 93.5C730.8 92.5 733.2 82.5 735.6 77.7C740.9 67.3 750.5 59.6 763.8 55.2C770.5 53.0 773.3 52.7 785.0 52.6C800.0 52.5 806.0 53.8 816.3 59.2C826.5 64.7 833.7 74.7 836.0 87.0C836.6 90.0 837.0 111.3 837.0 137.6L837.0 183.0 L824.0 183.0L811.0 183.0 L811.0 173.8L811.0 164.5 L809.1 167.5C806.8 171.3 799.2 178.3 795.2 180.4C786.9 184.7 771.2 186.1 759.5 183.5ZM0.0 92.0L0.0 1.0 L13.5 1.0L27.0 1.0 L27.2 45.8L27.5 90.7 L37.4 79.6C42.8 73.5 61.0 53.3 77.8 34.8L108.3 1.0 L125.3 1.0L142.3 1.0 L140.4 3.2C137.6 6.4 78.3 71.8 74.3 76.1L70.8 79.8 L106.4 130.5C126.0 158.4 142.3 181.6 142.6 182.1C142.9 182.6 136.3 183.0 127.3 183.0L111.5 183.0 L82.4 141.2C66.3 118.3 52.8 99.5 52.2 99.5C51.6 99.5 45.7 105.5 39.1 112.9L27.0 126.2 L27.0 154.6L27.0 183.0 L13.5 183.0L0.0 183.0 L0.0 92.0ZM435.0 118.5L435.0 54.0 L447.5 54.0L460.0 54.0 L460.0 118.5L460.0 183.0 L447.5 183.0L435.0 183.0 L435.0 118.5ZM492.0 92.0L492.0 1.0 L505.5 1.0L519.0 1.0 L519.2 45.8L519.5 90.7 L529.4 79.6C534.8 73.5 553.0 53.3 569.8 34.8L600.3 1.0 L617.3 1.0L634.3 1.0 L632.4 3.2C629.6 6.4 570.3 71.8 566.3 76.1L562.8 79.8 L598.4 130.5C618.0 158.4 634.3 181.6 634.6 182.1C634.9 182.6 628.3 183.0 619.3 183.0L603.5 183.0 L574.4 141.2C558.3 118.3 544.8 99.5 544.2 99.5C543.6 99.5 537.7 105.5 531.1 112.9L519.0 126.2 L519.0 154.6L519.0 183.0 L505.5 183.0L492.0 183.0 L492.0 92.0ZM653.0 118.5L653.0 54.0 L665.0 54.0L677.0 54.0 L677.0 64.8L677.0 75.5 L680.1 70.0C686.5 58.3 694.1 53.8 708.7 53.2L718.0 52.8 L718.0 65.2L718.0 77.6 L711.8 76.9C704.6 76.2 696.4 77.2 692.3 79.3C688.8 81.2 683.7 86.6 681.7 90.5C678.5 97.0 678.0 104.0 678.0 143.5L678.0 183.0 L665.5 183.0L653.0 183.0 L653.0 118.5ZM867.0 92.0L867.0 1.0 L879.5 1.0L892.0 1.0 L892.0 55.2L892.0 109.5 L919.8 81.7L947.5 54.0 L963.4 54.0L979.2 54.0 L952.2 81.8L925.1 109.6 L949.2 140.1C962.4 156.8 975.5 173.3 978.2 176.8L983.2 183.0 L967.3 183.0L951.5 183.0 L928.5 154.0L905.5 125.0 L898.8 131.7L892.0 138.4 L892.0 160.7L892.0 183.0 L879.5 183.0L867.0 183.0 L867.0 92.0ZM1127.0 118.5L1127.0 54.0 L1139.5 54.0L1152.0 54.0 L1152.0 63.6L1152.0 73.2 L1156.0 68.2C1163.5 58.6 1173.9 53.3 1187.0 52.3C1206.1 50.8 1222.6 59.3 1230.9 75.0C1236.7 85.8 1237.0 89.0 1237.0 138.2L1237.0 183.0 L1224.5 183.0L1212.0 183.0 L1212.0 145.2C1211.9 103.0 1211.3 95.2 1207.3 87.9C1202.5 79.0 1191.7 74.1 1179.8 75.4C1164.8 76.9 1155.9 85.3 1153.1 100.5C1152.4 104.1 1152.0 121.3 1152.0 144.7L1152.0 183.0 L1139.5 183.0L1127.0 183.0 L1127.0 118.5ZM219.9 161.0C225.5 158.5 232.7 151.5 235.9 145.2C243.1 131.1 243.1 105.8 235.9 91.8C227.7 75.7 208.6 68.9 191.8 76.2C186.5 78.4 179.2 85.7 176.2 91.6C170.7 102.3 168.8 121.4 171.9 134.0C175.7 149.5 184.8 159.7 197.7 163.0C203.4 164.4 214.1 163.4 219.9 161.0ZM363.2 161.5C377.3 156.6 385.4 141.1 385.4 119.0C385.4 107.0 383.9 99.6 379.9 91.7C368.8 70.0 337.7 68.1 323.2 88.2C318.0 95.6 315.8 103.0 315.2 115.3C314.7 127.4 316.0 136.0 319.6 143.5C327.6 160.5 345.2 167.7 363.2 161.5ZM794.5 161.1C800.5 158.5 805.4 153.9 808.3 148.5C810.0 145.2 810.5 142.3 810.8 132.3L811.2 120.2 L806.9 121.6C804.6 122.4 798.1 123.8 792.6 124.7C763.5 129.1 754.0 134.5 754.0 146.5C754.0 154.0 758.3 159.5 766.6 162.6C772.6 164.8 788.1 164.0 794.5 161.1ZM1078.6 101.8C1076.2 86.8 1064.6 75.1 1050.3 73.2C1029.8 70.5 1014.3 81.8 1010.5 102.3L1009.8 106.0 L1044.5 106.0L1079.3 106.0 L1078.6 101.8ZM443.4 31.0C435.6 29.2 430.1 21.1 431.3 13.4C432.5 6.2 439.8 -0.0 447.2 0.0C451.5 0.1 458.3 3.2 460.4 6.1C465.2 13.0 464.4 21.7 458.5 26.9C455.7 29.4 449.0 32.3 447.0 31.9C446.7 31.8 445.1 31.5 443.4 31.0Z"/></svg></div>
+    <div id="tab-desk" role="tabpanel" aria-labelledby="tabBtn-desk" class="tab">
+      <div class="connect-bar" role="group" aria-label="Desk connection">
+        <span class="field-label">Desk</span>
+        <input id="host" placeholder="192.168.0.128" inputmode="decimal" autocomplete="off" aria-label="Desk IP address">
+        <input id="port" class="port" type="number" value="49280" aria-label="Port">
+        <button id="connectBtn" class="primary" type="button">Connect</button>
+        <span id="linkStatus" class="status" role="status"></span>
+      </div>
+
+      <div class="cols">
+        <section class="panel" id="inputsPanel">
+          <header class="panel-head"><span class="step">01</span><h2>Inputs</h2><span id="inMeta" class="panel-meta"></span>
+            <div class="panel-tools"><label class="stepper" title="How many to add"><span>×</span><input id="addCount" type="number" min="1" max="32" value="1" aria-label="How many to add"></label></div>
+          </header>
+          <div class="panel-body">
+            <div id="addButtons" class="chip-groups"></div>
+            <div class="typein">
+              <div class="type-field">
+                <input id="typeText" placeholder="Type it: full band, 4 wedges, 2 handhelds" aria-label="Type what you need" autocomplete="off">
+                <button id="typeGo" class="ghost" type="button">Add</button>
+              </div>
+              <span id="wordsTip"></span>
+              <button id="pasteToggle" class="link" type="button" aria-expanded="false">Paste input list</button>
+            </div>
+            <div id="pasteBox" class="paste" hidden>
+              <textarea id="pasteText" rows="6" aria-label="Input list" placeholder="1  Kick In  Beta 91&#10;2  Snare Top  SM57&#10;3  OH L  KM184  48V&#10;4  OH R  KM184  48V"></textarea>
+              <div class="row"><span id="pasteOrder"></span><button id="pasteGo" class="ghost" type="button">Read list</button></div>
+            </div>
+            <div id="typePreview" class="preview" hidden>
+              <ul id="typeList" class="pills"></ul>
+              <div class="row"><span id="typeSummary" class="muted"></span><span class="grow"></span><button id="typeDiscard" class="ghost" type="button">Discard</button><button id="typeAdd" class="primary" type="button">Add to show</button></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="outputsPanel">
+          <header class="panel-head"><span class="step">02</span><h2>Outputs</h2><span id="outMeta" class="panel-meta"></span></header>
+          <div class="panel-body">
+            <div id="zoneButtons" class="chip-groups"></div>
+            <div class="row"><button id="pairMon" class="ghost" type="button">Pair singers with monitors</button></div>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel grid-panel">
+        <header class="panel-head"><span class="step">03</span><h2>Routing</h2><span id="routeMeta" class="panel-meta"></span>
+          <div class="panel-tools" id="routeTools"></div>
+        </header>
+        <div class="panel-body">
+          <div class="table-wrap"><table id="grid" class="grid"></table></div>
+          <div class="routing-foot"><div id="groupsList" class="groups"></div><ul id="warnings" class="warnings"></ul></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head"><span class="step">04</span><h2>Patch</h2><span id="patchMeta" class="panel-meta"></span>
+          <div class="panel-tools" id="patchTools">
+            <label class="mini">In from <select id="inStartBank" aria-label="Inputs start at"></select><input id="inStartPort" class="port" type="number" min="1" aria-label="Input start socket"></label>
+            <label class="mini">Out from <select id="outStartBank" aria-label="Outputs start at"></select><input id="outStartPort" class="port" type="number" min="1" aria-label="Output start socket"></label>
+            <span id="sendPatchRow"></span>
+          </div>
+        </header>
+        <div class="panel-body">
+          <div id="rioBox" class="rio-box"></div>
+          <div class="patch-tables">
+            <div class="table-wrap"><table id="patchIn"></table></div>
+            <div class="table-wrap"><table id="patchOut"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="sendPanel">
+        <header class="panel-head"><span class="step">05</span><h2>Send to desk</h2><span id="sendMeta" class="panel-meta"></span></header>
+        <div class="panel-body">
+          <div class="settings" id="sendSettings"></div>
+          <div id="pushAsk" class="ask-host"></div>
+          <div class="actionbar">
+            <button id="pushDesk" class="primary big" type="button">Send to desk</button>
+            <button id="verifyDesk" class="ghost" type="button">Check desk</button>
+            <button id="toggleCommands" class="ghost" type="button">Commands</button>
+            <span id="status" class="status" role="status"></span>
+          </div>
+          <progress id="progress" value="0" max="1" hidden></progress>
+          <pre id="log" class="log" hidden></pre>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head"><span class="step">06</span><h2>Line check</h2><span id="lcCount" class="panel-meta"></span>
+          <div class="panel-tools"><span id="lcNote"></span><button id="lcClear" class="ghost small" type="button">Clear</button></div>
+        </header>
+        <div class="panel-body"><div class="table-wrap"><table id="lcTable"></table></div></div>
+      </section>
     </div>
-  </section>
+
+    <div id="tab-amps" role="tabpanel" aria-labelledby="tabBtn-amps" class="tab" hidden><div id="ampsMain"></div></div>
+    <div id="tab-rf" role="tabpanel" aria-labelledby="tabBtn-rf" class="tab" hidden><div id="rfMain"></div></div>
+
+    <footer class="maker"><svg class="brand-word" width="160" height="24" role="img" aria-label="KobiKraken" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1237 186"><path fill="currentColor" fill-rule="evenodd" d="M194.0 184.9C170.0 180.3 153.0 163.7 146.4 138.5C143.7 127.9 143.9 108.0 146.8 97.6C150.3 85.4 154.7 77.4 162.4 69.3C188.7 41.4 237.9 46.5 257.3 79.1C265.0 92.1 268.6 110.5 266.9 127.6C265.2 144.4 259.6 157.1 249.1 168.3C236.1 182.1 214.0 188.8 194.0 184.9ZM345.2 184.9C335.2 183.0 325.2 176.4 318.8 167.6L316.0 163.7 L316.0 173.3L316.0 183.0 L303.5 183.0L291.0 183.0 L291.0 92.0L291.0 1.0 L303.5 1.0L316.0 1.0 L316.0 37.2L316.1 73.5 L318.2 70.5C336.2 45.6 377.8 46.2 397.2 71.7C419.4 100.9 415.6 153.3 389.7 174.1C377.5 183.9 360.7 188.0 345.2 184.9ZM1031.0 184.5C1009.4 179.6 993.1 163.3 986.8 140.3C983.8 129.2 983.8 108.8 986.8 97.7C990.1 85.7 995.3 76.6 1004.0 67.9C1018.3 53.5 1036.8 48.2 1057.5 52.5C1085.7 58.4 1104.0 83.8 1104.0 117.0L1104.0 126.0 L1057.0 126.0L1010.0 126.0 L1010.0 129.2C1010.1 141.7 1018.5 155.7 1029.1 160.8C1038.1 165.2 1053.8 165.2 1062.7 160.9C1068.4 158.2 1074.5 152.0 1076.2 147.4L1077.4 144.0 L1089.8 144.0L1102.2 144.0 L1101.6 147.2C1098.6 162.1 1084.3 176.6 1066.5 182.6C1056.5 185.9 1041.0 186.8 1031.0 184.5ZM759.5 183.5C750.6 181.6 744.1 178.2 738.4 172.5C731.2 165.3 728.6 158.4 728.6 146.0C728.5 137.6 728.9 135.8 731.3 130.8C738.2 116.8 750.7 111.1 784.0 107.0C803.9 104.6 807.5 103.6 809.6 100.4C812.0 96.8 811.1 88.2 807.7 83.2C800.5 72.3 779.1 69.9 766.0 78.6C761.6 81.5 757.0 88.3 757.0 91.8C757.0 93.9 756.6 94.0 744.7 94.0C737.9 94.0 732.1 93.8 731.8 93.5C730.8 92.5 733.2 82.5 735.6 77.7C740.9 67.3 750.5 59.6 763.8 55.2C770.5 53.0 773.3 52.7 785.0 52.6C800.0 52.5 806.0 53.8 816.3 59.2C826.5 64.7 833.7 74.7 836.0 87.0C836.6 90.0 837.0 111.3 837.0 137.6L837.0 183.0 L824.0 183.0L811.0 183.0 L811.0 173.8L811.0 164.5 L809.1 167.5C806.8 171.3 799.2 178.3 795.2 180.4C786.9 184.7 771.2 186.1 759.5 183.5ZM0.0 92.0L0.0 1.0 L13.5 1.0L27.0 1.0 L27.2 45.8L27.5 90.7 L37.4 79.6C42.8 73.5 61.0 53.3 77.8 34.8L108.3 1.0 L125.3 1.0L142.3 1.0 L140.4 3.2C137.6 6.4 78.3 71.8 74.3 76.1L70.8 79.8 L106.4 130.5C126.0 158.4 142.3 181.6 142.6 182.1C142.9 182.6 136.3 183.0 127.3 183.0L111.5 183.0 L82.4 141.2C66.3 118.3 52.8 99.5 52.2 99.5C51.6 99.5 45.7 105.5 39.1 112.9L27.0 126.2 L27.0 154.6L27.0 183.0 L13.5 183.0L0.0 183.0 L0.0 92.0ZM435.0 118.5L435.0 54.0 L447.5 54.0L460.0 54.0 L460.0 118.5L460.0 183.0 L447.5 183.0L435.0 183.0 L435.0 118.5ZM492.0 92.0L492.0 1.0 L505.5 1.0L519.0 1.0 L519.2 45.8L519.5 90.7 L529.4 79.6C534.8 73.5 553.0 53.3 569.8 34.8L600.3 1.0 L617.3 1.0L634.3 1.0 L632.4 3.2C629.6 6.4 570.3 71.8 566.3 76.1L562.8 79.8 L598.4 130.5C618.0 158.4 634.3 181.6 634.6 182.1C634.9 182.6 628.3 183.0 619.3 183.0L603.5 183.0 L574.4 141.2C558.3 118.3 544.8 99.5 544.2 99.5C543.6 99.5 537.7 105.5 531.1 112.9L519.0 126.2 L519.0 154.6L519.0 183.0 L505.5 183.0L492.0 183.0 L492.0 92.0ZM653.0 118.5L653.0 54.0 L665.0 54.0L677.0 54.0 L677.0 64.8L677.0 75.5 L680.1 70.0C686.5 58.3 694.1 53.8 708.7 53.2L718.0 52.8 L718.0 65.2L718.0 77.6 L711.8 76.9C704.6 76.2 696.4 77.2 692.3 79.3C688.8 81.2 683.7 86.6 681.7 90.5C678.5 97.0 678.0 104.0 678.0 143.5L678.0 183.0 L665.5 183.0L653.0 183.0 L653.0 118.5ZM867.0 92.0L867.0 1.0 L879.5 1.0L892.0 1.0 L892.0 55.2L892.0 109.5 L919.8 81.7L947.5 54.0 L963.4 54.0L979.2 54.0 L952.2 81.8L925.1 109.6 L949.2 140.1C962.4 156.8 975.5 173.3 978.2 176.8L983.2 183.0 L967.3 183.0L951.5 183.0 L928.5 154.0L905.5 125.0 L898.8 131.7L892.0 138.4 L892.0 160.7L892.0 183.0 L879.5 183.0L867.0 183.0 L867.0 92.0ZM1127.0 118.5L1127.0 54.0 L1139.5 54.0L1152.0 54.0 L1152.0 63.6L1152.0 73.2 L1156.0 68.2C1163.5 58.6 1173.9 53.3 1187.0 52.3C1206.1 50.8 1222.6 59.3 1230.9 75.0C1236.7 85.8 1237.0 89.0 1237.0 138.2L1237.0 183.0 L1224.5 183.0L1212.0 183.0 L1212.0 145.2C1211.9 103.0 1211.3 95.2 1207.3 87.9C1202.5 79.0 1191.7 74.1 1179.8 75.4C1164.8 76.9 1155.9 85.3 1153.1 100.5C1152.4 104.1 1152.0 121.3 1152.0 144.7L1152.0 183.0 L1139.5 183.0L1127.0 183.0 L1127.0 118.5ZM219.9 161.0C225.5 158.5 232.7 151.5 235.9 145.2C243.1 131.1 243.1 105.8 235.9 91.8C227.7 75.7 208.6 68.9 191.8 76.2C186.5 78.4 179.2 85.7 176.2 91.6C170.7 102.3 168.8 121.4 171.9 134.0C175.7 149.5 184.8 159.7 197.7 163.0C203.4 164.4 214.1 163.4 219.9 161.0ZM363.2 161.5C377.3 156.6 385.4 141.1 385.4 119.0C385.4 107.0 383.9 99.6 379.9 91.7C368.8 70.0 337.7 68.1 323.2 88.2C318.0 95.6 315.8 103.0 315.2 115.3C314.7 127.4 316.0 136.0 319.6 143.5C327.6 160.5 345.2 167.7 363.2 161.5ZM794.5 161.1C800.5 158.5 805.4 153.9 808.3 148.5C810.0 145.2 810.5 142.3 810.8 132.3L811.2 120.2 L806.9 121.6C804.6 122.4 798.1 123.8 792.6 124.7C763.5 129.1 754.0 134.5 754.0 146.5C754.0 154.0 758.3 159.5 766.6 162.6C772.6 164.8 788.1 164.0 794.5 161.1ZM1078.6 101.8C1076.2 86.8 1064.6 75.1 1050.3 73.2C1029.8 70.5 1014.3 81.8 1010.5 102.3L1009.8 106.0 L1044.5 106.0L1079.3 106.0 L1078.6 101.8ZM443.4 31.0C435.6 29.2 430.1 21.1 431.3 13.4C432.5 6.2 439.8 -0.0 447.2 0.0C451.5 0.1 458.3 3.2 460.4 6.1C465.2 13.0 464.4 21.7 458.5 26.9C455.7 29.4 449.0 32.3 447.0 31.9C446.7 31.8 445.1 31.5 443.4 31.0Z"/></svg><span class="foot-meta"><span id="footProduct"></span><span class="foot-sep">·</span><span id="footLicence"></span></span></footer>
   </div>
-  <div id="tab-amps" role="tabpanel" aria-labelledby="tabBtn-amps" hidden><div id="ampsMain"></div></div>
-  <div id="tab-rf" role="tabpanel" aria-labelledby="tabBtn-rf" hidden><div id="rfMain"></div></div>
-  <footer class="maker"><svg class="brand-word" width="160" height="24" role="img" aria-label="KobiKraken" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1237 186"><path fill="currentColor" fill-rule="evenodd" d="M194.0 184.9C170.0 180.3 153.0 163.7 146.4 138.5C143.7 127.9 143.9 108.0 146.8 97.6C150.3 85.4 154.7 77.4 162.4 69.3C188.7 41.4 237.9 46.5 257.3 79.1C265.0 92.1 268.6 110.5 266.9 127.6C265.2 144.4 259.6 157.1 249.1 168.3C236.1 182.1 214.0 188.8 194.0 184.9ZM345.2 184.9C335.2 183.0 325.2 176.4 318.8 167.6L316.0 163.7 L316.0 173.3L316.0 183.0 L303.5 183.0L291.0 183.0 L291.0 92.0L291.0 1.0 L303.5 1.0L316.0 1.0 L316.0 37.2L316.1 73.5 L318.2 70.5C336.2 45.6 377.8 46.2 397.2 71.7C419.4 100.9 415.6 153.3 389.7 174.1C377.5 183.9 360.7 188.0 345.2 184.9ZM1031.0 184.5C1009.4 179.6 993.1 163.3 986.8 140.3C983.8 129.2 983.8 108.8 986.8 97.7C990.1 85.7 995.3 76.6 1004.0 67.9C1018.3 53.5 1036.8 48.2 1057.5 52.5C1085.7 58.4 1104.0 83.8 1104.0 117.0L1104.0 126.0 L1057.0 126.0L1010.0 126.0 L1010.0 129.2C1010.1 141.7 1018.5 155.7 1029.1 160.8C1038.1 165.2 1053.8 165.2 1062.7 160.9C1068.4 158.2 1074.5 152.0 1076.2 147.4L1077.4 144.0 L1089.8 144.0L1102.2 144.0 L1101.6 147.2C1098.6 162.1 1084.3 176.6 1066.5 182.6C1056.5 185.9 1041.0 186.8 1031.0 184.5ZM759.5 183.5C750.6 181.6 744.1 178.2 738.4 172.5C731.2 165.3 728.6 158.4 728.6 146.0C728.5 137.6 728.9 135.8 731.3 130.8C738.2 116.8 750.7 111.1 784.0 107.0C803.9 104.6 807.5 103.6 809.6 100.4C812.0 96.8 811.1 88.2 807.7 83.2C800.5 72.3 779.1 69.9 766.0 78.6C761.6 81.5 757.0 88.3 757.0 91.8C757.0 93.9 756.6 94.0 744.7 94.0C737.9 94.0 732.1 93.8 731.8 93.5C730.8 92.5 733.2 82.5 735.6 77.7C740.9 67.3 750.5 59.6 763.8 55.2C770.5 53.0 773.3 52.7 785.0 52.6C800.0 52.5 806.0 53.8 816.3 59.2C826.5 64.7 833.7 74.7 836.0 87.0C836.6 90.0 837.0 111.3 837.0 137.6L837.0 183.0 L824.0 183.0L811.0 183.0 L811.0 173.8L811.0 164.5 L809.1 167.5C806.8 171.3 799.2 178.3 795.2 180.4C786.9 184.7 771.2 186.1 759.5 183.5ZM0.0 92.0L0.0 1.0 L13.5 1.0L27.0 1.0 L27.2 45.8L27.5 90.7 L37.4 79.6C42.8 73.5 61.0 53.3 77.8 34.8L108.3 1.0 L125.3 1.0L142.3 1.0 L140.4 3.2C137.6 6.4 78.3 71.8 74.3 76.1L70.8 79.8 L106.4 130.5C126.0 158.4 142.3 181.6 142.6 182.1C142.9 182.6 136.3 183.0 127.3 183.0L111.5 183.0 L82.4 141.2C66.3 118.3 52.8 99.5 52.2 99.5C51.6 99.5 45.7 105.5 39.1 112.9L27.0 126.2 L27.0 154.6L27.0 183.0 L13.5 183.0L0.0 183.0 L0.0 92.0ZM435.0 118.5L435.0 54.0 L447.5 54.0L460.0 54.0 L460.0 118.5L460.0 183.0 L447.5 183.0L435.0 183.0 L435.0 118.5ZM492.0 92.0L492.0 1.0 L505.5 1.0L519.0 1.0 L519.2 45.8L519.5 90.7 L529.4 79.6C534.8 73.5 553.0 53.3 569.8 34.8L600.3 1.0 L617.3 1.0L634.3 1.0 L632.4 3.2C629.6 6.4 570.3 71.8 566.3 76.1L562.8 79.8 L598.4 130.5C618.0 158.4 634.3 181.6 634.6 182.1C634.9 182.6 628.3 183.0 619.3 183.0L603.5 183.0 L574.4 141.2C558.3 118.3 544.8 99.5 544.2 99.5C543.6 99.5 537.7 105.5 531.1 112.9L519.0 126.2 L519.0 154.6L519.0 183.0 L505.5 183.0L492.0 183.0 L492.0 92.0ZM653.0 118.5L653.0 54.0 L665.0 54.0L677.0 54.0 L677.0 64.8L677.0 75.5 L680.1 70.0C686.5 58.3 694.1 53.8 708.7 53.2L718.0 52.8 L718.0 65.2L718.0 77.6 L711.8 76.9C704.6 76.2 696.4 77.2 692.3 79.3C688.8 81.2 683.7 86.6 681.7 90.5C678.5 97.0 678.0 104.0 678.0 143.5L678.0 183.0 L665.5 183.0L653.0 183.0 L653.0 118.5ZM867.0 92.0L867.0 1.0 L879.5 1.0L892.0 1.0 L892.0 55.2L892.0 109.5 L919.8 81.7L947.5 54.0 L963.4 54.0L979.2 54.0 L952.2 81.8L925.1 109.6 L949.2 140.1C962.4 156.8 975.5 173.3 978.2 176.8L983.2 183.0 L967.3 183.0L951.5 183.0 L928.5 154.0L905.5 125.0 L898.8 131.7L892.0 138.4 L892.0 160.7L892.0 183.0 L879.5 183.0L867.0 183.0 L867.0 92.0ZM1127.0 118.5L1127.0 54.0 L1139.5 54.0L1152.0 54.0 L1152.0 63.6L1152.0 73.2 L1156.0 68.2C1163.5 58.6 1173.9 53.3 1187.0 52.3C1206.1 50.8 1222.6 59.3 1230.9 75.0C1236.7 85.8 1237.0 89.0 1237.0 138.2L1237.0 183.0 L1224.5 183.0L1212.0 183.0 L1212.0 145.2C1211.9 103.0 1211.3 95.2 1207.3 87.9C1202.5 79.0 1191.7 74.1 1179.8 75.4C1164.8 76.9 1155.9 85.3 1153.1 100.5C1152.4 104.1 1152.0 121.3 1152.0 144.7L1152.0 183.0 L1139.5 183.0L1127.0 183.0 L1127.0 118.5ZM219.9 161.0C225.5 158.5 232.7 151.5 235.9 145.2C243.1 131.1 243.1 105.8 235.9 91.8C227.7 75.7 208.6 68.9 191.8 76.2C186.5 78.4 179.2 85.7 176.2 91.6C170.7 102.3 168.8 121.4 171.9 134.0C175.7 149.5 184.8 159.7 197.7 163.0C203.4 164.4 214.1 163.4 219.9 161.0ZM363.2 161.5C377.3 156.6 385.4 141.1 385.4 119.0C385.4 107.0 383.9 99.6 379.9 91.7C368.8 70.0 337.7 68.1 323.2 88.2C318.0 95.6 315.8 103.0 315.2 115.3C314.7 127.4 316.0 136.0 319.6 143.5C327.6 160.5 345.2 167.7 363.2 161.5ZM794.5 161.1C800.5 158.5 805.4 153.9 808.3 148.5C810.0 145.2 810.5 142.3 810.8 132.3L811.2 120.2 L806.9 121.6C804.6 122.4 798.1 123.8 792.6 124.7C763.5 129.1 754.0 134.5 754.0 146.5C754.0 154.0 758.3 159.5 766.6 162.6C772.6 164.8 788.1 164.0 794.5 161.1ZM1078.6 101.8C1076.2 86.8 1064.6 75.1 1050.3 73.2C1029.8 70.5 1014.3 81.8 1010.5 102.3L1009.8 106.0 L1044.5 106.0L1079.3 106.0 L1078.6 101.8ZM443.4 31.0C435.6 29.2 430.1 21.1 431.3 13.4C432.5 6.2 439.8 -0.0 447.2 0.0C451.5 0.1 458.3 3.2 460.4 6.1C465.2 13.0 464.4 21.7 458.5 26.9C455.7 29.4 449.0 32.3 447.0 31.9C446.7 31.8 445.1 31.5 443.4 31.0Z"/></svg><span class="foot-meta"><span id="footProduct"></span><span class="foot-sep">·</span><span id="footLicence"></span></span></footer>
-</div>
-
-<script type="module">
-import { LICENCE, PRODUCT, VERSION } from './about.js';
-import { rigPaperwork } from './rig.js';
-import { mountRig } from './rig-ui.js';
-import {
-  applyTemplate, changedCommands, cueCommand, deskCaps, gainOf, makeTemplate, monitorShow, pairMonitors, paperwork, parseInputList, phantomOf,
-  rememberPush, sceneStoreCommand,
-} from './plan.js';
-import { patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
-
-// SkyBlue and Pink are what a TF desk calls Cyan and Magenta
-const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', SkyBlue: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Pink: '#ff4fd8', Purple: '#9b6bff' };
-const $ = (id) => document.getElementById(id);
-const STORE = 'yamaha-show-builder-demo';
-
-function exampleShow() {
-  const s = defaultShow();
-  s.name = 'Conference, Hall A';
-  s.options.model = 'TF5';
-  return s;
-}
-let show = load() || exampleShow();
-let showCommands = false;
-let pushing = false;
-
-function load() { try { return JSON.parse(localStorage.getItem(STORE)); } catch { return null; } }
-function save() { try { localStorage.setItem(STORE, JSON.stringify(show)); } catch { /* storage off: fine */ } }
-function el(tag, props = {}, ...children) {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k.includes('-') || k === 'list') node.setAttribute(k, v); // aria-* and list are attributes only
-    else node[k] = v;
-  }
-  node.append(...children.filter((c) => c != null && c !== false));
-  return node;
-}
-function colorSelect(color, onChange) {
-  const value = normalizeColor(color);
-  const sel = el('select', { title: 'Colour', onchange: (e) => onChange(e.target.value) },
-    ...COLORS.map((c) => el('option', { value: c, textContent: c, selected: c === value })));
-  sel.style.borderLeft = `6px solid ${SWATCH[value]}`;
-  return sel;
-}
-
-// ---- builder ----
-function render() {
-  if (show.options.autoOrder !== false) show.sources = orderSources(show.sources);
-  const plan = buildPlan(show);
-  const model = MODELS[show.options.model] || MODELS.custom;
-  $('showName').value = show.name;
-  $('model').value = MODELS[show.options.model] ? show.options.model : 'custom';
-  $('maxLen').textContent = show.options.maxNameLength;
-  for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) $(k).value = show.options[k];
-  $('setLevels').checked = show.options.setLevels;
-  $('safeStart').checked = show.options.safeStart !== false;
-  $('autoOrder').checked = show.options.autoOrder !== false;
-
-  const busLabel = (zone) => {
-    if (zone.type === 'main') return 'Stereo';
-    const m = plan.mixes.find((x) => x.zone === zone);
-    return m.stereo ? `Mix ${m.mix}/${m.mix + 1}` : `Mix ${m.mix}`;
-  };
-  const head = el('tr', {},
-    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }), el('th', { textContent: 'Gain target dB', title: 'Safe start sends the lowest gain; bring it up to this at line check' }), el('th', { textContent: '48V' }), el('th', { className: 'zone all-col', textContent: 'All' }),
-    ...show.zones.map((zone) => el('th', { className: 'zone' },
-      el('input', { value: zone.name, 'aria-label': 'Zone name', onchange: (e) => update(() => { zone.name = e.target.value; }) }),
-      el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: `Remove ${zone.name}`, textContent: '×', onclick: () => update(() => removeZone(zone)) })),
-      zone.type === 'main' ? el('small', { textContent: 'Post' }) : el('button', {
-        className: `send-point ${sendOf(zone)}`, textContent: sendOf(zone) === 'pre' ? 'Pre' : 'Post',
-        title: 'Click to switch every send to this output between pre and post fade.',
-        onclick: () => update(() => { zone.send = sendOf(zone) === 'pre' ? 'post' : 'pre'; }),
-      }))),
-    el('th'));
-  const rows = show.sources.map((source) => {
-    const chs = plan.channels.filter((c) => c.source === source).map((c) => c.ch);
-    return el('tr', {},
-      el('td', { className: 'ch', textContent: chs.length > 1 ? `${chs[0]}–${chs[1]}` : chs[0] }),
-      el('td', {}, colorSelect(source.color, (v) => update(() => { source.color = v; }))),
-      el('td', { className: 'name' }, el('input', { value: source.name, 'aria-label': 'Input name', onchange: (e) => update(() => { source.name = e.target.value; }) })),
-      el('td', {}, el('select', { 'aria-label': 'Input type', onchange: (e) => update(() => changeType(source, e.target.value)) },
-        ...Object.entries(SOURCE_TYPES).map(([k, t]) => el('option', { value: k, textContent: t.label + (t.stereo ? ' (st)' : ''), selected: k === source.type })))),
-      el('td', { className: 'route' }, el('input', {
-        type: 'checkbox', checked: source.stereo, 'aria-label': 'Stereo: takes two channels, L and R',
-        onchange: (e) => update(() => { source.stereo = e.target.checked; }),
-      })),
-      el('td', { className: 'hpf' }, el('input', {
-        type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', 'aria-label': 'High-pass filter in Hz. Leave it blank for off.',
-        onchange: (e) => update(() => { source.hpf = Math.max(0, Math.round(Number(e.target.value) || 0)); }),
-      })),
-      el('td', { className: 'gain' }, el('input', {
-        type: 'number', min: -6, max: 66, step: 1, value: gainOf(source), 'aria-label': 'Head-amp gain in dB',
-        onchange: (e) => update(() => { source.gain = Math.min(66, Math.max(-6, Math.round(Number(e.target.value) || 0))); }),
-      })),
-      el('td', { className: 'route' }, el('input', {
-        type: 'checkbox', checked: phantomOf(source), 'aria-label': '48V phantom power',
-        onchange: (e) => update(() => { source.phantom = e.target.checked; }),
-      })),
-      el('td', { className: 'route all-col' }, el('input', {
-        type: 'checkbox', checked: show.zones.length > 0 && show.zones.every((z) => source.zones.includes(z.id)),
-        'aria-label': `${source.name} to every output`, title: 'Send to every output',
-        onchange: (e) => update(() => { source.zones = e.target.checked ? show.zones.map((z) => z.id) : []; }),
-      })),
-      ...show.zones.map((zone) => el('td', { className: 'route' }, el('input', {
-        type: 'checkbox', checked: source.zones.includes(zone.id), title: `${source.name} → ${zone.name}`,
-        onchange: (e) => update(() => { source.zones = e.target.checked ? [...source.zones, zone.id] : source.zones.filter((z) => z !== zone.id); }),
-      }))),
-      el('td', {}, ...moveButtons(source),
-        el('button', { className: 'remove', title: `Remove ${source.name}`, textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
-  });
-  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 10, textContent: 'Nothing here yet. Add some inputs above.' }));
-  $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty));
-
-  const of = (n) => (n ? ` of ${n}` : '');
-  $('summary').replaceChildren(
-    el('li', { className: 'count', textContent: `${plan.channels.length}${of(model.inputs)} input channels · ${plan.mixes.length}${of(model.mixes)} mixes · ${plan.commands.length} commands` }),
-    plan.spares.length > 0 && el('li', { className: 'count', textContent: `Ch ${plan.spares.join(', ')} left empty so stereo pairs start on an odd channel` }),
-    ...[...new Set(plan.warnings)].map((w) => el('li', { className: 'warn', textContent: w })));
-  if (showCommands && !pushing) { $('log').hidden = false; $('log').textContent = plan.commands.join('\n'); }
-  $('deskModel').textContent = model.inputs ? model.label : '';
-  renderPatch(plan, model);
-  renderGroups(plan, model);
-  renderSendOptions(plan, model);
-  renderLineCheck(plan, model);
-  rigUi.renderRios($('rioBox'));
-  if (activeTab === 'amps') rigUi.renderAmps($('ampsMain'));
-  if (activeTab === 'rf') rigUi.renderRf($('rfMain'));
-  save();
-}
-function update(fn) { fn(); render(); }
-function moveButtons(source) {
-  if (show.options.autoOrder !== false) return [];
-  const move = (step) => update(() => {
-    const i = show.sources.indexOf(source);
-    const j = i + step;
-    if (j < 0 || j >= show.sources.length) return;
-    [show.sources[i], show.sources[j]] = [show.sources[j], show.sources[i]];
-  });
-  return [
-    el('button', { className: 'remove', title: 'Move up', textContent: '↑', onclick: () => move(-1) }),
-    el('button', { className: 'remove', title: 'Move down', textContent: '↓', onclick: () => move(1) }),
-  ];
-}
-function removeZone(zone) {
-  show.zones = show.zones.filter((z) => z !== zone);
-  for (const s of show.sources) s.zones = s.zones.filter((z) => z !== zone.id);
-}
-function changeType(source, type) {
-  const t = SOURCE_TYPES[type];
-  Object.assign(source, { type, stereo: t.stereo, color: t.color, hpf: t.hpf, gain: t.gain, phantom: t.phantom });
-  source.zones = show.zones.filter((z) => ZONE_TYPES[z.type].takes.includes(t.category)).map((z) => z.id);
-}
-function addZone(type) {
-  if (type === 'main' && show.zones.some((z) => z.type === 'main')) return setStatus("You've already got a Main L/R.", 'bad');
-  const zone = makeZone(type, nextZoneName(show, type));
-  if (type === 'main') show.zones.unshift(zone); else show.zones.push(zone);
-  for (const s of show.sources) if (ZONE_TYPES[type].takes.includes(SOURCE_TYPES[s.type].category)) s.zones.push(zone.id);
-}
-function setStatus(text, kind = '') { $('status').textContent = text; $('status').className = `status ${kind}`; }
-
-// ---- simulated desk: applies the same RCP lines a real desk receives ----
-let desk;
-function wipeDesk() { desk = { inCh: {}, mix: {}, st: { name: '' }, sendPoint: {}, outPatch: {}, solo: null }; }
-function applyCommand(line) {
-  const m = /^set MIXER:Current\/(\w+)\/(.+?) (\d+) (\d+) (.+)$/.exec(line);
-  if (!m) return false;
-  const [, kind, param, xs, ys, raw] = m;
-  const x = Number(xs), y = Number(ys);
-  const v = raw.startsWith('"') ? raw.slice(1, -1) : isNaN(raw) ? raw : Number(raw);
-  if (param === 'Patch') {
-    const port = kind === 'OmniOutPort' ? `Omni ${x + 1}` : kind === 'DanteOutPort' ? `Dante ${x + 1}` : `Card ${kind.replace(/\D/g, '')} ${y + 1}`;
-    (desk.outPatch[v] ||= []).push(port);
-    return true;
-  }
-  if (kind === 'St') { if (param === 'Label/Name') desk.st.name = v; return true; }
-  if (kind === 'Cue') { if (param === 'InCh/On') desk.solo = v ? x : desk.solo === x ? null : desk.solo; return true; }
-  if (kind !== 'InCh' && kind !== 'Mix') return true; // DCAs and mute groups: the pretend desk doesn't draw them
-  const bank = kind === 'InCh' ? desk.inCh : desk.mix;
-  const c = (bank[x] ||= { name: '', color: null, level: null, toSt: 0, toMix: {}, hpfOn: 0, hpf: 0 });
-  if (param === 'Label/Name') c.name = v;
-  else if (param === 'Label/Color') c.color = v;
-  else if (param === 'Fader/Level') c.level = v;
-  else if (param === 'ToSt/On') c.toSt = v;
-  else if (param === 'HPF/On') c.hpfOn = v;
-  else if (param === 'HPF/Freq') c.hpf = v / 10;
-  else if (param === 'Port/HA/Gain') c.gain = Math.abs(v) > 100 ? v / 100 : v;
-  else if (param === 'ToMix/On') c.toMix[y] = v;
-  else if (param === 'ToMix/PrePost') desk.sendPoint[y] = v;
-  return x;
-}
-const dbText = (v) => v == null ? '' : v <= -32768 ? '-∞' : `${(v / 100).toFixed(1)} dB`;
-const capPos = (v) => v == null ? 70 : v <= -32768 ? 0 : Math.max(0, Math.min(76, 58 + v / 100 * 1.4));
-function lcd(name, color) {
-  const d = el('div', { className: name ? 'lcd' : 'lcd blank', textContent: name || '—' });
-  if (color) d.style.background = SWATCH[color];
-  return d;
-}
-function renderDesk(flashIdx) {
-  const model = MODELS[show.options.model] || MODELS.custom;
-  const used = Math.max(0, ...Object.keys(desk.inCh).map(Number).map((n) => n + 1));
-  const plan = buildPlan(show);
-  const lastPlanned = Math.max(0, ...plan.channels.map((c) => c.ch));
-  const count = Math.min(model.inputs || 999, Math.max(used, lastPlanned) + 2) || 16;
-  const mixCount = Math.max(4, ...Object.keys(desk.mix).map((n) => Number(n) + 1));
-  const strips = [];
-  for (let i = 0; i < count; i++) {
-    const c = desk.inCh[i] || {};
-    const lamps = [el('span', { className: `lamp st${c.toSt ? ' on' : ''}`, textContent: 'ST' })];
-    for (let mIdx = 0; mIdx < mixCount; mIdx++) if (desk.mix[mIdx]) lamps.push(el('span', { className: `lamp${c.toMix?.[mIdx] ? ' on' : ''}`, textContent: mIdx + 1 }));
-    const cap = el('div', { className: 'cap' });
-    cap.style.bottom = `${capPos(c.level)}px`;
-    strips.push(el('div', { className: `strip${flashIdx === i ? ' flash' : ''}${desk.solo === i ? ' soloed' : ''}` },
-      el('span', { className: 'num', textContent: i + 1 }), lcd(c.name, c.color),
-      el('div', { className: 'lamps' }, ...lamps), el('span', { className: `hpf-tag${c.hpfOn ? ' on' : ''}`, textContent: c.hpfOn ? `HPF ${c.hpf}` : 'HPF off' }), el('span', { className: 'gain-tag', textContent: desk.solo === i ? 'SOLO' : c.gain != null ? `${c.gain} dB` : '' }), el('div', { className: 'fader' }, cap), el('span', { className: 'db', textContent: dbText(c.level) })));
-  }
-  $('inputs').replaceChildren(...strips);
-
-  const feeding = (test) => Object.entries(desk.inCh).filter(([, c]) => test(c)).map(([, c]) => c.name).filter(Boolean)
-    .map((n) => n.replace(/ [LR]$/, '')).filter((n, i, a) => a.indexOf(n) === i);
-  const outStrip = (label, name, color, level, names, send, patch) => {
-    const cap = el('div', { className: 'cap' });
-    cap.style.bottom = `${capPos(level)}px`;
-    return el('div', { className: 'strip' }, el('span', { className: 'num', textContent: label }), lcd(name, color),
-      el('span', { className: `send-tag ${send}`, textContent: send === 'pre' ? 'Pre-fade' : 'Post-fade' }),
-      el('span', { className: 'send-tag', textContent: patch ? `→ ${patch}` : 'not patched' }),
-      el('div', { className: 'feeds', textContent: names.length ? names.join(', ') : 'nothing routed' }),
-      el('div', { className: 'fader' }, cap), el('span', { className: 'db', textContent: dbText(level) }));
-  };
-  const outs = [outStrip('Stereo', desk.st.name, desk.st.name ? 'Red' : null, desk.st.name ? 0 : null, feeding((c) => c.toSt), 'post', desk.outPatch['ST L'] && [...desk.outPatch['ST L'], ...(desk.outPatch['ST R'] || [])].join(' + '))];
-  for (const [idx, m] of Object.entries(desk.mix)) outs.push(outStrip(`Mix ${Number(idx) + 1}`, m.name, m.color, m.level, feeding((c) => c.toMix?.[idx]), desk.sendPoint[idx] === 0 ? 'pre' : 'post', desk.outPatch[`MIX${Number(idx) + 1}`]?.join(' + ')));
-  $('outputs').replaceChildren(...outs);
-  if (!Object.keys(desk.inCh).length) $('inputs').prepend(el('p', { className: 'empty-desk', textContent: 'Nothing on the desk yet. Press "Push show to desk" to load your show.' }));
-}
-
-let pending = null;
-function askPush() {
-  const plan = buildPlan(show);
-  const model = MODELS[show.options.model] || MODELS.custom;
-  if (!plan.commands.length) return setStatus('Add some inputs or outputs first.', 'bad');
-  if (link.state !== 'connected') {
-    setStatus('Connect to the desk first, at the top of the page.', 'bad');
-    return $('host').focus();
-  }
-  const last = loadLast();
-  const onlyChanges = Boolean(last) && show.options.onlyChanges !== false;
-  const commands = onlyChanges ? changedCommands(plan.commands, last) : plan.commands;
-  if (!commands.length) return setStatus('Nothing has changed since the last push.', 'ok');
-  const caps = deskCaps(model);
-  const backup = show.options.backup || {};
-  const scene = backup.scene || caps?.sceneMax;
-  const backupCmd = caps && backup.on !== false ? sceneStoreCommand(model, scene) : null;
-  pending = { commands, backupCmd, scene, last };
-  const what = onlyChanges ? `${commands.length} changed lines` : 'this show';
-  $('confirmText').textContent = `Send ${what} to the ${link.product} at ${link.host}? ${backupCmd ? `First it stores the desk's current scene as scene ${scene}, overwriting what's there.` : 'On a real desk it renames and re-routes the current scene, so store a backup scene first.'}`;
-  $('confirmBox').hidden = false;
-}
-async function pushDesk() {
-  $('confirmBox').hidden = true;
-  const { commands, backupCmd, scene, last } = pending;
-  pushing = true;
-  $('pushDesk').disabled = true;
-  $('progress').hidden = false;
-  $('log').hidden = false;
-  setStatus('Sending…');
-  const fast = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const lines = backupCmd ? [`OK ${backupCmd}  (backup)`] : [];
-  $('log').textContent = lines.join('\n');
-  for (const [i, cmd] of commands.entries()) {
-    const idx = applyCommand(cmd);
-    lines.push(`OK ${cmd}`);
-    if (i % 6 === 0 || i === commands.length - 1) {
-      $('progress').value = (i + 1) / commands.length;
-      $('log').textContent = lines.slice(-40).join('\n');
-      $('log').scrollTop = $('log').scrollHeight;
-      renderDesk(cmd.includes('/InCh/') ? idx : null);
-      if (!fast) await new Promise((r) => setTimeout(r, 16));
-    }
-  }
-  saveLast(rememberPush(last, commands));
-  renderDesk();
-  pushing = false;
-  $('pushDesk').disabled = false;
-  render();
-  const n = commands.length;
-  setStatus(`Sent. The pretend desk took ${n === 1 ? 'the 1 line' : `all ${n} lines`}.${backupCmd ? ` Your old scene is safe in scene ${scene}.` : ''}`, 'ok');
-}
-// The pretend desk holds exactly what was pushed, so checking it compares the show with the last push
-function verifyDesk() {
-  if (link.state !== 'connected') {
-    setStatus('Connect to the desk first, at the top of the page.', 'bad');
-    return $('host').focus();
-  }
-  const plan = buildPlan(show);
-  const last = loadLast();
-  if (!last) return setStatus("Nothing's been pushed to this desk yet.", 'bad');
-  const wrong = changedCommands(plan.commands, last);
-  $('log').hidden = !wrong.length;
-  $('log').textContent = wrong.map((c) => `${c}\n  ↳ the desk has something else`).join('\n');
-  setStatus(wrong.length ? `${wrong.length} of ${plan.commands.length} settings don't match the show. They're in the log.` : `The desk matches the show. All ${plan.commands.length} settings checked.`, wrong.length ? 'bad' : 'ok');
-}
-
-// ---- exports (shown on the page; downloads are blocked in this preview) ----
-function showSheet(title, hint, text) {
-  $('sheetTitle').textContent = title;
-  $('sheetHint').textContent = hint;
-  $('sheetText').value = text;
-  $('copyStatus').textContent = '';
-  $('sheetPanel').hidden = false;
-  $('sheetPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-$('copySheet').onclick = async () => {
-  try { await navigator.clipboard.writeText($('sheetText').value); $('copyStatus').textContent = 'Copied'; }
-  catch { $('sheetText').select(); $('copyStatus').textContent = 'Press Ctrl+C / ⌘C to copy'; }
-};
-$('closeSheet').onclick = () => { $('sheetPanel').hidden = true; };
-$('exportJson').onclick = () => showSheet('Show file', 'In the real app this saves as a .show.json file you can reopen for the next job.', JSON.stringify(show, null, 2));
-$('exportCsv').onclick = () => showSheet('Patch sheet', 'Every channel and output, as CSV. Paste into a spreadsheet, or the real app downloads it as a file.', patchSheetCsv(show, buildPlan(show)));
-
-// ---- static controls ----
-const series = {};
-for (const [id, m] of Object.entries(MODELS)) (series[m.series || ''] ||= []).push(el('option', { value: id, textContent: m.label }));
-for (const [name, options] of Object.entries(series)) {
-  $('model').append(name ? el('optgroup', { label: name === 'RIVAGE' ? 'RIVAGE PM' : `${name} series` }, ...options) : options[0]);
-}
-$('model').onchange = (e) => { update(() => { show.options.model = e.target.value; }); renderDesk(); };
-const GROUPS = { speech: 'Speech', band: 'Band', talkback: 'Band', program: 'Playback', bgm: 'Playback' };
-const groups = { Packages: Object.entries(PACKAGES).map(([key, pkg]) => el('button', {
-  className: 'chip', textContent: `${pkg.label} (${pkg.sources.reduce((n, s) => n + ((s.stereo ?? SOURCE_TYPES[s.type].stereo) ? 2 : 1), 0)} ch)`,
-  onclick: () => update(() => applySuggestion(show, packageSuggestion(key))),
-})) };
-for (const [type, t] of Object.entries(SOURCE_TYPES)) {
-  const chip = el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addSources(show, type, Math.max(1, Number($('addCount').value) || 1))) });
-  (groups[GROUPS[t.category]] ||= []).push(chip);
-}
-for (const [name, chips] of Object.entries(groups)) {
-  $('addButtons').append(el('div', { className: 'chip-group' }, el('span', { className: 'chip-label', textContent: name }), el('div', { className: 'chips' }, ...chips)));
-}
-$('addButtons').children[0].after(el('div', { className: 'chip-group', id: 'tplGroup', hidden: true },
-  el('span', { className: 'chip-label', textContent: 'Yours' }), el('div', { className: 'chips', id: 'tplChips' })));
-const zoneGroups = { 'Speakers · post-fade': [], 'Monitors · pre-fade': [] };
-for (const [type, t] of Object.entries(ZONE_TYPES)) {
-  zoneGroups[t.monitor ? 'Monitors · pre-fade' : 'Speakers · post-fade'].push(el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addZone(type)) }));
-}
-for (const [name, chips] of Object.entries(zoneGroups)) {
-  $('zoneButtons').append(el('div', { className: 'chip-group zone-group' }, el('span', { className: 'chip-label', textContent: name }), el('div', { className: 'chips' }, ...chips)));
-}
-$('showName').onchange = (e) => update(() => { show.name = e.target.value; });
-for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) $(k).onchange = (e) => update(() => { show.options[k] = Math.max(1, Number(e.target.value) || 1); });
-$('autoOrder').onchange = (e) => update(() => { show.options.autoOrder = e.target.checked; });
-$('setLevels').onchange = (e) => update(() => { show.options.setLevels = e.target.checked; });
-$('safeStart').onchange = (e) => update(() => { show.options.safeStart = e.target.checked; });
-// New show wipes the page back to empty; Example loads the conference example. Both ask first unless the page is already empty.
-let pendingShow = null;
-function resetPage() {
-  $('typeText').value = '';
-  $('pasteText').value = '';
-  $('monStatus').textContent = '';
-  $('tplBar').hidden = true;
-  $('paperPanel').hidden = true;
-  soloKey = null;
-  $('typePreview').hidden = true;
-  typeStatus('');
-  $('addCount').value = 1;
-  $('log').textContent = '';
-  $('log').hidden = true;
-  $('progress').hidden = true;
-  showCommands = false;
-  $('toggleCommands').textContent = 'Show commands';
-  $('sheetPanel').hidden = true;
-  $('confirmBox').hidden = true;
-  setStatus('In the real app this goes straight to the desk.');
-  wipeDesk();
-  renderDesk();
-}
-function startShow(next) {
-  update(() => { show = next; });
-  resetPage();
-}
-function askToReplace(next, text) {
-  if (!show.sources.length && !show.zones.length) return startShow(next);
-  pendingShow = next;
-  $('newText').textContent = text;
-  $('newConfirm').hidden = false;
-  $('newYes').focus();
-}
-$('newShow').onclick = () => askToReplace(emptyShow(show.options.model), "Start again with an empty show? You'll lose everything on this page.");
-$('exampleShow').onclick = () => askToReplace({ ...exampleShow(), options: { ...exampleShow().options, model: show.options.model } }, 'Load the example? It replaces everything on this page.');
-$('newYes').onclick = () => { $('newConfirm').hidden = true; startShow(pendingShow); };
-$('newNo').onclick = () => { $('newConfirm').hidden = true; pendingShow = null; };
-$('toggleCommands').onclick = () => {
-  showCommands = !showCommands;
-  $('toggleCommands').textContent = showCommands ? 'Hide commands' : 'Show commands';
-  if (!showCommands) $('log').hidden = true;
-  render();
-};
-$('pushDesk').onclick = askPush;
-$('confirmYes').onclick = pushDesk;
-$('confirmNo').onclick = () => { $('confirmBox').hidden = true; };
-// ---- Patch: inputs and outputs onto Analogue, Card and Dante ports ----
-const range = (p, n) => (p ? (n > 1 ? `${portLabel(p)}–${p.port + n - 1}` : portLabel(p)) : 'unpatched');
-function bankSelect(banks, value, autoText, onChange) {
-  return el('select', { 'aria-label': 'Patch', onchange: (e) => onChange(e.target.value) },
-    ...(autoText ? [el('option', { value: 'auto', textContent: autoText, selected: !value })] : []),
-    ...banks.map((b) => el('option', { value: b.key, textContent: `${b.label} (${b.first || 1}–${(b.first || 1) + b.size - 1})`, selected: value === b.key })));
-}
-function patchControl(target, banks, autoText) {
-  const fixed = target.patch;
-  return el('div', { className: 'patch-cell' },
-    bankSelect(banks, fixed?.bank, autoText, (bank) => update(() => { target.patch = bank === 'auto' ? undefined : { bank, port: fixed?.port || 1 }; })),
-    fixed && el('input', {
-      type: 'number', min: 1, value: fixed.port, className: 'port', 'aria-label': 'Port number',
-      onchange: (e) => update(() => { target.patch = { bank: fixed.bank, port: Math.max(1, Math.round(Number(e.target.value) || 1)) }; }),
-    }));
-}
-function startControl(id, banks, opt) {
-  const current = show.options[opt] || { bank: banks[0]?.key, port: 1 };
-  $(`${id}Bank`).replaceChildren(...bankSelect(banks, current.bank, null, () => {}).children);
-  $(`${id}Bank`).value = current.bank;
-  $(`${id}Bank`).onchange = (e) => update(() => { show.options[opt] = { bank: e.target.value, port: 1 }; });
-  $(`${id}Port`).value = current.port || 1;
-  $(`${id}Port`).onchange = (e) => update(() => { show.options[opt] = { bank: $(`${id}Bank`).value, port: Math.max(1, Math.round(Number(e.target.value) || 1)) }; });
-}
-function renderPatch(plan, model) {
-  const inBanks = patchBanks(model, 'in', show.rios);
-  const outBanks = patchBanks(model, 'out', show.rios);
-  const sends = plan.patchOnDesk.outputs;
-  $('patchNote').textContent = sends
-    ? `The app patches your outputs on the ${model.label}. The desk won't let it touch the input patch, so plug inputs in from this list or the patch sheet.`
-    : model.inputs
-      ? `The ${model.label} won't take patch changes from the app. Patch it on the desk from this list or the patch sheet.`
-      : 'Pick your desk at the top to see its real sockets.';
-  $('sendPatchRow').hidden = !sends;
-  $('sendPatch').checked = show.options.sendPatch !== false;
-  startControl('inStart', inBanks, 'inPatch');
-  startControl('outStart', outBanks, 'outPatch');
-
-  const inRows = plan.channels.filter((c) => c.side !== 'R').map((c) => {
-    const n = c.side ? 2 : 1;
-    const last = c.ch + n - 1;
-    return el('tr', {},
-      el('td', { className: 'ch', textContent: n > 1 ? `${c.ch}–${last}` : c.ch }),
-      el('td', { textContent: c.source.name }),
-      el('td', {}, patchControl(c.source, inBanks, `Auto · ${range(c.patch, n)}`)));
-  });
-  $('patchIn').replaceChildren(
-    el('thead', {}, el('tr', {}, el('th', { textContent: 'Ch' }), el('th', { textContent: 'Input' }), el('th', { textContent: 'Plugs into' }))),
-    el('tbody', {}, ...inRows));
-  const outRows = plan.outputs.map((o) => el('tr', {},
-    el('td', { className: 'ch', textContent: o.zone.type === 'main' ? 'ST L/R' : o.buses.map((b) => b.replace('MIX', '')).join('/') }),
-    el('td', { textContent: o.name }),
-    el('td', {}, patchControl(o.zone, outBanks, `Auto · ${range(o.patch, o.ports)}`))));
-  $('patchOut').replaceChildren(
-    el('thead', {}, el('tr', {}, el('th', { textContent: 'Bus' }), el('th', { textContent: 'Output' }), el('th', { textContent: 'Comes out of' }))),
-    el('tbody', {}, ...outRows));
-}
-$('sendPatch').onchange = (e) => update(() => { show.options.sendPatch = e.target.checked; });
-
-// ---- Typed requests: trigger words turn plain text into inputs and zones, offline ----
-let suggestion = null;
-function typeStatus(text, kind = '') {
-  $('typeStatus').textContent = text;
-  $('typeStatus').className = `status ${kind}`;
-}
-function previewTyped() {
-  const s = parseRequest($('typeText').value, show);
-  const unknown = s.unknown.length ? `Not sure what these are: ${s.unknown.join(', ')}` : '';
-  if (!s.sources.length && !s.zones.length) {
-    $('typePreview').hidden = true;
-    return typeStatus(unknown || 'Try something like "full band and 4 wedges".', 'bad');
-  }
-  pasteMode = false;
-  typeStatus(unknown, unknown ? 'bad' : '');
-  showPreview(s);
-}
-function showPreview(s) {
-  suggestion = s;
-  $('typeSummary').textContent = `This adds ${s.summary}`;
-  $('typeList').replaceChildren(
-    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name}${(x.stereo ?? SOURCE_TYPES[x.type].stereo) ? ' (L/R)' : ''}${x.note ? ` · ${x.note}` : ''}${x.phantom ? ' · 48V' : ''}` })),
-    ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Output: ${z.name}` })));
-  $('typePreview').hidden = false;
-}
-let pasteMode = false;
-$('pasteGo').onclick = () => {
-  const s = parseInputList($('pasteText').value);
-  if (!s.sources.length) return typeStatus('Paste at least one line, like "1  Kick In  Beta 91".', 'bad');
-  pasteMode = true;
-  typeStatus('');
-  showPreview(s);
-};
-$('typeGo').onclick = previewTyped;
-$('typeText').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); previewTyped(); } };
-$('typeAdd').onclick = () => {
-  const keepOrder = pasteMode && $('pasteKeepOrder').checked;
-  update(() => {
-    applySuggestion(show, suggestion);
-    if (keepOrder) show.options.autoOrder = false;
-  });
-  $('typePreview').hidden = true;
-  if (pasteMode) $('pasteText').value = '';
-  else $('typeText').value = '';
-  typeStatus(keepOrder ? 'Added. Auto order is off, so your list keeps its order.' : 'Added. Check the routing below.', 'ok');
-};
-$('typeDiscard').onclick = () => { $('typePreview').hidden = true; typeStatus(''); };
-// ---- Desk connection (demo): any IP connects to the pretend desk on this page ----
-let link = { state: 'idle' };
-function showLink(s) {
-  link = s;
-  $('linkDot').className = `link-dot ${s.state}`;
-  $('linkStatus').textContent = {
-    idle: s.error || 'Not connected. In the demo, any IP connects to the pretend desk below.',
-    connecting: `Connecting to ${s.host}…`,
-    connected: `Connected to the pretend ${s.product} at ${s.host}`,
-  }[s.state];
-  $('linkStatus').className = `status ${s.state === 'connected' ? 'ok' : s.error ? 'bad' : ''}`;
-  $('connectBtn').textContent = { idle: 'Connect', connecting: 'Connecting…', connected: 'Disconnect' }[s.state];
-  $('connectBtn').className = s.state === 'connected' ? '' : 'primary';
-  $('connectBtn').disabled = s.state === 'connecting';
-  $('host').disabled = $('port').disabled = s.state !== 'idle';
-  render();
-}
-function connectDesk() {
-  if (link.state === 'connected') return showLink({ state: 'idle' });
-  const host = $('host').value.trim();
-  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return showLink({ state: 'idle', error: "Type the desk's IP, like 192.168.0.128." });
-  showLink({ state: 'connecting', host });
-  const model = MODELS[show.options.model];
-  setTimeout(() => showLink({ state: 'connected', host, product: model?.inputs ? model.label : 'desk' }), 700);
-}
-$('connectBtn').onclick = connectDesk;
-$('host').onkeydown = (e) => { if (e.key === 'Enter') connectDesk(); };
-// ---- Find devices (demo): the real app scans the network; here it lists a pretend rig ----
-const KINDS = [['desk', 'Desks'], ['stagebox', 'Stage boxes'], ['radio', 'Radio mics'], ['amp', 'Amps'], ['playback', 'Playback'], ['other', 'Other']];
-function pretendDevices() {
-  const model = MODELS[show.options.model];
-  return [
-    { kind: 'desk', make: 'Yamaha', model: model?.inputs ? model.label : 'QL5', ip: '192.168.0.128', via: ['port 49280'] },
-    { kind: 'stagebox', make: 'Yamaha', model: 'Rio3224-D2', ip: '192.168.0.130', via: ['port 49280'] },
-    { kind: 'radio', make: 'Shure', model: 'ULXD4Q', name: 'Rack 1', ip: '192.168.0.50', via: ['port 2202'] },
-    { kind: 'radio', make: 'Shure', model: 'AD4Q', name: 'Rack 2', ip: '192.168.0.51', via: ['port 2202'] },
-    { kind: 'amp', make: '', model: 'AES70 device (d&b and others)', name: 'D80 Main', ip: '192.168.0.60', via: ['port 30013'] },
-    { kind: 'amp', make: '', model: 'AES70 device (d&b and others)', name: 'D40 Fills', ip: '192.168.0.61', via: ['port 30013'] },
-    { kind: 'radio', make: 'Sennheiser', model: 'Spectera', name: 'Base station', ip: '192.168.0.55', via: ['announces _ssc._udp'] },
-    { kind: 'playback', make: 'Figure 53', model: 'QLab', name: 'Show Mac', ip: '192.168.0.70', via: ['announces _qlab._tcp', 'port 53000'] },
-  ];
-}
-function findDevices() {
-  $('findPanel').hidden = false;
-  $('findStatus').className = 'status';
-  $('findStatus').textContent = 'Looking on this network…';
-  $('findList').replaceChildren();
-  $('findBtn').disabled = $('findAgain').disabled = true;
-  setTimeout(() => {
-    $('findBtn').disabled = $('findAgain').disabled = false;
-    const devices = pretendDevices();
-    $('findStatus').className = 'status ok';
-    $('findStatus').textContent = `Found ${devices.length} pretend devices on 192.168.0.0/24. The real app finds what's on your network.`;
-    $('findList').replaceChildren(...KINDS.map(([kind, title]) => {
-      const list = devices.filter((d) => d.kind === kind);
-      if (!list.length) return null;
-      const ul = el('ul');
-      for (const d of list) {
-        const who = el('span', { className: 'who' });
-        who.append(el('b', { textContent: [d.make, d.model].filter(Boolean).join(' ') }),
-          el('small', { textContent: [d.ip, d.name].filter(Boolean).join(' · ') }));
-        who.title = `Found by: ${d.via.join(', ')}`;
-        const li = el('li');
-        li.append(who);
-        if (d.kind === 'desk') {
-          const use = el('button', { className: 'primary', textContent: 'Use this desk' });
-          use.onclick = () => { link = { state: 'idle' }; $('host').value = d.ip; connectDesk(); };
-          li.append(use);
-        } else if (d.kind === 'amp' || d.kind === 'radio') {
-          const targets = rigUi.ipTargets().filter((t) => t.kind === d.kind);
-          li.append(el('select', {
-            'aria-label': `Use ${d.ip} for`,
-            onchange: (e) => { const t = targets[Number(e.target.value)]; if (t) { update(() => t.set(d.ip)); $('findStatus').textContent = `${d.ip} is now ${t.label}.`; } e.target.value = ''; },
-          }, el('option', { value: '', textContent: 'Use for…' }), ...targets.map((t, i) => el('option', { value: String(i), textContent: t.label }))));
-        }
-        ul.append(li);
-      }
-      const g = el('div', { className: 'find-group' });
-      g.append(el('h3', { textContent: title }), ul);
-      return g;
-    }).filter(Boolean));
-  }, 900);
-}
-$('findBtn').onclick = findDevices;
-$('findAgain').onclick = findDevices;
-$('findClose').onclick = () => { $('findPanel').hidden = true; };
-// ---- Your templates: saved on this computer, shown as one-click chips next to the packages ----
-const TPL_KEY = `${STORE}-templates`;
-function loadTemplates() {
-  try { return JSON.parse(localStorage.getItem(TPL_KEY)) || []; } catch { return []; }
-}
-function saveTemplates(list) {
-  try { localStorage.setItem(TPL_KEY, JSON.stringify(list)); } catch { /* storage off */ }
-}
-function renderTemplates() {
-  const list = loadTemplates();
-  $('tplGroup').hidden = !list.length;
-  $('tplChips').replaceChildren(...list.map((tpl, i) => el('span', { className: 'tpl-chip' },
-    el('button', {
-      className: 'chip', textContent: tpl.name, title: `${tpl.sources.length} inputs, ${tpl.zones.length} outputs`,
-      onclick: () => { update(() => applyTemplate(show, tpl)); typeStatus(`Added the ${tpl.name} template.`, 'ok'); },
-    }),
-    el('button', { className: 'remove', textContent: '×', title: `Delete the ${tpl.name} template`, onclick: () => { saveTemplates(loadTemplates().filter((_, j) => j !== i)); renderTemplates(); } }))));
-}
-$('saveTemplate').onclick = () => {
-  $('tplBar').hidden = false;
-  $('tplName').value = show.name === 'New show' ? '' : show.name;
-  $('tplName').focus();
-};
-$('tplSave').onclick = () => {
-  if (!show.sources.length && !show.zones.length) return typeStatus('Add some inputs or outputs before saving a template.', 'bad');
-  const tpl = makeTemplate(show, $('tplName').value);
-  saveTemplates([...loadTemplates().filter((t) => t.name !== tpl.name), tpl]);
-  renderTemplates();
-  $('tplBar').hidden = true;
-  typeStatus(`Saved "${tpl.name}". It's under Yours, next to the packages.`, 'ok');
-};
-$('tplCancel').onclick = () => { $('tplBar').hidden = true; };
-$('tplName').onkeydown = (e) => { if (e.key === 'Enter') $('tplSave').click(); };
-
-// ---- Monitors: pair singers with their own mix, and make a monitor-desk show ----
-$('pairMon').onclick = () => {
-  let pairs = [];
-  update(() => { pairs = pairMonitors(show); });
-  $('monStatus').textContent = pairs.length ? pairs.join(' · ') : 'Add some vocal mics and monitor outputs first.';
-  $('monStatus').className = `status ${pairs.length ? 'ok' : 'bad'}`;
-};
-$('monitorShow').onclick = () => {
-  const mon = monitorShow(show);
-  showSheet('Monitor desk show', `${mon.name}: the same inputs and input patch, with only the monitor outputs. In the real app this saves as a .show.json file for the monitor desk's laptop.`, JSON.stringify(mon, null, 2));
-  $('monStatus').textContent = `Made ${mon.name}. It's at the top of the page.`;
-  $('monStatus').className = 'status ok';
-};
-
-// ---- DCAs, mute groups, gain and push options ----
-function renderGroups(plan, model) {
-  const caps = deskCaps(model);
-  $('autoGroups').checked = show.options.groups !== false;
-  $('groupsList').replaceChildren(...plan.groups.map((g) => el('span', { className: 'group-pill', title: g.channels.map((c) => c.name).join(', ') },
-    el('b', { textContent: g.number }), ` ${g.name} · ${g.channels.length}`)));
-  $('groupsNote').textContent = show.options.groups === false || !plan.groups.length ? ''
-    : !caps ? 'Pick your desk to send these.'
-      : !caps.dcas ? `The ${model.label} won't take DCAs from the app.`
-        : caps.dcaAssign ? `DCAs go to the desk, named and assigned.${caps.muteGroups ? ' Mute groups get their names; assign channels to them on the desk.' : ''}`
-          : 'Names go to the desk. Assign channels to them on the desk.';
-}
-$('autoGroups').onchange = (e) => update(() => { show.options.groups = e.target.checked; });
-
-const lastKey = () => `${STORE}-last-${link.host || 'none'}-${show.options.model}`;
-function loadLast() {
-  if (link.state !== 'connected') return null;
-  try { return JSON.parse(localStorage.getItem(lastKey())); } catch { return null; }
-}
-function saveLast(value) {
-  try { if (value) localStorage.setItem(lastKey(), JSON.stringify(value)); else localStorage.removeItem(lastKey()); } catch { /* storage off */ }
-}
-function renderSendOptions(plan, model) {
-  const caps = deskCaps(model);
-  $('setGain').checked = show.options.setGain !== false;
-  $('gainNote').textContent = !caps ? '(pick your desk)' : !caps.gain ? '(this desk takes neither from the app)' : caps.phantom ? '' : '(gain only: switch 48V on at the desk)';
-  const backup = show.options.backup || {};
-  $('backupOn').disabled = !caps;
-  $('backupOn').checked = Boolean(caps) && backup.on !== false;
-  $('backupScene').value = backup.scene || caps?.sceneMax || 100;
-  $('backupScene').disabled = !caps;
-  $('backupNote').textContent = caps ? 'This overwrites that scene.' : 'Pick your desk to back up from here.';
-  const last = loadLast();
-  $('onlyChanges').disabled = !last;
-  $('onlyChanges').checked = Boolean(last) && show.options.onlyChanges !== false;
-  $('forgetPush').hidden = !last;
-  $('changesNote').textContent = last
-    ? `${changedCommands(plan.commands, last).length} of ${plan.commands.length} lines have changed since the last push to this desk.`
-    : 'After your first push to a desk, later pushes can send only the changes.';
-}
-$('setGain').onchange = (e) => update(() => { show.options.setGain = e.target.checked; });
-$('backupOn').onchange = (e) => update(() => { show.options.backup = { ...show.options.backup, on: e.target.checked }; });
-$('backupScene').onchange = (e) => update(() => { show.options.backup = { ...show.options.backup, scene: Math.max(1, Math.round(Number(e.target.value) || 1)) }; });
-$('onlyChanges').onchange = (e) => update(() => { show.options.onlyChanges = e.target.checked; });
-$('forgetPush').onclick = () => { saveLast(null); render(); setStatus('The next push sends everything.'); };
-$('verifyDesk').onclick = verifyDesk;
-
-// ---- Line check: tick each channel off, soloing it on the desk where the desk allows ----
-let soloKey = null;
-const lcKey = (c) => `${c.source.id}:${c.side || ''}`;
-function renderLineCheck(plan, model) {
-  const caps = deskCaps(model);
-  show.lineCheck ||= {};
-  const done = plan.channels.filter((c) => show.lineCheck[lcKey(c)]).length;
-  $('lcCount').textContent = plan.channels.length ? `${done} of ${plan.channels.length} checked` : '';
-  $('lcCount').className = `status ${done && done === plan.channels.length ? 'ok' : ''}`;
-  const canSolo = Boolean(caps?.cue) && link.state === 'connected';
-  if (!canSolo) soloKey = null;
-  $('lcNote').textContent = !caps?.cue
-    ? (model.inputs ? `The ${model.label} won't take solo from the app, so solo on the desk as you go.` : 'Pick your desk to solo channels from here.')
-    : canSolo ? 'Tap Solo to hear a channel on the desk, then tick it. Ticking a soloed channel moves the solo on to the next one.'
-      : 'Connect to the desk to solo channels from here.';
-  $('lcTable').replaceChildren(
-    el('thead', {}, el('tr', {}, ...['✓', 'Ch', 'Name', 'Plugs into', 'Mic / note', '48V', 'Bring gain to', ''].map((t) => el('th', { textContent: t })))),
-    el('tbody', {}, ...plan.channels.map((c) => {
-      const key = lcKey(c);
-      const ticked = Boolean(show.lineCheck[key]);
-      return el('tr', { className: `${ticked ? 'lc-done' : ''} ${soloKey === key ? 'lc-solo' : ''}` },
-        el('td', { className: 'lc-tick' }, el('input', { type: 'checkbox', checked: ticked, 'aria-label': `${c.name} checked`, onchange: (e) => tickLine(plan, c, e.target.checked) })),
-        el('td', { className: 'ch', textContent: c.ch }),
-        el('td', { textContent: c.name }),
-        el('td', { textContent: portLabel(c.patch) }),
-        el('td', { textContent: c.source.note || '' }),
-        el('td', { textContent: phantomOf(c.source) ? '48V' : '' }),
-        el('td', { textContent: `${gainOf(c.source)} dB` }),
-        el('td', {}, canSolo && el('button', { className: `solo ${soloKey === key ? 'on' : ''}`, textContent: soloKey === key ? 'Soloed' : 'Solo', onclick: () => solo(plan, c) })));
-    })));
-}
-async function sendCue(commands) {
-  for (const cmd of commands) applyCommand(cmd);
-  renderDesk();
-}
-async function solo(plan, c) {
-  const model = MODELS[show.options.model] || MODELS.custom;
-  const key = lcKey(c);
-  const prev = soloKey && plan.channels.find((x) => lcKey(x) === soloKey);
-  const commands = [];
-  if (prev) commands.push(cueCommand(model, prev.ch, false));
-  if (soloKey !== key) commands.push(cueCommand(model, c.ch, true));
-  try {
-    await sendCue(commands);
-    soloKey = soloKey === key ? null : key;
-  } catch (err) {
-    setStatus(err.message, 'bad');
-  }
-  render();
-}
-function tickLine(plan, c, ticked) {
-  const key = lcKey(c);
-  show.lineCheck[key] = ticked;
-  if (ticked && soloKey === key) {
-    const next = plan.channels.slice(plan.channels.indexOf(c) + 1).find((x) => !show.lineCheck[lcKey(x)]);
-    if (next) return solo(plan, next);
-    return solo(plan, c); // last one: solo off
-  }
-  render();
-}
-$('lcClear').onclick = () => update(() => { show.lineCheck = {}; });
-
-// ---- Paperwork: input list, outputs, line check sheet, desk tape and stage-box labels ----
-$('paperworkBtn').onclick = () => {
-  const plan = buildPlan(show);
-  const p = paperwork(show, plan, { version: VERSION, licence: LICENCE, extra: rigPaperwork(show, plan) });
-  const style = document.getElementById('paperCss') || document.head.appendChild(el('style', { id: 'paperCss' }));
-  style.textContent = p.css;
-  $('paperBody').innerHTML = p.body; // built by paperwork() from escaped show data
-  $('paperPanel').hidden = false;
-  $('paperPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-};
-$('closePaper').onclick = () => { $('paperPanel').hidden = true; };
-
-$('resetDesk').onclick = () => { wipeDesk(); renderDesk(); setStatus('Simulated desk wiped.'); };
-
-// Footer: version and licence number, from about.js
-$('footProduct').textContent = `${PRODUCT} v${VERSION}`;
-$('footLicence').textContent = `Licence ${LICENCE}`;
-
-renderTemplates();
-wipeDesk();
-// ---- Desk / Amplifiers / RF tabs ----
-const TAB_KEY = 'kk-demo-tab';
-let activeTab = (() => { try { return localStorage.getItem(TAB_KEY) || 'desk'; } catch { return 'desk'; } })();
-function showTab(tab) {
-  activeTab = ['desk', 'amps', 'rf'].includes(tab) ? tab : 'desk';
-  try { localStorage.setItem(TAB_KEY, activeTab); } catch { /* storage off */ }
-  for (const t of ['desk', 'amps', 'rf']) {
-    $(`tab-${t}`).hidden = t !== activeTab;
-    $(`tabBtn-${t}`).setAttribute('aria-selected', String(t === activeTab));
-  }
-  render();
-}
-for (const t of ['desk', 'amps', 'rf']) $(`tabBtn-${t}`).onclick = () => showTab(t);
-
-// The demo's pretend RF kit: Shure receivers that answer like real ones, and a Spectera base station
-// with four paired packs. Nothing leaves the page.
-const pretendShure = {};
-const pretendPacks = [
-  { mtUid: 1, type: 'SKM', name: 'SKM 1', serial: '1500321' }, { mtUid: 2, type: 'SKM', name: 'SKM 2', serial: '1500322' },
-  { mtUid: 3, type: 'SEK', name: 'SEK 1', serial: '1600411', headphoneVolumeMin: -100 }, { mtUid: 4, type: 'SEK', name: 'SEK 2', serial: '1600412', headphoneVolumeMin: -100 },
-];
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const rigUi = mountRig({
-  getShow: () => show,
-  update,
-  demo: true,
-  transport: {
-    shure: async (host, lines, check, onLine) => {
-      const rx = (pretendShure[host] ||= {});
-      for (const [i, line] of lines.entries()) {
-        await wait(60);
-        const [, ch, param, value] = /^SET (\d) (\w+) (.*)$/.exec(line);
-        if (!check) rx[`${ch} ${param}`] = value;
-        const held = rx[`${ch} ${param}`];
-        const reply = held == null ? 'TIMEOUT' : `< REP ${ch} ${param} ${held} >`;
-        onLine({ i, line: check ? `GET ${ch} ${param}` : line, reply, ok: check ? held === value : true });
-      }
-      return { done: true };
-    },
-    specteraDevices: async (host) => {
-      await wait(400);
-      if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(host || '')) throw new Error("Type the base station's IP first.");
-      return pretendPacks.map((p) => ({ ...p }));
-    },
-    specteraPush: async (host, password, writes) => {
-      await wait(400);
-      return writes.map((w) => { Object.assign(pretendPacks.find((p) => `/mts/paired/all/${p.mtUid}` === w.path) || {}, w.body); return { path: w.path, ok: true }; });
-    },
-  },
-});
-showTab(activeTab);
-renderDesk();
-</script>
+  <script type="module" src="bridge.js"></script>
