@@ -329,6 +329,13 @@ const rigUi = mountRig({
     shure: async (ip, lines, check, onLine) => {
       try { return await streamLines('/api/shure', { host: ip, lines, check }, onLine); } catch (err) { return { error: err.message }; }
     },
+    ampRead: async (ip) => {
+      const res = await api('/api/amp/read', { method: 'POST', body: JSON.stringify({ host: ip }) });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      return data;
+    },
+    save: (name, text) => download(name, text, 'application/json'),
     specteraDevices: async (ip, password) => {
       const res = await api('/api/spectera/devices', { method: 'POST', body: JSON.stringify({ host: ip, password }) });
       const data = await res.json();

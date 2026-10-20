@@ -104,7 +104,9 @@ In step 4 (Patch), add your Rio or Tio units in the order they sit on the desk's
 3. The table shows which desk socket feeds each amp channel, the amp input (A1–A4 for analogue, D1–D4 for AES, Network for Dante/Milan), a guessed speaker setup (Y10P for main, 44S for fills, M4 for wedges; type any d&b setup) and a target gain.
 4. Set each amp's IP, or pick it up with **Find devices** (d&b amps answer on AES70, port 30013).
 
-The app **can't send settings to d&b amps**: d&b doesn't publish the control list for its AES70 interface. Set the amps up in R1 from this table, or from the Amplifiers page in Paperwork. Everything there starts muted with its gain right down.
+**Read amp:** each amp with an IP has a **Read** button. It connects over AES70 (TCP 30013), reads the amp's whole control list (every object, its role, and the current mute, gain, input and name values) and saves it as a file. It only reads: nothing on the amp changes. From a terminal, `node amp-read.mjs 192.168.0.60` does the same (add a port number if the amp doesn't use 30013). The AES70 client (`oca-link.js`) is written from the published AES70 standard. `mock-amp.js` is a pretend 4-channel amp for testing.
+
+Once a real d&b amp's file has been read, its controls can be mapped and the app can send channel names, input routing and safe start (muted, gain lowest) itself. Until then, the app **can't send settings to d&b amps**: d&b doesn't publish the control list for its AES70 interface. Set the amps up in R1 from this table, or from the Amplifiers page in Paperwork. Everything there starts muted with its gain right down.
 
 ## RF (Shure and Sennheiser Spectera)
 

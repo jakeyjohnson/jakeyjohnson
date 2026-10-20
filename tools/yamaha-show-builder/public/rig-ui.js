@@ -26,7 +26,7 @@ const fmt = (f) => (f ? f.toFixed(3) : '');
 const remove = (label, onclick) => el('button', { className: 'remove', type: 'button', textContent: '×', title: `Remove ${label}`, onclick });
 
 export function mountRig({ getShow, update, transport, demo = false }) {
-  const session = { password: '', packs: null, picks: {} };
+  const session = { password: '', packs: null, picks: {}, reads: {} };
   const show = () => getShow();
   // The show's RF settings, with any missing ones filled in place so every caller edits the same object
   const rf = () => {
@@ -67,6 +67,11 @@ export function mountRig({ getShow, update, transport, demo = false }) {
       el('td', {}, select(a.model, modelOptions, (v) => update(() => { a.model = v; }), { 'aria-label': 'Model' })),
       el('td', {}, el('input', { value: a.ip, placeholder: 'IP', inputMode: 'decimal', className: 'ip', 'aria-label': `${a.name} IP`, onchange: (e) => update(() => { a.ip = e.target.value.trim(); }) })),
       el('td', { className: 'ch', textContent: `${AMP_MODELS[a.model]?.channels || 0} ch` }),
+      el('td', { className: 'dim' }, session.reads[a.id] || ''),
+      el('td', {}, el('button', {
+        className: 'ghost small', type: 'button', textContent: 'Read', disabled: !a.ip, title: a.ip ? `Read ${a.name}'s control list and save it to a file. Nothing on the amp changes.` : 'Put the amp\'s IP in first',
+        onclick: (e) => readAmp(a, e.target),
+      })),
       el('td', {}, remove(a.name, () => update(() => s.amps.splice(i, 1))))));
     const chRows = amp.rows.map((r) => el('tr', { className: r.feed ? '' : 'spare' },
       el('td', {}, el('b', { textContent: r.label })),
@@ -84,18 +89,36 @@ export function mountRig({ getShow, update, transport, demo = false }) {
           el('button', { className: 'ghost', type: 'button', textContent: 'Add amp', onclick: () => update(() => s.amps.push(makeAmp(addModel, s.amps.length + 1))) }),
           el('button', { className: 'primary', type: 'button', textContent: 'Fill from outputs', title: 'Add amps until every speaker output has a channel', onclick: () => update(() => addAmpsFor(s, plan, addModel)) }),
         ],
-      }, s.amps.length ? table(['Name', 'Model', 'IP', '', ''], ampRows) : empty('No amps yet. Fill from outputs adds enough for every speaker output.')),
+      }, s.amps.length ? table(['Name', 'Model', 'IP', '', 'Control list', '', ''], ampRows) : empty('No amps yet. Fill from outputs adds enough for every speaker output.')),
       panel({ step: '02', title: 'Amp patch', meta: amp.feeds.length ? plural(amp.feeds.length, 'feed') : '', tools: [tag('Starts muted, gain lowest', 'on')] },
         amp.rows.length ? table(['Amp channel', 'Feeds', 'From desk', 'Amp input', 'Speaker setup', 'Target'], chRows) : empty('Add an amp to see which output goes where.'),
         el('datalist', { id: 'kkSetups' }, ...SPEAKER_SETUPS.map((x) => el('option', { value: x }))),
         warnList(amp.warnings)),
-      panel({ step: '03', title: 'Set up in R1', tools: [tag('Not sent from here', '', 'd&b doesn\'t publish the control list for its AES70 interface, so these settings go in R1. Print them from Export → Paperwork.')] },
+      panel({ step: '03', title: 'Set up in R1', tools: [tag('Not sent from here yet', '', 'Live control comes once a real amp\'s control list has been read: press Read on an amp above and send the file it saves. Until then these settings go in R1; print them from Export → Paperwork.')] },
         el('ol', { className: 'steps' },
           el('li', { textContent: 'Fixed IP on each amp, entered above' }),
           el('li', { textContent: 'In R1: speaker setup and input per channel, from the patch' }),
           el('li', { textContent: 'Every channel muted, gain right down' }),
           el('li', { textContent: 'Unmute one at a time and bring up to target' }))),
     );
+  }
+
+  // Reads an amp's AES70 control list and saves it, so the amp's controls can be mapped for live control
+  async function readAmp(a, button) {
+    button.disabled = true;
+    button.textContent = 'Reading…';
+    try {
+      const dump = await transport.ampRead(a.ip);
+      const d = dump.device;
+      const count = (name) => dump.objects.filter((o) => o.className === name).length;
+      session.reads[a.id] = `${[d.model, d.name].filter(Boolean).join(' · ')} · ${dump.objects.length} controls`;
+      transport.save(`amp-${String(d.model || a.model).replace(/[^\w.-]+/g, '-')}-${a.ip}.json`, JSON.stringify(dump, null, 2));
+      toast(`${a.name}: ${dump.objects.length} controls, ${count('OcaMute')} mutes, ${count('OcaGain')} gains. Saved.`, 'ok');
+    } catch (err) {
+      session.reads[a.id] = '';
+      toast(`${a.name}: ${err.message}`, 'bad');
+    }
+    update(() => {});
   }
 
   // ---- RF tab ----
