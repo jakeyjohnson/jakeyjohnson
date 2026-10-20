@@ -1,15 +1,20 @@
 import { LICENCE, PRODUCT, VERSION } from './about.js';
 import { rigPaperwork } from './rig.js';
 import { mountRig } from './rig-ui.js';
+import { ask, el, info, tag, toast, toggle, wireMenus } from './ui.js';
 import {
   applyTemplate, changedCommands, cueCommand, deskCaps, gainOf, makeTemplate, monitorShow, pairMonitors, paperwork, parseInputList, phantomOf,
   rememberPush, sceneStoreCommand,
 } from './plan.js';
 import { modelFromProduct, patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
-const SWATCH = { Blue: '#3d6dff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
+// The page can run inside the Mac app, a browser, or the demo. The demo hands in its own way to save
+// files and show paperwork, since it can't download or open windows.
+const host = window.kkHost || {};
+const SWATCH = { Blue: '#4d7cff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
 const $ = (id) => document.getElementById(id);
 const STORE = 'yamaha-show-builder';
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 let show = load() || defaultShow();
 let showCommands = false;
@@ -20,20 +25,13 @@ function load() {
 function save() {
   try { localStorage.setItem(STORE, JSON.stringify(show)); } catch { /* private mode: fine */ }
 }
-function el(tag, props = {}, ...children) {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k.includes('-') || k === 'list') node.setAttribute(k, v); // aria-* and list are attributes only
-    else node[k] = v;
-  }
-  node.append(...children.filter((c) => c != null && c !== false));
-  return node;
-}
 function colorSelect(color, onChange) {
   const value = normalizeColor(color);
-  const sel = el('select', { title: 'Colour', onchange: (e) => onChange(e.target.value) },
+  const sel = el('select', { className: 'color-sel', 'aria-label': 'Colour', onchange: (e) => onChange(e.target.value) },
     ...COLORS.map((c) => el('option', { value: c, textContent: c, selected: c === value })));
-  sel.style.borderLeft = `6px solid ${SWATCH[value]}`;
+  sel.style.backgroundImage = `radial-gradient(circle, ${SWATCH[value]} 4.5px, transparent 5.5px), linear-gradient(45deg, transparent 50%, #8e949b 50%), linear-gradient(135deg, #8e949b 50%, transparent 50%)`;
+  sel.style.backgroundSize = '12px 12px, 5px 5px, 5px 5px';
+  sel.style.backgroundPosition = '8px 50%, calc(100% - 13px) 50%, calc(100% - 8px) 50%';
   return sel;
 }
 
@@ -43,76 +41,16 @@ function render() {
   const model = MODELS[show.options.model] || MODELS.custom;
   $('showName').value = show.name;
   $('model').value = MODELS[show.options.model] ? show.options.model : 'custom';
-  $('maxLen').textContent = show.options.maxNameLength;
-  for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) $(k).value = show.options[k];
-  $('setLevels').checked = show.options.setLevels;
-  $('safeStart').checked = show.options.safeStart !== false;
-  $('autoOrder').checked = show.options.autoOrder !== false;
 
-  // Routing grid
-  const busLabel = (zone) => {
-    if (zone.type === 'main') return 'Stereo';
-    const m = plan.mixes.find((x) => x.zone === zone);
-    return m.stereo ? `Mix ${m.mix}/${m.mix + 1}` : `Mix ${m.mix}`;
-  };
-  const head = el('tr', {},
-    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }), el('th', { textContent: 'Name' }), el('th', { textContent: 'Type' }), el('th', { textContent: 'St' }), el('th', { textContent: 'HPF Hz' }), el('th', { textContent: 'Gain target dB', title: 'Safe start sends the lowest gain; bring it up to this at line check' }), el('th', { textContent: '48V' }), el('th', { className: 'zone all-col', textContent: 'All' }),
-    ...show.zones.map((zone) => el('th', { className: 'zone' },
-      el('input', { value: zone.name, onchange: (e) => update(() => { zone.name = e.target.value; }) }),
-      el('small', {}, busLabel(zone), ' ', el('button', { className: 'remove', title: 'Remove zone', textContent: '×', onclick: () => update(() => removeZone(zone)) })),
-      zone.type === 'main' ? el('small', { textContent: 'Post' }) : el('button', {
-        className: `send-point ${sendOf(zone)}`, textContent: sendOf(zone) === 'pre' ? 'Pre' : 'Post',
-        title: 'Click to switch every send to this output between pre and post fade.',
-        onclick: () => update(() => { zone.send = sendOf(zone) === 'pre' ? 'post' : 'pre'; }),
-      }))),
-    el('th'));
+  const of = (n) => (model.inputs ? `/${n}` : '');
+  $('inMeta').textContent = plan.channels.length ? `${plan.channels.length}${of(model.inputs)} ch` : '';
+  $('outMeta').textContent = show.zones.length ? plural(show.zones.length, 'output') : '';
+  $('routeMeta').textContent = plan.channels.length ? `${plan.channels.length}${of(model.inputs)} ch · ${plan.mixes.length}${of(model.mixes)} mix` : '';
+  $('countDesk').textContent = plan.channels.length ? `${plan.channels.length}` : '';
 
-  const rows = show.sources.map((source) => {
-    const chs = plan.channels.filter((c) => c.source === source).map((c) => c.ch);
-    return el('tr', {},
-      el('td', { className: 'ch', textContent: chs.length > 1 ? `${chs[0]}–${chs[1]}` : chs[0] }),
-      el('td', {}, colorSelect(source.color, (v) => update(() => { source.color = v; }))),
-      el('td', { className: 'name' }, el('input', { value: source.name, onchange: (e) => update(() => { source.name = e.target.value; }) })),
-      el('td', { className: 'type' }, el('select', { onchange: (e) => update(() => changeType(source, e.target.value)) },
-        ...Object.entries(SOURCE_TYPES).map(([k, t]) => el('option', { value: k, textContent: t.label + (t.stereo ? ' (st)' : ''), selected: k === source.type })))),
-      el('td', { className: 'route' }, el('input', {
-        type: 'checkbox', checked: source.stereo, title: 'Stereo: takes two channels, L and R',
-        onchange: (e) => update(() => { source.stereo = e.target.checked; }),
-      })),
-      el('td', { className: 'hpf' }, el('input', {
-        type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', title: 'High-pass filter in Hz. Leave it blank for off.',
-        onchange: (e) => update(() => { source.hpf = Math.max(0, Math.round(Number(e.target.value) || 0)); }),
-      })),
-      el('td', { className: 'gain' }, el('input', {
-        type: 'number', min: -6, max: 66, step: 1, value: gainOf(source), title: 'Head-amp gain in dB',
-        onchange: (e) => update(() => { source.gain = Math.min(66, Math.max(-6, Math.round(Number(e.target.value) || 0))); }),
-      })),
-      el('td', { className: 'route' }, el('input', {
-        type: 'checkbox', checked: phantomOf(source), title: '48V phantom power',
-        onchange: (e) => update(() => { source.phantom = e.target.checked; }),
-      })),
-      el('td', { className: 'route all-col' }, el('input', {
-        type: 'checkbox', checked: show.zones.length > 0 && show.zones.every((z) => source.zones.includes(z.id)),
-        'aria-label': `${source.name} to every output`, title: 'Send to every output',
-        onchange: (e) => update(() => { source.zones = e.target.checked ? show.zones.map((z) => z.id) : []; }),
-      })),
-      ...show.zones.map((zone) => el('td', { className: 'route' }, el('input', {
-        type: 'checkbox', checked: source.zones.includes(zone.id), title: `${source.name} → ${zone.name}`,
-        onchange: (e) => update(() => {
-          source.zones = e.target.checked ? [...source.zones, zone.id] : source.zones.filter((z) => z !== zone.id);
-        }),
-      }))),
-      el('td', {}, ...moveButtons(source),
-        el('button', { className: 'remove', title: 'Remove input', textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
-  });
-  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 10, className: 'type', textContent: 'Nothing here yet. Add some inputs above.' }));
-  $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty || null));
-
-  const of = (n) => (model.inputs ? ` of ${n}` : '');
-  const spares = plan.spares.length ? `, ch ${plan.spares.join(', ')} left empty so stereo pairs start on an odd channel` : '';
-  const totals = `${plan.channels.length}${of(model.inputs)} input channels, ${plan.mixes.length}${of(model.mixes)} mixes, ${plan.commands.length} commands${spares}`;
-  $('warnings').replaceChildren(el('li', { style: 'color: var(--muted); list-style: none; margin-left: -18px', textContent: totals }),
-    ...[...new Set(plan.warnings)].map((w) => el('li', { textContent: w })));
+  renderGrid(plan);
+  $('warnings').replaceChildren(...[...new Set(plan.warnings)].map((w) => el('li', { textContent: w })),
+    ...(plan.spares.length ? [el('li', { className: 'note', textContent: `Ch ${plan.spares.join(', ')} left empty so stereo pairs start on an odd channel` })] : []));
 
   if (showCommands) {
     $('log').hidden = false;
@@ -123,6 +61,9 @@ function render() {
   renderSendOptions(plan, model);
   renderLineCheck(plan, model);
   rigUi.renderRios($('rioBox'));
+  const counts = rigUi.counts();
+  $('countAmps').textContent = counts.amps || '';
+  $('countRf').textContent = counts.rf || '';
   if (activeTab === 'amps') rigUi.renderAmps($('ampsMain'));
   if (activeTab === 'rf') rigUi.renderRf($('rfMain'));
   save();
@@ -130,6 +71,67 @@ function render() {
 }
 
 function update(fn) { fn(); render(); }
+
+// ---- Routing grid ----
+function renderGrid(plan) {
+  const busLabel = (zone) => {
+    if (zone.type === 'main') return 'ST';
+    const m = plan.mixes.find((x) => x.zone === zone);
+    return m.stereo ? `MIX ${m.mix}/${m.mix + 1}` : `MIX ${m.mix}`;
+  };
+  $('routeTools').replaceChildren(
+    toggle({ label: 'Auto order', checked: show.options.autoOrder !== false, onchange: (v) => update(() => { show.options.autoOrder = v; }), tip: 'Speech mics first, then band, playback, and background music last. Turn it off to order channels by hand.' }),
+    toggle({ label: 'DCAs', checked: show.options.groups !== false, onchange: (v) => update(() => { show.options.groups = v; }), tip: 'DCAs and mute groups made from the input types: Speech, Drums, Band, Vox, Playback, BGM.' }));
+  const head = el('tr', {},
+    el('th', { textContent: 'Ch' }), el('th', { textContent: 'Colour' }),
+    el('th', { textContent: 'Name', title: `The desk shows the first ${show.options.maxNameLength} letters` }),
+    el('th', { textContent: 'Type' }), el('th', { textContent: 'St', title: 'Stereo: takes two channels, L and R' }),
+    el('th', { textContent: 'HPF Hz' }), el('th', { textContent: 'Gain dB', title: 'Target gain. Safe start sends the lowest; bring it up to this at line check.' }),
+    el('th', { textContent: '48V' }), el('th', { className: 'zone all-col', textContent: 'All' }),
+    ...show.zones.map((zone) => el('th', { className: 'zone' },
+      el('input', { value: zone.name, 'aria-label': 'Output name', onchange: (e) => update(() => { zone.name = e.target.value; }) }),
+      el('div', { className: 'zone-sub' },
+        el('span', { textContent: busLabel(zone) }),
+        zone.type === 'main' ? null : el('button', {
+          className: `send-point ${sendOf(zone)}`, textContent: sendOf(zone), type: 'button',
+          title: 'Sends to this output: pre or post fader. Click to switch.',
+          onclick: () => update(() => { zone.send = sendOf(zone) === 'pre' ? 'post' : 'pre'; }),
+        }),
+        el('button', { className: 'remove', type: 'button', title: `Remove ${zone.name}`, textContent: '×', onclick: () => update(() => removeZone(zone)) })))),
+    el('th'));
+
+  const rows = show.sources.map((source) => {
+    const chs = plan.channels.filter((c) => c.source === source).map((c) => c.ch);
+    return el('tr', {},
+      el('td', { className: 'ch', textContent: chs.length > 1 ? `${chs[0]}–${chs[1]}` : chs[0] }),
+      el('td', {}, colorSelect(source.color, (v) => update(() => { source.color = v; }))),
+      el('td', { className: 'name' }, el('input', { value: source.name, 'aria-label': 'Input name', onchange: (e) => update(() => { source.name = e.target.value; }) })),
+      el('td', { className: 'type' }, el('select', { 'aria-label': 'Type', onchange: (e) => update(() => changeType(source, e.target.value)) },
+        ...Object.entries(SOURCE_TYPES).map(([k, t]) => el('option', { value: k, textContent: t.label, selected: k === source.type })))),
+      el('td', { className: 'route' }, el('input', { type: 'checkbox', checked: source.stereo, 'aria-label': `${source.name} stereo`, onchange: (e) => update(() => { source.stereo = e.target.checked; }) })),
+      el('td', { className: 'hpf' }, el('input', {
+        type: 'number', min: 0, max: 600, step: 10, value: hpfOf(source) || '', placeholder: 'off', 'aria-label': `${source.name} high-pass in Hz`,
+        onchange: (e) => update(() => { source.hpf = Math.max(0, Math.round(Number(e.target.value) || 0)); }),
+      })),
+      el('td', { className: 'gain' }, el('input', {
+        type: 'number', min: -6, max: 66, step: 1, value: gainOf(source), 'aria-label': `${source.name} target gain in dB`,
+        onchange: (e) => update(() => { source.gain = Math.min(66, Math.max(-6, Math.round(Number(e.target.value) || 0))); }),
+      })),
+      el('td', { className: 'route' }, el('input', { type: 'checkbox', checked: phantomOf(source), 'aria-label': `${source.name} 48V`, onchange: (e) => update(() => { source.phantom = e.target.checked; }) })),
+      el('td', { className: 'route all-col' }, el('input', {
+        type: 'checkbox', checked: show.zones.length > 0 && show.zones.every((z) => source.zones.includes(z.id)), 'aria-label': `${source.name} to every output`,
+        onchange: (e) => update(() => { source.zones = e.target.checked ? show.zones.map((z) => z.id) : []; }),
+      })),
+      ...show.zones.map((zone) => el('td', { className: 'route' }, el('input', {
+        type: 'checkbox', checked: source.zones.includes(zone.id), 'aria-label': `${source.name} to ${zone.name}`,
+        onchange: (e) => update(() => { source.zones = e.target.checked ? [...source.zones, zone.id] : source.zones.filter((z) => z !== zone.id); }),
+      }))),
+      el('td', {}, ...moveButtons(source),
+        el('button', { className: 'remove', type: 'button', title: `Remove ${source.name}`, textContent: '×', onclick: () => update(() => { show.sources = show.sources.filter((s) => s !== source); }) })));
+  });
+  const empty = !show.sources.length && el('tr', {}, el('td', { colSpan: show.zones.length + 10, className: 'dim', textContent: 'No inputs yet' }));
+  $('grid').replaceChildren(el('thead', {}, head), el('tbody', {}, ...rows, empty || null));
+}
 
 // Up/down arrows, only when channels are ordered by hand
 function moveButtons(source) {
@@ -141,8 +143,8 @@ function moveButtons(source) {
     [show.sources[i], show.sources[j]] = [show.sources[j], show.sources[i]];
   });
   return [
-    el('button', { className: 'remove', title: 'Move up', textContent: '↑', onclick: () => move(-1) }),
-    el('button', { className: 'remove', title: 'Move down', textContent: '↓', onclick: () => move(1) }),
+    el('button', { className: 'remove', type: 'button', title: 'Move up', textContent: '↑', onclick: () => move(-1) }),
+    el('button', { className: 'remove', type: 'button', title: 'Move down', textContent: '↓', onclick: () => move(1) }),
   ];
 }
 
@@ -158,16 +160,17 @@ function changeType(source, type) {
 }
 
 function addZone(type) {
-  if (type === 'main' && show.zones.some((z) => z.type === 'main')) return alert("You've already got a Main L/R.");
+  if (type === 'main' && show.zones.some((z) => z.type === 'main')) return toast('This show already has a Main L/R.');
   const zone = makeZone(type, nextZoneName(show, type));
   if (type === 'main') show.zones.unshift(zone); else show.zones.push(zone);
-  // route existing inputs that this kind of zone would normally take
+  // route existing inputs that this kind of output would normally take
   for (const s of show.sources) {
     if (ZONE_TYPES[type].takes.includes(SOURCE_TYPES[s.type].category)) s.zones.push(zone.id);
   }
 }
 
 function download(name, text, type) {
+  if (host.download) return host.download(name, text, type);
   const a = el('a', { href: URL.createObjectURL(new Blob([text], { type })), download: name });
   a.click();
   URL.revokeObjectURL(a.href);
@@ -178,26 +181,26 @@ function setStatus(text, kind = '') {
   $('status').textContent = text;
   $('status').className = `status ${kind}`;
 }
+
 // ---- Desk connection: the app server holds one live connection and reports every change ----
 let link = { state: 'idle' };
 function showLink(s) {
   const was = link.state;
   link = s;
-  $('linkDot').className = `link-dot ${s.state}`;
-  const text = {
-    idle: s.error || 'Not connected',
-    connecting: `Connecting to ${s.host}…`,
-    connected: `Connected to ${s.product || 'the desk'} at ${s.host}`,
-    lost: `${s.error} Check the cable, then reconnect.`,
+  for (const dot of [$('linkDot')]) dot.className = `link-dot ${s.state}`;
+  $('linkPill').className = `link-pill ${s.state}`;
+  $('linkPillText').textContent = {
+    idle: 'No desk', connecting: 'Connecting…', connected: `${s.product || 'Desk'} · ${s.host}`, lost: 'Desk lost',
   }[s.state];
-  $('linkStatus').textContent = text;
-  $('linkStatus').className = `status ${s.state === 'connected' ? 'ok' : s.error ? 'bad' : ''}`;
+  $('linkStatus').textContent = { idle: s.error || '', connecting: '', connected: 'Connected', lost: s.error || 'Lost the desk' }[s.state];
+  $('linkStatus').className = `status ${s.state === 'connected' ? 'ok' : s.error || s.state === 'lost' ? 'bad' : ''}`;
   const btn = $('connectBtn');
   btn.textContent = { idle: 'Connect', connecting: 'Connecting…', connected: 'Disconnect', lost: 'Reconnect' }[s.state];
   btn.className = s.state === 'connected' ? 'ghost' : 'primary';
   btn.disabled = s.state === 'connecting';
   $('host').disabled = $('port').disabled = s.state === 'connected' || s.state === 'connecting';
   if (s.state === 'connected' && was !== 'connected') matchModel(s.product);
+  if (s.state === 'lost' && was === 'connected') toast(`Lost ${s.product || 'the desk'}. Check the cable.`, 'bad');
   if (s.state !== was) render();
 }
 // Set the desk model from the name the desk reports, when it's one the app knows
@@ -205,9 +208,9 @@ function matchModel(product) {
   const id = modelFromProduct(product);
   if (id && id !== show.options.model) {
     update(() => { show.options.model = id; });
-    setStatus(`Desk model set to ${MODELS[id].label} to match the desk.`, 'ok');
+    toast(`Desk set to ${MODELS[id].label}`, 'ok');
   } else if (/RIVAGE|PM\d/i.test(product || '')) {
-    setStatus('RIVAGE desks vary by DSP engine: pick yours under Desk model.');
+    toast('RIVAGE: pick your DSP engine under Desk.');
   }
 }
 async function connectDesk() {
@@ -215,35 +218,36 @@ async function connectDesk() {
     await fetch('/api/disconnect', { method: 'POST' });
     return;
   }
-  const host = $('host').value.trim();
-  if (!host) {
-    showLink({ state: 'idle', error: 'Type the desk IP first.' });
+  const hostIp = $('host').value.trim();
+  if (!hostIp) {
+    showLink({ state: 'idle', error: 'Type the desk IP' });
     return $('host').focus();
   }
-  try { localStorage.setItem(`${STORE}-host`, host); } catch { /* ignore */ }
-  showLink({ state: 'connecting', host });
+  try { localStorage.setItem(`${STORE}-host`, hostIp); } catch { /* ignore */ }
+  showLink({ state: 'connecting', host: hostIp });
   try {
-    const res = await fetch('/api/connect', { method: 'POST', body: JSON.stringify({ host, port: Number($('port').value) || 49280 }) });
+    const res = await fetch('/api/connect', { method: 'POST', body: JSON.stringify({ host: hostIp, port: Number($('port').value) || 49280 }) });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     showLink(data);
   } catch (err) {
-    showLink({ state: 'idle', host, error: err.message === 'Failed to fetch' ? 'The app server has stopped. Start it again with npm start.' : err.message });
+    showLink({ state: 'idle', host: hostIp, error: err.message === 'Failed to fetch' ? 'The app has stopped. Open it again.' : err.message });
   }
 }
 const events = new EventSource('/api/events');
 events.onmessage = (e) => showLink(JSON.parse(e.data));
-events.onerror = () => { if (link.state === 'connected') showLink({ state: 'lost', host: link.host, error: 'Lost touch with the app server.' }); };
+events.onerror = () => { if (link.state === 'connected') showLink({ state: 'lost', host: link.host, error: 'Lost touch with the app' }); };
 $('connectBtn').onclick = connectDesk;
 $('host').onkeydown = (e) => { if (e.key === 'Enter') connectDesk(); };
+$('linkPill').onclick = () => { showTab('desk'); $('host').disabled ? $('connectBtn').focus() : $('host').focus(); };
 
 // ---- Find devices on the network ----
-const KINDS = [['desk', 'Desks'], ['stagebox', 'Stage boxes'], ['radio', 'Radio mics'], ['amp', 'Amps'], ['playback', 'Playback'], ['other', 'Other']];
+const KINDS = [['desk', 'Desks'], ['stagebox', 'Stage boxes'], ['radio', 'Radio'], ['amp', 'Amps'], ['playback', 'Playback'], ['other', 'Other']];
 async function findDevices() {
   $('findPanel').hidden = false;
   const subnet = $('findSubnet').value.trim();
-  $('findStatus').className = 'status';
-  $('findStatus').textContent = subnet ? `Looking on ${subnet}.x…` : 'Looking on this network… (about 10 seconds)';
+  $('findStatus').textContent = 'Scanning…';
+  $('findList').replaceChildren();
   $('findBtn').disabled = $('findAgain').disabled = true;
   try {
     const res = await fetch('/api/discover', { method: 'POST', body: JSON.stringify({ subnet }) });
@@ -251,51 +255,46 @@ async function findDevices() {
     if (data.error) throw new Error(data.error);
     showDevices(data);
   } catch (err) {
-    $('findStatus').className = 'status bad';
-    $('findStatus').textContent = err.message === 'Failed to fetch' ? 'The app server has stopped. Start it again with npm start.' : err.message;
+    $('findStatus').textContent = '';
+    toast(err.message === 'Failed to fetch' ? 'The app has stopped. Open it again.' : err.message, 'bad');
   } finally {
     $('findBtn').disabled = $('findAgain').disabled = false;
   }
 }
 function showDevices({ devices, subnets }) {
-  const where = subnets.length ? subnets.join(', ') : 'this computer only (no network found)';
-  $('findStatus').className = `status ${devices.length ? 'ok' : ''}`;
-  $('findStatus').textContent = devices.length
-    ? `Found ${devices.length} ${devices.length === 1 ? 'device' : 'devices'} on ${where}.`
-    : `Nothing found on ${where}. Check the network cable, or try another network.`;
+  $('findStatus').textContent = `${plural(devices.length, 'device')} · ${subnets.length ? subnets.join(', ') : 'this computer'}`;
+  if (!devices.length) {
+    $('findList').replaceChildren(el('div', { className: 'empty' }, 'Nothing answered. Check the network cable, or scan another range.'));
+    return;
+  }
   const groups = KINDS.map(([kind, title]) => {
     const list = devices.filter((d) => d.kind === kind);
     if (!list.length) return null;
-    const ul = el('ul');
-    for (const d of list) {
-      const who = el('span', { className: 'who' });
-      who.append(el('b', { textContent: [d.make, d.model].filter(Boolean).join(' ') }),
-        el('small', { textContent: [d.ip || 'no address sent', d.name && d.name !== d.model ? d.name : ''].filter(Boolean).join(' · ') }));
-      who.title = `Found by: ${d.via.join(', ')}`;
-      const li = el('li');
-      li.append(who);
+    return el('div', { className: 'find-group' }, el('h3', { textContent: title }), el('ul', {}, ...list.map((d) => {
+      const li = el('li', {}, el('span', { className: 'who', title: `Found by ${d.via.join(', ')}` },
+        el('b', { textContent: [d.make, d.model].filter(Boolean).join(' ') }),
+        el('small', { textContent: [d.ip || 'no address', d.name && d.name !== d.model ? d.name : ''].filter(Boolean).join(' · ') })));
       if (d.make === 'Yamaha' && d.kind === 'desk' && d.ip) {
-        const use = el('button', { className: 'primary', textContent: 'Use this desk' });
-        use.onclick = async () => {
-          if (link.state === 'connected') await fetch('/api/disconnect', { method: 'POST' });
-          $('host').value = d.ip;
-          $('port').value = d.port || 49280;
-          link.state = 'idle';
-          connectDesk();
-        };
-        li.append(use);
+        li.append(el('button', {
+          className: 'primary small', type: 'button', textContent: 'Connect',
+          onclick: async () => {
+            if (link.state === 'connected') await fetch('/api/disconnect', { method: 'POST' });
+            $('host').value = d.ip;
+            $('port').value = d.port || 49280;
+            link.state = 'idle';
+            showTab('desk');
+            connectDesk();
+          },
+        }));
       } else if (d.ip && (d.kind === 'amp' || d.kind === 'radio')) {
         const targets = rigUi.ipTargets().filter((t) => t.kind === d.kind);
         li.append(el('select', {
           'aria-label': `Use ${d.ip} for`,
-          onchange: (e) => { const t = targets[Number(e.target.value)]; if (t) { update(() => t.set(d.ip)); $('findStatus').textContent = `${d.ip} is now ${t.label}.`; } e.target.value = ''; },
+          onchange: (e) => { const t = targets[Number(e.target.value)]; if (t) { update(() => t.set(d.ip)); toast(`${t.label} is at ${d.ip}`, 'ok'); } e.target.value = ''; },
         }, el('option', { value: '', textContent: 'Use for…' }), ...targets.map((t, i) => el('option', { value: String(i), textContent: t.label }))));
       }
-      ul.append(li);
-    }
-    const g = el('div', { className: 'find-group' });
-    g.append(el('h3', { textContent: title }), ul);
-    return g;
+      return li;
+    })));
   }).filter(Boolean);
   $('findList').replaceChildren(...groups);
 }
@@ -322,18 +321,19 @@ for (const t of ['desk', 'amps', 'rf']) $(`tabBtn-${t}`).onclick = () => showTab
 const rigUi = mountRig({
   getShow: () => show,
   update,
+  demo: Boolean(host.demo),
   transport: {
-    shure: async (host, lines, check, onLine) => {
-      try { return await streamLines('/api/shure', { host, lines, check }, onLine); } catch (err) { return { error: err.message }; }
+    shure: async (ip, lines, check, onLine) => {
+      try { return await streamLines('/api/shure', { host: ip, lines, check }, onLine); } catch (err) { return { error: err.message }; }
     },
-    specteraDevices: async (host, password) => {
-      const res = await fetch('/api/spectera/devices', { method: 'POST', body: JSON.stringify({ host, password }) });
+    specteraDevices: async (ip, password) => {
+      const res = await fetch('/api/spectera/devices', { method: 'POST', body: JSON.stringify({ host: ip, password }) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       return data.devices;
     },
-    specteraPush: async (host, password, writes) => {
-      const res = await fetch('/api/spectera/push', { method: 'POST', body: JSON.stringify({ host, password, writes }) });
+    specteraPush: async (ip, password, writes) => {
+      const res = await fetch('/api/spectera/push', { method: 'POST', body: JSON.stringify({ host: ip, password, writes }) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       return data.results;
@@ -373,26 +373,35 @@ function logLine(msg, okText, badText) {
   $('progress').value = (msg.i + 1) / msg.total;
   $('log').append(el('div', { className: msg.ok ? '' : 'bad', textContent: msg.ok ? okText(msg) : badText(msg) }));
 }
+function needDesk() {
+  if (link.state === 'connected') return false;
+  setStatus('Connect the desk first', 'bad');
+  showTab('desk');
+  $('host').focus();
+  return true;
+}
 
 async function pushDesk() {
   const plan = buildPlan(show);
   const model = MODELS[show.options.model] || MODELS.custom;
-  if (!plan.commands.length) return setStatus('Add some inputs or outputs first.', 'bad');
-  if (link.state !== 'connected') {
-    setStatus('Connect to the desk first, at the top of the page.', 'bad');
-    return $('host').focus();
-  }
+  if (!plan.commands.length) return setStatus('Add inputs or outputs first', 'bad');
+  if (needDesk()) return;
   const last = loadLast();
   const onlyChanges = Boolean(last) && show.options.onlyChanges !== false;
   const commands = onlyChanges ? changedCommands(plan.commands, last) : plan.commands;
-  if (!commands.length) return setStatus('Nothing has changed since the last push.', 'ok');
+  if (!commands.length) return setStatus('Nothing has changed since the last send', 'ok');
   const caps = deskCaps(model);
   const backup = show.options.backup || {};
   const scene = backup.scene || caps?.sceneMax;
   const backupCmd = caps && backup.on !== false ? sceneStoreCommand(model, scene) : null;
-  const what = onlyChanges ? `${commands.length} changed lines` : 'this show';
-  const safety = backupCmd ? `First it stores the desk's current scene as scene ${scene}, overwriting what's there.` : 'It renames and re-routes the current scene, so store a backup scene first.';
-  if (!confirm(`Send ${what} to ${link.product || 'the desk'} at ${link.host}?\n\n${safety}`)) return;
+  const what = onlyChanges ? plural(commands.length, 'changed line') : `${commands.length} lines`;
+  const ok = await ask($('pushAsk'), {
+    text: backupCmd
+      ? `Send ${what} to ${link.product || 'the desk'}? The current scene is stored to scene ${scene} first, overwriting it.`
+      : `Send ${what} to ${link.product || 'the desk'}? This desk can't back up from here, so store a scene first.`,
+    yes: 'Send', danger: !backupCmd,
+  });
+  if (!ok) return;
 
   startLog();
   $('pushDesk').disabled = true;
@@ -401,15 +410,18 @@ async function pushDesk() {
     if (backupCmd) {
       setStatus(`Backing up to scene ${scene}…`);
       const result = await streamLines('/api/push', { commands: [backupCmd] }, (msg) => logLine(msg, (m) => `${m.cmd}  (backup)`, (m) => `${m.cmd}\n  ↳ ${m.reply}`));
-      if (result?.errors) return setStatus(`The desk refused the backup, so nothing else was sent. Store a scene by hand, or untick the backup.`, 'bad');
+      if (result?.errors) return setStatus('The desk refused the backup, so nothing was sent', 'bad');
     }
     setStatus('Sending…');
     const result = await streamLines('/api/push', { commands }, (msg) => {
       if (msg.ok) sent.push(msg.cmd);
       logLine(msg, (m) => m.cmd, (m) => `${m.cmd}\n  ↳ ${m.reply}`);
     });
-    const backedUp = backupCmd ? ` Your old scene is safe in scene ${scene}.` : '';
-    setStatus(result.errors ? `Sent, but the desk refused ${result.errors} lines. They're in red in the log.${backedUp}` : `Sent. The desk took ${result.total === 1 ? 'the 1 line' : `all ${result.total} lines`}.${backedUp}`, result.errors ? 'bad' : 'ok');
+    if (result.errors) setStatus(`${result.errors} of ${result.total} lines refused, marked red below`, 'bad');
+    else {
+      setStatus(`Sent ${result.total} lines${backupCmd ? ` · old scene in ${scene}` : ''}`, 'ok');
+      toast(`Show sent to ${link.product || 'the desk'}`, 'ok');
+    }
   } catch (err) {
     setStatus(err.message, 'bad');
   } finally {
@@ -421,20 +433,21 @@ async function pushDesk() {
 
 async function verifyDesk() {
   const plan = buildPlan(show);
-  if (link.state !== 'connected') {
-    setStatus('Connect to the desk first, at the top of the page.', 'bad');
-    return $('host').focus();
-  }
+  if (needDesk()) return;
   startLog();
   $('verifyDesk').disabled = true;
-  setStatus('Reading the desk back…');
+  setStatus('Reading the desk…');
   try {
     const result = await streamLines('/api/verify', { commands: plan.commands }, (msg) => {
-      if (!msg.ok) logLine(msg, () => '', (m) => `${m.cmd}\n  ↳ the desk has: ${m.reply.replace(/^OK get \S+ \d+ \d+ /, '')}`);
+      if (!msg.ok) logLine(msg, () => '', (m) => `${m.cmd}\n  ↳ desk has ${m.reply.replace(/^OK get \S+ \d+ \d+ /, '')}`);
       else $('progress').value = (msg.i + 1) / msg.total;
     });
-    setStatus(result.wrong ? `${result.wrong} of ${result.total} settings don't match the show. They're in the log.` : `The desk matches the show. All ${result.total} settings checked.`, result.wrong ? 'bad' : 'ok');
-    if (!result.wrong) $('log').hidden = true;
+    if (result.wrong) setStatus(`${result.wrong} of ${result.total} settings differ, listed below`, 'bad');
+    else {
+      setStatus(`All ${result.total} settings match`, 'ok');
+      $('log').hidden = true;
+      $('progress').hidden = true;
+    }
   } catch (err) {
     setStatus(err.message, 'bad');
   } finally {
@@ -442,27 +455,29 @@ async function verifyDesk() {
   }
 }
 
-// Static controls
-const GROUPS = { speech: 'Speech', band: 'Band', talkback: 'Band', program: 'Playback', bgm: 'Playback' };
-const groups = { Packages: Object.entries(PACKAGES).map(([key, pkg]) => el('button', {
-  className: 'chip', textContent: `${pkg.label} (${pkg.sources.reduce((n, s) => n + ((s.stereo ?? SOURCE_TYPES[s.type].stereo) ? 2 : 1), 0)} ch)`,
-  onclick: () => update(() => applySuggestion(show, packageSuggestion(key))),
+// ---- Static controls: add buttons, desk list, file actions ----
+const GROUP_OF = { speech: 'Speech', band: 'Band', talkback: 'Band', program: 'Playback', bgm: 'Playback' };
+const chipGroups = { Packages: Object.entries(PACKAGES).map(([key, pkg]) => el('button', {
+  className: 'chip', type: 'button', textContent: `${pkg.label} · ${pkg.sources.reduce((n, s) => n + ((s.stereo ?? SOURCE_TYPES[s.type].stereo) ? 2 : 1), 0)}`,
+  onclick: () => { update(() => applySuggestion(show, packageSuggestion(key))); toast(`${pkg.label} added`, 'ok'); },
 })) };
 for (const [type, t] of Object.entries(SOURCE_TYPES)) {
-  const chip = el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addSources(show, type, Math.max(1, Number($('addCount').value) || 1))) });
-  (groups[GROUPS[t.category]] ||= []).push(chip);
+  const chip = el('button', { className: 'chip', type: 'button', textContent: t.label, onclick: () => update(() => addSources(show, type, Math.max(1, Number($('addCount').value) || 1))) });
+  (chipGroups[GROUP_OF[t.category]] ||= []).push(chip);
 }
-for (const [name, chips] of Object.entries(groups)) {
+for (const [name, chips] of Object.entries(chipGroups)) {
   $('addButtons').append(el('div', { className: 'chip-group' }, el('span', { className: 'chip-label', textContent: name }), el('div', { className: 'chips' }, ...chips)));
 }
 $('addButtons').children[0].after(el('div', { className: 'chip-group', id: 'tplGroup', hidden: true },
   el('span', { className: 'chip-label', textContent: 'Yours' }), el('div', { className: 'chips', id: 'tplChips' })));
-const zoneGroups = { 'Speakers · post-fade': [], 'Monitors · pre-fade': [] };
+const zoneGroups = { Speakers: [], Monitors: [] };
 for (const [type, t] of Object.entries(ZONE_TYPES)) {
-  zoneGroups[t.monitor ? 'Monitors · pre-fade' : 'Speakers · post-fade'].push(el('button', { className: 'chip', textContent: t.label, onclick: () => update(() => addZone(type)) }));
+  zoneGroups[t.monitor ? 'Monitors' : 'Speakers'].push(el('button', { className: 'chip', type: 'button', textContent: t.label, onclick: () => update(() => addZone(type)) }));
 }
 for (const [name, chips] of Object.entries(zoneGroups)) {
-  $('zoneButtons').append(el('div', { className: 'chip-group zone-group' }, el('span', { className: 'chip-label', textContent: name }), el('div', { className: 'chips' }, ...chips)));
+  $('zoneButtons').append(el('div', { className: 'chip-group' },
+    el('span', { className: 'chip-label' }, name, el('small', { textContent: name === 'Monitors' ? 'pre fade' : 'post fade' })),
+    el('div', { className: 'chips' }, ...chips)));
 }
 const series = {};
 for (const [id, m] of Object.entries(MODELS)) (series[m.series || ''] ||= []).push(el('option', { value: id, textContent: m.label }));
@@ -470,46 +485,35 @@ for (const [name, options] of Object.entries(series)) {
   $('model').append(name ? el('optgroup', { label: name === 'RIVAGE' ? 'RIVAGE PM' : `${name} series` }, ...options) : options[0]);
 }
 $('model').onchange = (e) => update(() => { show.options.model = e.target.value; });
-$('showName').onchange =(e) => update(() => { show.name = e.target.value; });
-for (const k of ['firstChannel', 'firstMix', 'maxNameLength']) {
-  $(k).onchange = (e) => update(() => { show.options[k] = Math.max(1, Number(e.target.value) || 1); });
-}
-$('autoOrder').onchange = (e) => update(() => { show.options.autoOrder = e.target.checked; });
-$('setLevels').onchange = (e) => update(() => { show.options.setLevels = e.target.checked; });
-$('safeStart').onchange = (e) => update(() => { show.options.safeStart = e.target.checked; });
-// New show wipes the page back to empty; Example loads the conference example. Both ask first unless the page is already empty.
-let pendingShow = null;
+$('showName').onchange = (e) => update(() => { show.name = e.target.value.trim() || 'New show'; });
+
+// New show wipes the page back to empty; the example loads the conference show. Both ask first unless the page is empty.
 function resetPage() {
   $('typeText').value = '';
   $('pasteText').value = '';
-  $('monStatus').textContent = '';
   $('tplBar').hidden = true;
   soloKey = null;
   $('typePreview').hidden = true;
-  typeStatus('');
   $('addCount').value = 1;
   $('log').textContent = '';
   $('log').hidden = true;
   $('progress').hidden = true;
   showCommands = false;
-  $('toggleCommands').textContent = 'Show commands';
+  $('toggleCommands').textContent = 'Commands';
   setStatus('');
 }
 function startShow(next) {
   update(() => { show = next; });
   resetPage();
 }
-function askToReplace(next, text) {
-  if (!show.sources.length && !show.zones.length) return startShow(next);
-  pendingShow = next;
-  $('newText').textContent = text;
-  $('newConfirm').hidden = false;
-  $('newYes').focus();
+async function askToReplace(next, text, yes) {
+  if (show.sources.length || show.zones.length) {
+    if (!await ask($('askHost'), { text, yes, danger: true })) return;
+  }
+  startShow(next);
 }
-$('newShow').onclick = () => askToReplace(emptyShow(show.options.model), "Start again with an empty show? You'll lose everything on this page.");
-$('exampleShow').onclick = () => askToReplace({ ...defaultShow(), options: { ...defaultShow().options, model: show.options.model } }, 'Load the example? It replaces everything on this page.');
-$('newYes').onclick = () => { $('newConfirm').hidden = true; startShow(pendingShow); };
-$('newNo').onclick = () => { $('newConfirm').hidden = true; pendingShow = null; };
+$('newShow').onclick = () => askToReplace(emptyShow(show.options.model), 'Start an empty show? Everything on this page goes.', 'Start empty');
+$('exampleShow').onclick = () => askToReplace({ ...defaultShow(), options: { ...defaultShow().options, model: show.options.model } }, 'Load the conference example? It replaces this show.', 'Load example');
 $('saveShow').onclick = () => download(`${fileBase()}.show.json`, JSON.stringify(show, null, 2), 'application/json');
 $('exportCsv').onclick = () => download(`${fileBase()}-patch.csv`, patchSheetCsv(show, buildPlan(show)), 'text/csv');
 $('openFile').onchange = async (e) => {
@@ -517,31 +521,32 @@ $('openFile').onchange = async (e) => {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    if (!Array.isArray(data.sources) || !Array.isArray(data.zones)) throw new Error('Not a show file');
+    if (!Array.isArray(data.sources) || !Array.isArray(data.zones)) throw new Error('not a show file');
     update(() => { show = data; });
-  } catch (err) { alert(`Couldn't open that file: ${err.message}`); }
+    toast(`Opened ${show.name}`, 'ok');
+  } catch (err) { toast(`Couldn't open that file: ${err.message}`, 'bad'); }
   e.target.value = '';
 };
 $('toggleCommands').onclick = () => {
   showCommands = !showCommands;
-  $('toggleCommands').textContent = showCommands ? 'Hide commands' : 'Show commands';
+  $('toggleCommands').textContent = showCommands ? 'Hide commands' : 'Commands';
   if (!showCommands) $('log').hidden = true;
   render();
 };
 
-// ---- Patch: inputs and outputs onto Analogue, Card and Dante ports ----
+// ---- Patch: inputs and outputs onto Analogue, Card, Rio and Dante sockets ----
 const range = (p, n) => (p ? (n > 1 ? `${portLabel(p)}–${p.port + n - 1}` : portLabel(p)) : 'unpatched');
 function bankSelect(banks, value, autoText, onChange) {
-  return el('select', { 'aria-label': 'Patch', onchange: (e) => onChange(e.target.value) },
+  return el('select', { 'aria-label': 'Socket bank', onchange: (e) => onChange(e.target.value) },
     ...(autoText ? [el('option', { value: 'auto', textContent: autoText, selected: !value })] : []),
-    ...banks.map((b) => el('option', { value: b.key, textContent: `${b.label} (${b.first || 1}–${(b.first || 1) + b.size - 1})`, selected: value === b.key })));
+    ...banks.map((b) => el('option', { value: b.key, textContent: `${b.label} ${b.first || 1}–${(b.first || 1) + b.size - 1}`, selected: value === b.key })));
 }
 function patchControl(target, banks, autoText) {
   const fixed = target.patch;
   return el('div', { className: 'patch-cell' },
     bankSelect(banks, fixed?.bank, autoText, (bank) => update(() => { target.patch = bank === 'auto' ? undefined : { bank, port: fixed?.port || 1 }; })),
     fixed && el('input', {
-      type: 'number', min: 1, value: fixed.port, className: 'port', 'aria-label': 'Port number',
+      type: 'number', min: 1, value: fixed.port, className: 'port', 'aria-label': 'Socket',
       onchange: (e) => update(() => { target.patch = { bank: fixed.bank, port: Math.max(1, Math.round(Number(e.target.value) || 1)) }; }),
     }));
 }
@@ -557,21 +562,17 @@ function renderPatch(plan, model) {
   const inBanks = patchBanks(model, 'in', show.rios);
   const outBanks = patchBanks(model, 'out', show.rios);
   const sends = plan.patchOnDesk.outputs;
-  $('patchNote').textContent = sends
-    ? `The app patches your outputs on the ${model.label}. The desk won't let it touch the input patch, so plug inputs in from this list or the patch sheet.`
-    : model.inputs
-      ? `The ${model.label} won't take patch changes from the app. Patch it on the desk from this list or the patch sheet.`
-      : 'Pick your desk at the top to see its real sockets.';
-  $('sendPatchRow').hidden = !sends;
-  $('sendPatch').checked = show.options.sendPatch !== false;
+  $('patchMeta').replaceChildren(!model.inputs ? tag('Pick a desk')
+    : sends ? tag('Outputs from app', 'on', `The app patches outputs on the ${model.label}. Inputs are patched by hand: the desk won't take input patch over the network.`)
+      : tag('Patch by hand', '', `The ${model.label} doesn't take patch changes over the network. Patch it from this list or the patch sheet.`));
+  $('sendPatchRow').replaceChildren(sends ? toggle({ label: 'Send output patch', checked: show.options.sendPatch !== false, onchange: (v) => update(() => { show.options.sendPatch = v; }) }) : '');
   startControl('inStart', inBanks, 'inPatch');
   startControl('outStart', outBanks, 'outPatch');
 
   const inRows = plan.channels.filter((c) => c.side !== 'R').map((c) => {
     const n = c.side ? 2 : 1;
-    const last = c.ch + n - 1;
     return el('tr', {},
-      el('td', { className: 'ch', textContent: n > 1 ? `${c.ch}–${last}` : c.ch }),
+      el('td', { className: 'ch', textContent: n > 1 ? `${c.ch}–${c.ch + 1}` : c.ch }),
       el('td', { textContent: c.source.name }),
       el('td', {}, patchControl(c.source, inBanks, `Auto · ${range(c.patch, n)}`)));
   });
@@ -579,66 +580,66 @@ function renderPatch(plan, model) {
     el('thead', {}, el('tr', {}, el('th', { textContent: 'Ch' }), el('th', { textContent: 'Input' }), el('th', { textContent: 'Plugs into' }))),
     el('tbody', {}, ...inRows));
   const outRows = plan.outputs.map((o) => el('tr', {},
-    el('td', { className: 'ch', textContent: o.zone.type === 'main' ? 'ST L/R' : o.buses.map((b) => b.replace('MIX', '')).join('/') }),
+    el('td', { className: 'ch', textContent: o.zone.type === 'main' ? 'ST' : o.buses.map((b) => b.replace('MIX', '')).join('/') }),
     el('td', { textContent: o.name }),
     el('td', {}, patchControl(o.zone, outBanks, `Auto · ${range(o.patch, o.ports)}`))));
   $('patchOut').replaceChildren(
     el('thead', {}, el('tr', {}, el('th', { textContent: 'Bus' }), el('th', { textContent: 'Output' }), el('th', { textContent: 'Comes out of' }))),
     el('tbody', {}, ...outRows));
 }
-$('sendPatch').onchange = (e) => update(() => { show.options.sendPatch = e.target.checked; });
 
-// ---- Typed requests: trigger words turn plain text into inputs and zones, offline ----
+// ---- Typed requests and pasted lists: trigger words turn plain text into inputs and outputs, offline ----
 let suggestion = null;
-function typeStatus(text, kind = '') {
-  $('typeStatus').textContent = text;
-  $('typeStatus').className = `status ${kind}`;
-}
+let pasteMode = false;
+let keepOrder = true;
 function previewTyped() {
   const s = parseRequest($('typeText').value, show);
-  const unknown = s.unknown.length ? `Not sure what these are: ${s.unknown.join(', ')}` : '';
   if (!s.sources.length && !s.zones.length) {
     $('typePreview').hidden = true;
-    return typeStatus(unknown || 'Try something like "full band and 4 wedges".', 'bad');
+    return toast(s.unknown.length ? `Didn't recognise ${s.unknown.join(', ')}` : 'Try "full band and 4 wedges"', 'bad');
   }
   pasteMode = false;
-  typeStatus(unknown, unknown ? 'bad' : '');
-  showPreview(s);
+  showPreview(s, s.unknown.length ? `Skipped ${s.unknown.join(', ')}` : '');
 }
-function showPreview(s) {
+function showPreview(s, note = '') {
   suggestion = s;
-  $('typeSummary').textContent = `This adds ${s.summary}`;
+  $('typeSummary').textContent = note;
   $('typeList').replaceChildren(
-    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name}${(x.stereo ?? SOURCE_TYPES[x.type].stereo) ? ' (L/R)' : ''}${x.note ? ` · ${x.note}` : ''}${x.phantom ? ' · 48V' : ''}` })),
-    ...s.zones.map((z) => el('li', { className: 'pill zone-pill', textContent: `Output: ${z.name}` })));
+    ...s.sources.map((x) => el('li', { className: 'pill', textContent: `${x.count > 1 ? `${x.count} × ` : ''}${x.name}${(x.stereo ?? SOURCE_TYPES[x.type].stereo) ? ' L/R' : ''}${x.note ? ` · ${x.note}` : ''}${x.phantom ? ' · 48V' : ''}` })),
+    ...s.zones.map((z) => el('li', { className: 'pill out', textContent: z.name })));
   $('typePreview').hidden = false;
 }
-let pasteMode = false;
+$('wordsTip').replaceWith(info('Words it knows: full band, drum kit, lectern, headset, handheld, kick, snare, hi hat, tom, overhead, bass, guitar, acoustic, keys, vocal, BV, talkback, laptop, playback, BGM, main, PA, wedge, mono IEM, stereo IEM, delay, front fill, ceiling, record. Numbers work as digits or words.'));
+$('pasteToggle').onclick = () => {
+  const open = $('pasteBox').hidden;
+  $('pasteBox').hidden = !open;
+  $('pasteToggle').setAttribute('aria-expanded', String(open));
+  if (open) $('pasteText').focus();
+};
+$('pasteOrder').replaceWith(toggle({ label: "Keep the list's order", checked: true, onchange: (v) => { keepOrder = v; }, tip: 'Paste from a rider, spreadsheet or email, one line per channel. 48V and mic models are picked up, and "Keys L" / "Keys R" become one stereo input.' }));
 $('pasteGo').onclick = () => {
   const s = parseInputList($('pasteText').value);
-  if (!s.sources.length) return typeStatus('Paste at least one line, like "1  Kick In  Beta 91".', 'bad');
+  if (!s.sources.length) return toast('Paste at least one line, like "1  Kick In  Beta 91"', 'bad');
   pasteMode = true;
-  typeStatus('');
-  showPreview(s);
+  showPreview(s, plural(s.sources.length, 'input'));
 };
 $('typeGo').onclick = previewTyped;
-$('typeText').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); previewTyped(); } };
+$('typeText').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); previewTyped(); } };
 $('typeAdd').onclick = () => {
-  const keepOrder = pasteMode && $('pasteKeepOrder').checked;
+  const ordered = pasteMode && keepOrder;
   update(() => {
     applySuggestion(show, suggestion);
-    if (keepOrder) show.options.autoOrder = false;
+    if (ordered) show.options.autoOrder = false;
   });
   $('typePreview').hidden = true;
-  if (pasteMode) $('pasteText').value = '';
-  else $('typeText').value = '';
-  typeStatus(keepOrder ? 'Added. Auto order is off, so your list keeps its order.' : 'Added. Check the routing below.', 'ok');
+  if (pasteMode) { $('pasteText').value = ''; $('pasteBox').hidden = true; } else $('typeText').value = '';
+  toast(ordered ? 'Added in your order' : 'Added', 'ok');
 };
-$('typeDiscard').onclick = () => { $('typePreview').hidden = true; typeStatus(''); };
+$('typeDiscard').onclick = () => { $('typePreview').hidden = true; };
 $('pushDesk').onclick = pushDesk;
 try { $('host').value = localStorage.getItem(`${STORE}-host`) || ''; } catch { /* ignore */ }
 
-// ---- Your templates: saved on this computer, shown as one-click chips next to the packages ----
+// ---- Your templates: saved on this computer, shown as chips next to the packages ----
 const TPL_KEY = `${STORE}-templates`;
 function loadTemplates() {
   try { return JSON.parse(localStorage.getItem(TPL_KEY)) || []; } catch { return []; }
@@ -651,10 +652,10 @@ function renderTemplates() {
   $('tplGroup').hidden = !list.length;
   $('tplChips').replaceChildren(...list.map((tpl, i) => el('span', { className: 'tpl-chip' },
     el('button', {
-      className: 'chip', textContent: tpl.name, title: `${tpl.sources.length} inputs, ${tpl.zones.length} outputs`,
-      onclick: () => { update(() => applyTemplate(show, tpl)); typeStatus(`Added the ${tpl.name} template.`, 'ok'); },
+      className: 'chip mine', type: 'button', textContent: tpl.name, title: `${plural(tpl.sources.length, 'input')}, ${plural(tpl.zones.length, 'output')}`,
+      onclick: () => { update(() => applyTemplate(show, tpl)); toast(`${tpl.name} added`, 'ok'); },
     }),
-    el('button', { className: 'remove', textContent: '×', title: `Delete the ${tpl.name} template`, onclick: () => { saveTemplates(loadTemplates().filter((_, j) => j !== i)); renderTemplates(); } }))));
+    el('button', { className: 'remove', type: 'button', textContent: '×', title: `Delete ${tpl.name}`, onclick: () => { saveTemplates(loadTemplates().filter((_, j) => j !== i)); renderTemplates(); } }))));
 }
 $('saveTemplate').onclick = () => {
   $('tplBar').hidden = false;
@@ -662,44 +663,39 @@ $('saveTemplate').onclick = () => {
   $('tplName').focus();
 };
 $('tplSave').onclick = () => {
-  if (!show.sources.length && !show.zones.length) return typeStatus('Add some inputs or outputs before saving a template.', 'bad');
+  if (!show.sources.length && !show.zones.length) return toast('Add inputs or outputs first', 'bad');
   const tpl = makeTemplate(show, $('tplName').value);
   saveTemplates([...loadTemplates().filter((t) => t.name !== tpl.name), tpl]);
   renderTemplates();
   $('tplBar').hidden = true;
-  typeStatus(`Saved "${tpl.name}". It's under Yours, next to the packages.`, 'ok');
+  toast(`Template saved: ${tpl.name}`, 'ok');
 };
 $('tplCancel').onclick = () => { $('tplBar').hidden = true; };
-$('tplName').onkeydown = (e) => { if (e.key === 'Enter') $('tplSave').click(); };
+$('tplName').onkeydown = (e) => { if (e.key === 'Enter') $('tplSave').click(); if (e.key === 'Escape') $('tplBar').hidden = true; };
 
 // ---- Monitors: pair singers with their own mix, and make a monitor-desk show ----
 $('pairMon').onclick = () => {
   let pairs = [];
   update(() => { pairs = pairMonitors(show); });
-  $('monStatus').textContent = pairs.length ? pairs.join(' · ') : 'Add some vocal mics and monitor outputs first.';
-  $('monStatus').className = `status ${pairs.length ? 'ok' : 'bad'}`;
+  toast(pairs.length ? pairs.join(' · ') : 'Add vocal mics and monitor outputs first', pairs.length ? 'ok' : 'bad');
 };
 $('monitorShow').onclick = () => {
   const mon = monitorShow(show);
   download(`${fileBase()}-monitors.show.json`, JSON.stringify(mon, null, 2), 'application/json');
-  $('monStatus').textContent = `Saved ${mon.name}. Open it with Open on the monitor desk's laptop.`;
-  $('monStatus').className = 'status ok';
+  toast(`Saved ${mon.name}. Open it on the monitor desk's laptop.`, 'ok');
 };
 
-// ---- DCAs, mute groups, gain and push options ----
+// ---- DCAs and mute groups ----
 function renderGroups(plan, model) {
   const caps = deskCaps(model);
-  $('autoGroups').checked = show.options.groups !== false;
-  $('groupsList').replaceChildren(...plan.groups.map((g) => el('span', { className: 'group-pill', title: g.channels.map((c) => c.name).join(', ') },
-    el('b', { textContent: g.number }), ` ${g.name} · ${g.channels.length}`)));
-  $('groupsNote').textContent = show.options.groups === false || !plan.groups.length ? ''
-    : !caps ? 'Pick your desk to send these.'
-      : !caps.dcas ? `The ${model.label} won't take DCAs from the app.`
-        : caps.dcaAssign ? `DCAs go to the desk, named and assigned.${caps.muteGroups ? ' Mute groups get their names; assign channels to them on the desk.' : ''}`
-          : 'Names go to the desk. Assign channels to them on the desk.';
+  const on = show.options.groups !== false && plan.groups.length;
+  const where = !on ? null
+    : !caps ? tag('Pick a desk') : !caps.dcas ? tag('Not on this desk') : caps.dcaAssign ? tag('Sent to desk', 'on', caps.muteGroups ? 'DCAs are named and assigned. Mute groups get their names; assign channels to them on the desk.' : 'DCAs are named and assigned.') : tag('Names only', '', 'Names go to the desk. Assign channels on the desk.');
+  $('groupsList').replaceChildren(...(on ? [el('span', { className: 'chip-label', textContent: 'DCA' }), ...plan.groups.map((g) => el('span', { className: 'group-pill', title: g.channels.map((c) => c.name).join(', ') },
+    el('b', { textContent: g.number }), g.name, el('span', { className: 'dim', textContent: g.channels.length }))), where] : []));
 }
-$('autoGroups').onchange = (e) => update(() => { show.options.groups = e.target.checked; });
 
+// ---- Send options ----
 const lastKey = () => `${STORE}-last-${link.host || 'none'}-${show.options.model}`;
 function loadLast() {
   if (link.state !== 'connected') return null;
@@ -708,29 +704,33 @@ function loadLast() {
 function saveLast(value) {
   try { if (value) localStorage.setItem(lastKey(), JSON.stringify(value)); else localStorage.removeItem(lastKey()); } catch { /* storage off */ }
 }
+function setting(control, ...right) {
+  return el('div', { className: 'setting' }, control, el('span', { className: 'grow' }), ...right);
+}
+function numberSetting(label, key, min, max) {
+  return setting(el('span', { className: 'switch-label', textContent: label }),
+    el('input', { type: 'number', min, max, value: show.options[key], 'aria-label': label, onchange: (e) => update(() => { show.options[key] = Math.min(max, Math.max(min, Number(e.target.value) || min)); }) }));
+}
 function renderSendOptions(plan, model) {
   const caps = deskCaps(model);
-  $('setGain').checked = show.options.setGain !== false;
-  $('gainNote').textContent = !caps ? '(pick your desk)' : !caps.gain ? '(this desk takes neither from the app)' : caps.phantom ? '' : '(gain only: switch 48V on at the desk)';
   const backup = show.options.backup || {};
-  $('backupOn').disabled = !caps;
-  $('backupOn').checked = Boolean(caps) && backup.on !== false;
-  $('backupScene').value = backup.scene || caps?.sceneMax || 100;
-  $('backupScene').disabled = !caps;
-  $('backupNote').textContent = caps ? 'This overwrites that scene.' : 'Pick your desk to back up from here.';
   const last = loadLast();
-  $('onlyChanges').disabled = !last;
-  $('onlyChanges').checked = Boolean(last) && show.options.onlyChanges !== false;
-  $('forgetPush').hidden = !last;
-  $('changesNote').textContent = last
-    ? `${changedCommands(plan.commands, last).length} of ${plan.commands.length} lines have changed since the last push to this desk.`
-    : 'After your first push to a desk, later pushes can send only the changes.';
+  const changed = last ? changedCommands(plan.commands, last).length : 0;
+  $('sendMeta').textContent = plan.commands.length ? `${plan.commands.length} lines` : '';
+  $('sendSettings').replaceChildren(
+    setting(toggle({ label: 'Safe start', checked: show.options.safeStart !== false, onchange: (v) => update(() => { show.options.safeStart = v; }), tip: 'Every head-amp at its lowest (-6 dB) and every fader at -∞: inputs, outputs and Main L/R. Bring them up at line check.' })),
+    setting(toggle({ label: 'Reset faders', checked: show.options.setLevels, onchange: (v) => update(() => { show.options.setLevels = v; }), tip: 'Inputs to -∞, outputs to -∞ with safe start (0 dB without). Off leaves the desk\'s levels alone.' })),
+    setting(toggle({ label: 'Gain and 48V', checked: show.options.setGain !== false, disabled: !caps?.gain, onchange: (v) => update(() => { show.options.setGain = v; }) }),
+      el('span', { className: 'value', textContent: !caps ? 'pick a desk' : !caps.gain ? 'not on this desk' : caps.phantom ? '' : 'gain only' })),
+    setting(toggle({ label: 'Back up scene first', checked: Boolean(caps) && backup.on !== false, disabled: !caps, onchange: (v) => update(() => { show.options.backup = { ...show.options.backup, on: v }; }) }),
+      el('input', { type: 'number', min: 1, value: backup.scene || caps?.sceneMax || 100, disabled: !caps, 'aria-label': 'Backup scene number', onchange: (e) => update(() => { show.options.backup = { ...show.options.backup, scene: Math.max(1, Math.round(Number(e.target.value) || 1)) }; }) })),
+    setting(toggle({ label: 'Only changes', checked: Boolean(last) && show.options.onlyChanges !== false, disabled: !last, onchange: (v) => update(() => { show.options.onlyChanges = v; }), tip: 'After the first send to a desk, later sends only include what changed.' }),
+      last ? el('span', { className: 'value', textContent: `${changed} changed` }) : null,
+      last ? el('button', { className: 'link', type: 'button', textContent: 'Reset', title: 'Send everything next time', onclick: () => { saveLast(null); render(); toast('Next send includes everything'); } }) : null),
+    numberSetting('First channel', 'firstChannel', 1, 288),
+    numberSetting('First mix', 'firstMix', 1, 72),
+    numberSetting('Name length', 'maxNameLength', 4, 32));
 }
-$('setGain').onchange = (e) => update(() => { show.options.setGain = e.target.checked; });
-$('backupOn').onchange = (e) => update(() => { show.options.backup = { ...show.options.backup, on: e.target.checked }; });
-$('backupScene').onchange = (e) => update(() => { show.options.backup = { ...show.options.backup, scene: Math.max(1, Math.round(Number(e.target.value) || 1)) }; });
-$('onlyChanges').onchange = (e) => update(() => { show.options.onlyChanges = e.target.checked; });
-$('forgetPush').onclick = () => { saveLast(null); render(); setStatus('The next push sends everything.'); };
 $('verifyDesk').onclick = verifyDesk;
 
 // ---- Line check: tick each channel off, soloing it on the desk where the desk allows ----
@@ -740,29 +740,27 @@ function renderLineCheck(plan, model) {
   const caps = deskCaps(model);
   show.lineCheck ||= {};
   const done = plan.channels.filter((c) => show.lineCheck[lcKey(c)]).length;
-  $('lcCount').textContent = plan.channels.length ? `${done} of ${plan.channels.length} checked` : '';
-  $('lcCount').className = `status ${done && done === plan.channels.length ? 'ok' : ''}`;
+  $('lcCount').textContent = plan.channels.length ? `${done}/${plan.channels.length}` : '';
   const canSolo = Boolean(caps?.cue) && link.state === 'connected';
   if (!canSolo) soloKey = null;
-  $('lcNote').textContent = !caps?.cue
-    ? (model.inputs ? `The ${model.label} won't take solo from the app, so solo on the desk as you go.` : 'Pick your desk to solo channels from here.')
-    : canSolo ? 'Tap Solo to hear a channel on the desk, then tick it. Ticking a soloed channel moves the solo on to the next one.'
-      : 'Connect to the desk to solo channels from here.';
+  $('lcNote').replaceChildren(!model.inputs ? '' : !caps?.cue ? tag('Solo on the desk') : canSolo
+    ? tag('Solo from here', 'on', 'Ticking a soloed channel moves the solo on to the next one.') : tag('Connect to solo'));
   $('lcTable').replaceChildren(
-    el('thead', {}, el('tr', {}, ...['✓', 'Ch', 'Name', 'Plugs into', 'Mic / note', '48V', 'Bring gain to', ''].map((t) => el('th', { textContent: t })))),
+    el('thead', {}, el('tr', {}, ...['', 'Ch', 'Name', 'Plugs into', 'Mic', '48V', 'Gain', ''].map((t) => el('th', { textContent: t })))),
     el('tbody', {}, ...plan.channels.map((c) => {
       const key = lcKey(c);
       const ticked = Boolean(show.lineCheck[key]);
       return el('tr', { className: `${ticked ? 'lc-done' : ''} ${soloKey === key ? 'lc-solo' : ''}` },
-        el('td', { className: 'lc-tick' }, el('input', { type: 'checkbox', checked: ticked, 'aria-label': `${c.name} checked`, onchange: (e) => tickLine(plan, c, e.target.checked) })),
+        el('td', { className: 'ch' }, el('input', { type: 'checkbox', checked: ticked, 'aria-label': `${c.name} checked`, onchange: (e) => tickLine(plan, c, e.target.checked) })),
         el('td', { className: 'ch', textContent: c.ch }),
         el('td', { textContent: c.name }),
-        el('td', { textContent: portLabel(c.patch) }),
-        el('td', { textContent: c.source.note || '' }),
-        el('td', { textContent: phantomOf(c.source) ? '48V' : '' }),
-        el('td', { textContent: `${gainOf(c.source)} dB` }),
-        el('td', {}, canSolo && el('button', { className: `solo ${soloKey === key ? 'on' : ''}`, textContent: soloKey === key ? 'Soloed' : 'Solo', onclick: () => solo(plan, c) })));
-    })));
+        el('td', { className: 'mono dim', textContent: portLabel(c.patch) }),
+        el('td', { className: 'dim', textContent: c.source.note || '' }),
+        el('td', { className: 'mono', textContent: phantomOf(c.source) ? '48V' : '' }),
+        el('td', { className: 'mono', textContent: `${gainOf(c.source)} dB` }),
+        el('td', {}, canSolo && el('button', { className: `solo ${soloKey === key ? 'on' : ''}`, type: 'button', textContent: 'Solo', 'aria-pressed': String(soloKey === key), onclick: () => solo(plan, c) })));
+    }),
+    !plan.channels.length ? el('tr', {}, el('td', { colSpan: 8, className: 'dim', textContent: 'No inputs yet' })) : null));
 }
 async function sendCue(commands) {
   const res = await fetch('/api/cue', { method: 'POST', body: JSON.stringify({ commands }) });
@@ -780,7 +778,7 @@ async function solo(plan, c) {
     await sendCue(commands);
     soloKey = soloKey === key ? null : key;
   } catch (err) {
-    setStatus(err.message, 'bad');
+    toast(err.message, 'bad');
   }
   render();
 }
@@ -796,19 +794,19 @@ function tickLine(plan, c, ticked) {
 }
 $('lcClear').onclick = () => update(() => { show.lineCheck = {}; });
 
-// ---- Paperwork: input list, outputs, line check sheet, desk tape and stage-box labels, ready to print ----
+// ---- Paperwork: input list, outputs, line check, desk tape, labels, amps, RF and Dante, ready to print ----
 $('paperworkBtn').onclick = () => {
   const plan = buildPlan(show);
   const p = paperwork(show, plan, { version: VERSION, licence: LICENCE, extra: rigPaperwork(show, plan) });
+  if (host.paperwork) return host.paperwork(p);
   const title = p.title.replace(/[<>&]/g, '');
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title><style>body{margin:24px;background:#fff}${p.css}@media print{.noprint{display:none}body{margin:0}}</style></head><body><p class="noprint"><button onclick="print()">Print</button></p>${p.body}</body></html>`;
   window.open(URL.createObjectURL(new Blob([html], { type: 'text/html' })), '_blank');
 };
 
+wireMenus();
 renderTemplates();
-
-// Footer: version and licence number, from about.js
 $('footProduct').textContent = `${PRODUCT} v${VERSION}`;
 $('footLicence').textContent = `Licence ${LICENCE}`;
-
+showLink(link);
 showTab(activeTab);
