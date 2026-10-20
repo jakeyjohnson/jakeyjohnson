@@ -1,6 +1,6 @@
 import { LICENCE, PRODUCT, VERSION } from './about.js';
 import { CHECK_LEVELS, OSC_KEYS, checkKeys, checkState, checkSteps, faderToLevel, levelText, noiseChannel, readLines, restoreLines, stateLines } from './check.js';
-import { ampPlan, rigPaperwork } from './rig.js';
+import { ampPlan, normalizeRacks, rigPaperwork } from './rig.js';
 import { mountRig } from './rig-ui.js';
 import { ask, el, info, segmented, tag, toast, toggle, wireMenus } from './ui.js';
 import {
@@ -38,7 +38,18 @@ function colorSelect(color, onChange) {
   return sel;
 }
 
+// A field that loses focus because a redraw removed it fires its change in the middle of that redraw;
+// that change is applied, and the page redrawn again once this one finishes.
+let rendering = false;
+let renderAgain = false;
 function render() {
+  if (rendering) { renderAgain = true; return; }
+  rendering = true;
+  try { draw(); } finally { rendering = false; }
+  if (renderAgain) { renderAgain = false; render(); }
+}
+function draw() {
+  normalizeRacks(show); // amps and RF units in rack order, which is the order they fill in
   if (show.options.autoOrder !== false) show.sources = orderSources(show.sources);
   const plan = buildPlan(show);
   const model = MODELS[show.options.model] || MODELS.custom;
@@ -267,6 +278,8 @@ async function findDevices() {
   }
 }
 function showDevices({ devices, subnets }) {
+  rigUi.setFound(devices);
+  render();
   $('findStatus').textContent = `${plural(devices.length, 'device')} · ${subnets.length ? subnets.join(', ') : 'this computer'}`;
   if (!devices.length) {
     $('findList').replaceChildren(el('div', { className: 'empty' }, 'Nothing answered. Check the network cable, or scan another range.'));
@@ -291,12 +304,14 @@ function showDevices({ devices, subnets }) {
             connectDesk();
           },
         }));
-      } else if (d.ip && (d.kind === 'amp' || d.kind === 'radio')) {
-        const targets = rigUi.ipTargets().filter((t) => t.kind === d.kind);
-        li.append(el('select', {
-          'aria-label': `Use ${d.ip} for`,
-          onchange: (e) => { const t = targets[Number(e.target.value)]; if (t) { update(() => t.set(d.ip)); toast(`${t.label} is at ${d.ip}`, 'ok'); } e.target.value = ''; },
-        }, el('option', { value: '', textContent: 'Use for…' }), ...targets.map((t, i) => el('option', { value: String(i), textContent: t.label }))));
+      } else {
+        const options = rigUi.foundOptions(d);
+        if (options.length) {
+          li.append(el('select', {
+            'aria-label': `Use ${d.ip}`,
+            onchange: (e) => { options[Number(e.target.value)]?.run(); e.target.value = ''; },
+          }, el('option', { value: '', textContent: d.kind === 'amp' || d.make === 'Shure' ? 'Rack it…' : 'Use for…' }), ...options.map((o, i) => el('option', { value: String(i), textContent: o.label }))));
+        }
       }
       return li;
     })));
@@ -330,6 +345,18 @@ const rigUi = mountRig({
   transport: {
     shure: async (ip, lines, check, onLine) => {
       try { return await streamLines('/api/shure', { host: ip, lines, check }, onLine); } catch (err) { return { error: err.message }; }
+    },
+    identify: async (kind, ip) => {
+      const res = await api('/api/identify', { method: 'POST', body: JSON.stringify({ kind, host: ip }) });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      return data;
+    },
+    flash: async (ip) => {
+      const res = await api('/api/flash', { method: 'POST', body: JSON.stringify({ host: ip }) });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      return data;
     },
     ampRead: async (ip) => {
       const res = await api('/api/amp/read', { method: 'POST', body: JSON.stringify({ host: ip }) });

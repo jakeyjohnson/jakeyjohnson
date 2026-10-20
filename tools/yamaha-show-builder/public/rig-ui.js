@@ -5,6 +5,7 @@ import {
   AMP_INPUTS, AMP_MODELS, IEM_MODELS, RECEIVER_MODELS, SHURE_GAIN, SPEAKER_SETUPS, SPECTERA_LOWEST, addAmpsFor, ampPlan, ampReadSummary, applyShureReads, defaultRf,
   isRadio, makeAmp, makeRfDevice, parseShureReads, rfPlan, shureCommands, shureReadLines, specteraWrites,
 } from './rig.js';
+import { makeRackUi } from './rack-ui.js';
 import { el, info, panel, segmented, tag, toast } from './ui.js';
 
 const MIC_TYPES = ['lectern', 'headset', 'handheld', 'vocal', 'talkback', 'instrument', 'acoustic'];
@@ -28,6 +29,7 @@ const remove = (label, onclick) => el('button', { className: 'remove', type: 'bu
 export function mountRig({ getShow, update, transport, demo = false }) {
   const session = { password: '', packs: null, picks: {} };
   const show = () => getShow();
+  const racks = makeRackUi({ show, update, transport, session });
   // The show's RF settings, with any missing ones filled in place so every caller edits the same object
   const rf = () => {
     const s = show();
@@ -62,17 +64,6 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     let addModel = s.amps.at(-1)?.model || 'D80';
     const modelOptions = Object.entries(AMP_MODELS).map(([k, m]) => [k, m.label]);
 
-    const ampRows = s.amps.map((a, i) => el('tr', {},
-      el('td', { className: 'name' }, el('input', { value: a.name, 'aria-label': 'Amp name', onchange: (e) => update(() => { a.name = e.target.value.trim() || a.name; }) })),
-      el('td', {}, select(a.model, modelOptions, (v) => update(() => { a.model = v; }), { 'aria-label': 'Model' })),
-      el('td', {}, el('input', { value: a.ip, placeholder: 'IP', inputMode: 'decimal', className: 'ip', 'aria-label': `${a.name} IP`, onchange: (e) => update(() => { a.ip = e.target.value.trim(); }) })),
-      el('td', { className: 'ch', textContent: `${AMP_MODELS[a.model]?.channels || 0} ch` }),
-      el('td', { className: 'dim' }, readText(s.ampReads?.[a.id])),
-      el('td', {}, el('button', {
-        className: 'ghost small', type: 'button', textContent: 'Read', disabled: !a.ip, title: a.ip ? `Read ${a.name}'s control list and save it to a file. Nothing on the amp changes.` : 'Put the amp\'s IP in first',
-        onclick: (e) => readAmp(a, e.target),
-      })),
-      el('td', {}, remove(a.name, () => update(() => s.amps.splice(i, 1))))));
     const chRows = amp.rows.map((r) => el('tr', { className: r.feed ? '' : 'spare' },
       el('td', {}, el('b', { textContent: r.label })),
       el('td', { textContent: r.feed ? r.feed.name : 'spare' }),
@@ -81,27 +72,34 @@ export function mountRig({ getShow, update, transport, demo = false }) {
       el('td', {}, r.feed && el('input', { value: r.setup, className: 'setup', 'aria-label': 'Speaker setup', list: 'kkSetups', onchange: (e) => setting(r.feed, 'setup', e.target.value.trim()) })),
       el('td', {}, r.feed && el('input', { type: 'number', step: '0.5', min: '-57.5', max: '6', value: r.target, className: 'port', 'aria-label': 'Target gain in dB', onchange: (e) => setting(r.feed, 'target', Number(e.target.value) || 0) }), r.feed ? el('span', { className: 'dim', textContent: ' dB' }) : null)));
 
-    main.replaceChildren(
+    main.replaceChildren(...[
       panel({
-        step: '01', title: 'Amplifiers', meta: s.amps.length ? `${plural(s.amps.length, 'amp')} · ${used}/${amp.rows.length} ch` : '',
+        step: '01', title: 'Amp racks', meta: s.amps.length ? `${plural(s.amps.length, 'amp')} · ${used}/${amp.rows.length} ch` : '',
         tools: [
           select(addModel, modelOptions, (v) => { addModel = v; }, { 'aria-label': 'Amp model to add' }),
           el('button', { className: 'ghost', type: 'button', textContent: 'Add amp', onclick: () => update(() => s.amps.push(makeAmp(addModel, s.amps.length + 1))) }),
           el('button', { className: 'primary', type: 'button', textContent: 'Fill from outputs', title: 'Add amps until every speaker output has a channel', onclick: () => update(() => addAmpsFor(s, plan, addModel)) }),
+          ...racks.rackTools('amp'),
         ],
-      }, s.amps.length ? table(['Name', 'Model', 'IP', '', 'Control list', '', ''], ampRows) : empty('No amps yet. Fill from outputs adds enough for every speaker output.')),
+      }, s.amps.length || session.found.some((d) => d.kind === 'amp') ? racks.racksView('amp', {
+        feeds: racks.ampFeeds(amp.rows),
+        extra: (a) => [el('button', {
+          className: 'ghost small', type: 'button', textContent: 'Read', disabled: !a.ip, title: a.ip ? `${readText(s.ampReads?.[a.id]) || 'Read'}: reads ${a.name}'s control list and saves it to a file. Nothing on the amp changes.` : 'Put the amp\'s IP in first',
+          onclick: (e) => readAmp(a, e.currentTarget),
+        })],
+      }) : empty('No amps yet. Fill from outputs adds enough for every speaker output, or rack the ones Find devices finds.')),
       panel({ step: '02', title: 'Amp patch', meta: amp.feeds.length ? plural(amp.feeds.length, 'feed') : '', tools: [tag('Starts muted, gain lowest', 'on')] },
         amp.rows.length ? table(['Amp channel', 'Feeds', 'From desk', 'Amp input', 'Speaker setup', 'Target'], chRows) : empty('Add an amp to see which output goes where.'),
         el('datalist', { id: 'kkSetups' }, ...SPEAKER_SETUPS.map((x) => el('option', { value: x }))),
         warnList(amp.warnings)),
       panel({ step: '03', title: 'Set up in R1', tools: [tag('Not sent from here yet', '', 'Live control comes once a real amp\'s control list has been read: press Read on an amp above and send the file it saves. Until then these settings go in R1; print them from Export → Paperwork.')] },
         el('ol', { className: 'steps' },
-          el('li', { textContent: 'Fixed IP on each amp, entered above' }),
+          el('li', { textContent: 'Fixed IP on each amp, racked above in the order they sit' }),
           el('li', { textContent: 'In R1: speaker setup and input per channel, from the patch' }),
           el('li', { textContent: 'Every channel muted, gain right down' }),
           el('li', { textContent: 'Unmute one at a time and bring up to target' }))),
       ampReadsPanel(s),
-    );
+    ].filter(Boolean));
   }
 
   // Reads an amp's AES70 control list into the show, and saves the full list to a file so the amp's
@@ -111,6 +109,7 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     button.disabled = true;
     button.textContent = 'Reading…';
     try {
+      await racks.confirmUnit(a, 'amp');
       const dump = await transport.ampRead(a.ip);
       const count = (name) => dump.objects.filter((o) => o.className === name).length;
       show().ampReads = { ...(show().ampReads || {}), [a.id]: ampReadSummary(dump) };
@@ -143,6 +142,7 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     for (const a of (s.amps || []).filter((x) => x.ip)) {
       onStep(a.name);
       try {
+        await racks.confirmUnit(a, 'amp');
         s.ampReads = { ...(s.ampReads || {}), [a.id]: ampReadSummary(await transport.ampRead(a.ip)) };
         out.amps++;
       } catch (err) { out.errors.push(`${a.name}: ${err.message}`); }
@@ -150,6 +150,7 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     if (r.mics === 'shure') {
       for (const d of r.receivers.filter((x) => x.ip)) {
         onStep(d.name);
+        try { await racks.confirmUnit(d, 'rf'); } catch (err) { out.errors.push(err.message); continue; }
         const replies = [];
         const result = await transport.shure(d.ip, shureReadLines(d), false, (x) => replies.push(x.reply));
         if (result?.error) { out.errors.push(`${d.name}: ${result.error}`); continue; }
@@ -170,31 +171,37 @@ export function mountRig({ getShow, update, transport, demo = false }) {
   }
 
   // ---- RF tab ----
-  function deviceTable(kind, devices, models) {
-    const rows = devices.map((d, i) => el('tr', {},
-      el('td', { className: 'name' }, el('input', { value: d.name, 'aria-label': 'Name', onchange: (e) => update(() => { d.name = e.target.value.trim() || d.name; }) })),
-      el('td', {}, select(d.model, Object.entries(models).map(([k, m]) => [k, m.label]), (v) => update(() => { d.model = v; }), { 'aria-label': 'Model' })),
-      el('td', {}, el('input', { value: d.ip, placeholder: 'IP', inputMode: 'decimal', className: 'ip', 'aria-label': `${d.name} IP`, onchange: (e) => update(() => { d.ip = e.target.value.trim(); }) })),
-      el('td', { className: 'ch', textContent: `${models[d.model]?.channels || 0} ch` }),
-      el('td', {}, remove(d.name, () => update(() => devices.splice(i, 1))))));
-    return devices.length ? table(['Name', 'Model', 'IP', '', ''], rows) : null;
-  }
-  function deviceTools(kind, devices, models) {
-    let addModel = devices.at(-1)?.model || (kind === 'rx' ? 'ULXD4Q' : 'P10T');
+  // Adding and filling Shure units for the RF racks: receivers for the radio mics, transmitters for IEMs
+  function rfRackTools(r) {
+    const kinds = [...(r.mics === 'shure' ? [['rx', RECEIVER_MODELS]] : []), ...(r.iems === 'shure' ? [['tx', IEM_MODELS]] : [])];
+    let add = `${kinds[0][0]}:${kinds[0][0] === 'rx' ? (r.receivers.at(-1)?.model || 'ULXD4Q') : (r.transmitters.at(-1)?.model || 'P10T')}`;
+    const listOf = (kind) => (kind === 'rx' ? rf().receivers : rf().transmitters);
     return [
-      select(addModel, Object.entries(models).map(([k, m]) => [k, m.label]), (v) => { addModel = v; }, { 'aria-label': 'Model to add' }),
-      el('button', { className: 'ghost', type: 'button', textContent: 'Add', onclick: () => update(() => devices.push(makeRfDevice(kind, addModel, devices.length + 1))) }),
+      el('select', { 'aria-label': 'Unit to add', onchange: (e) => { add = e.target.value; } },
+        ...kinds.map(([kind, models]) => el('optgroup', { label: kind === 'rx' ? 'Receivers' : 'IEM transmitters' },
+          ...Object.entries(models).map(([k, m]) => el('option', { value: `${kind}:${k}`, textContent: m.label, selected: `${kind}:${k}` === add }))))),
+      el('button', { className: 'ghost', type: 'button', textContent: 'Add', onclick: () => update(() => { const [kind, model] = add.split(':'); listOf(kind).push(makeRfDevice(kind, model, listOf(kind).length + 1)); }) }),
       el('button', {
-        className: 'primary', type: 'button', textContent: 'Fill', title: kind === 'rx' ? 'Add receivers until every radio mic has a channel' : 'Add transmitters until every IEM has a channel',
+        className: 'primary', type: 'button', textContent: 'Fill', title: 'Add units until every radio mic and IEM has a channel',
         onclick: () => update(() => {
           const rig = rfPlan(show(), buildPlan(show()));
-          const need = (kind === 'rx' ? rig.mics : rig.iems).filter((x) => !x.device).length;
-          let room = 0;
-          while (room < need) { devices.push(makeRfDevice(kind, addModel, devices.length + 1)); room += models[addModel].channels; }
+          for (const [kind, models] of kinds) {
+            const list = listOf(kind);
+            const model = list.at(-1)?.model || (add.startsWith(`${kind}:`) ? add.split(':')[1] : Object.keys(models)[0]);
+            const need = (kind === 'rx' ? rig.mics : rig.iems).filter((x) => !x.device).length;
+            for (let room = 0; room < need; room += models[model].channels) list.push(makeRfDevice(kind, model, list.length + 1));
+          }
         }),
       }),
+      ...racks.rackTools('rf'),
     ];
   }
+  // What each receiver or transmitter channel carries
+  const rfFeeds = (rig) => (u) => {
+    const tx = rf().transmitters.includes(u);
+    const n = (tx ? IEM_MODELS : RECEIVER_MODELS)[u.model]?.channels || 0;
+    return [...Array(n).keys()].map((k) => [String(k + 1), (tx ? rig.iems : rig.mics).find((x) => x.device === u && x.channel === k + 1)?.name || '']);
+  };
   const freqCell = (item) => el('input', {
     value: fmt(item.freq), placeholder: 'auto', inputMode: 'decimal', className: `freq ${item.freqFixed ? 'fixed' : ''}`, 'aria-label': `${item.name} frequency in MHz`,
     title: item.freqFixed ? 'Set by hand. Clear it to let the plan choose.' : 'Chosen by the plan. Type a frequency to fix it.',
@@ -226,6 +233,8 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     let total = 0;
     for (const job of jobs) {
       out.log.textContent += `${job.host}\n`;
+      const unit = rf().receivers.find((d) => d.ip === job.host);
+      try { if (unit) await racks.confirmUnit(unit, 'rf'); } catch (err) { bad++; out.log.textContent += `  ✗ ${err.message} Nothing sent.\n`; continue; }
       const result = await transport.shure(job.host, job.lines, check, (r) => {
         total++;
         if (!r.ok) bad++;
@@ -329,16 +338,24 @@ export function mountRig({ getShow, update, transport, demo = false }) {
       spec.list);
     }
 
-    main.replaceChildren(
-      panel({ step: '01', title: 'Radio mics', meta: rig.mics.length ? plural(rig.mics.length, 'mic') : '',
-        tools: [segmented(r.mics, [['shure', 'Shure'], ['spectera', 'Spectera']], (v) => update(() => { rf().mics = v; }), 'Radio mic system'), ...(r.mics === 'shure' ? deviceTools('rx', r.receivers, RECEIVER_MODELS) : [])] },
-      r.mics === 'shure' ? deviceTable('rx', r.receivers, RECEIVER_MODELS) : null,
+    let step = 0;
+    const next = () => String(++step).padStart(2, '0');
+    const shureRack = r.mics === 'shure' || r.iems === 'shure';
+    main.replaceChildren(...[
+      shureRack ? panel({ step: next(), title: 'RF racks', meta: r.receivers.length + r.transmitters.length ? plural(r.receivers.length + r.transmitters.length, 'unit') : '', tools: rfRackTools(r) },
+        r.receivers.length + r.transmitters.length || session.found.some((d) => d.make === 'Shure')
+          ? racks.racksView('rf', {
+            feeds: rfFeeds(rig),
+            extra: (u) => [el('button', { className: 'ghost small', type: 'button', textContent: 'Flash', disabled: !u.ip, title: u.ip ? `Flash ${u.name}'s front panel to find it in the rack` : 'Put its IP in first', onclick: (e) => racks.flash(u, e.currentTarget) })],
+          })
+          : empty('No units yet. Fill adds enough for every radio mic and IEM, or rack the ones Find devices finds.')) : null,
+      panel({ step: next(), title: 'Radio mics', meta: rig.mics.length ? plural(rig.mics.length, 'mic') : '',
+        tools: [segmented(r.mics, [['shure', 'Shure'], ['spectera', 'Spectera']], (v) => update(() => { rf().mics = v; }), 'Radio mic system')] },
       micRows.length ? table(['Ch', 'Name', 'Radio', 'Channel', 'MHz', 'Start', ...(anyRead ? ['On receiver'] : [])], micRows) : empty('Add mics on the Desk tab first.')),
-      panel({ step: '02', title: 'IEMs', meta: rig.iems.length ? plural(rig.iems.length, 'mix', 'mixes') : '',
-        tools: [segmented(r.iems, [['shure', 'Shure PSM'], ['spectera', 'Spectera']], (v) => update(() => { rf().iems = v; }), 'IEM system'), ...(r.iems === 'shure' ? deviceTools('tx', r.transmitters, IEM_MODELS) : [])] },
-      r.iems === 'shure' ? deviceTable('tx', r.transmitters, IEM_MODELS) : null,
+      panel({ step: next(), title: 'IEMs', meta: rig.iems.length ? plural(rig.iems.length, 'mix', 'mixes') : '',
+        tools: [segmented(r.iems, [['shure', 'Shure PSM'], ['spectera', 'Spectera']], (v) => update(() => { rf().iems = v; }), 'IEM system')] },
       iemRows.length ? table(['Mix', 'Name', '', 'Channel', 'MHz', 'From desk'], iemRows) : empty('Add a mono or stereo IEM output on the Desk tab.')),
-      panel({ step: '03', title: 'Frequencies', tools: [
+      panel({ step: next(), title: 'Frequencies', tools: [
         el('button', { className: 'ghost small', type: 'button', textContent: 'Clear fixed', title: 'Let the plan choose every frequency again', onclick: () => update(() => { rf().fixed = {}; }) }),
         info('A starting plan on a 25 kHz grid: mics 400 kHz apart, IEMs 600 kHz apart, clear of third-order intermod between every transmitter. Scan the room and check it in Wireless Workbench before the show.')] },
       el('div', { className: 'settings rows' },
@@ -348,20 +365,15 @@ export function mountRig({ getShow, update, transport, demo = false }) {
           el('span', { className: 'range' }, el('input', { type: 'number', step: '0.025', value: r.spectera.frequency || '', className: 'freq', placeholder: 'centre', 'aria-label': 'Spectera centre frequency, MHz', onchange: (e) => update(() => { rf().spectera = { ...rf().spectera, frequency: Number(e.target.value) || 0 }; }) }), 'MHz'),
           select(String(r.spectera.bandwidth), [['6', '6 MHz'], ['8', '8 MHz'], ['10', '10 MHz']], (v) => update(() => { rf().spectera = { ...rf().spectera, bandwidth: Number(v) }; }), { 'aria-label': 'Spectera bandwidth' })) : null),
       warnList(rig.warnings)),
-      panel({ step: '04', title: 'Send to RF' }, ...(sendBlocks.length ? sendBlocks : [empty('Nothing to send yet.')])),
-    );
+      panel({ step: next(), title: 'Send to RF' }, ...(sendBlocks.length ? sendBlocks : [empty('Nothing to send yet.')])),
+    ].filter(Boolean));
   }
 
-  // Devices in the show that Find devices can hand an IP to
-  function ipTargets() {
-    const s = show();
-    const r = rf();
-    return [
-      ...(s.amps || []).map((a) => ({ kind: 'amp', label: a.name, set: (ip) => { a.ip = ip; } })),
-      ...r.receivers.map((d) => ({ kind: 'radio', label: d.name, set: (ip) => { d.ip = ip; } })),
-      ...r.transmitters.map((d) => ({ kind: 'radio', label: d.name, set: (ip) => { d.ip = ip; } })),
-      { kind: 'radio', label: 'Spectera base station', set: (ip) => { rf().spectera = { ...rf().spectera, ip }; } },
-    ];
+  // What Find devices can do with a device: rack an amp or Shure unit, or say which unit or base station it is
+  function foundOptions(d) {
+    if (d.kind === 'amp' || d.make === 'Shure') return racks.foundOptions(d);
+    if (d.kind === 'radio' && d.ip) return [{ label: 'Is the Spectera base station', run: () => { update(() => { rf().spectera = { ...rf().spectera, ip: d.ip }; }); toast(`Spectera base station is at ${d.ip}`, 'ok'); } }];
+    return [];
   }
 
   // Counts for the tab labels
@@ -372,7 +384,7 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     return { amps: (s.amps || []).length, rf: rig.mics.length + rig.iems.length };
   }
 
-  return { renderRios, renderAmps, renderRf, ipTargets, counts, isRadio, readKit };
+  return { renderRios, renderAmps, renderRf, foundOptions, setFound: racks.setFound, counts, isRadio, readKit };
 }
 
 function plural(n, one, many = `${one}s`) {

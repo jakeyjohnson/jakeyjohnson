@@ -178,6 +178,22 @@ async function inBatches(items, size, fn) {
   for (let i = 0; i < items.length; i += size) await Promise.all(items.slice(i, i + size).map(fn));
 }
 
+// Who an amp is, without reading its controls: maker, model, serial number and the name set on it.
+// The serial is how a rack position knows it is still talking to the same amp.
+export async function identifyDevice(host, { port, timeoutMs } = {}) {
+  const conn = await new OcaConnection(host, { port, timeoutMs }).connect();
+  try {
+    const device = { host };
+    const model = await conn.call(DEVICE_MANAGER, 3, 6);
+    if (ok(model)) { const r = new Reader(model.params); Object.assign(device, { manufacturer: r.string(), model: r.string() }); }
+    device.serial = await readString(conn, DEVICE_MANAGER, 3, 3);
+    device.name = await readString(conn, DEVICE_MANAGER, 3, 4);
+    return device;
+  } finally {
+    conn.close();
+  }
+}
+
 export async function readDevice(host, { port, timeoutMs, onProgress = () => {} } = {}) {
   const conn = await new OcaConnection(host, { port, timeoutMs }).connect();
   try {

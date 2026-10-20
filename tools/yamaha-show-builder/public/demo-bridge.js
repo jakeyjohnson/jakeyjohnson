@@ -56,11 +56,13 @@ const packs = [
 const network = () => [
   { kind: 'desk', make: 'Yamaha', model: PRODUCT[currentModel()] || 'QL5', name: '', ip: '192.168.0.128', port: 49280, via: ['port 49280'] },
   { kind: 'stagebox', make: 'Yamaha', model: 'Rio3224-D2', name: '', ip: '192.168.0.130', via: ['port 49280'] },
-  { kind: 'radio', make: 'Shure', model: 'ULXD4Q', name: 'Rack 1', ip: '192.168.0.50', via: ['port 2202'] },
-  { kind: 'radio', make: 'Shure', model: 'AD4Q', name: 'Rack 2', ip: '192.168.0.51', via: ['port 2202'] },
+  { kind: 'radio', make: 'Shure', model: 'ULXD4Q', name: 'RF SL 1', ip: '192.168.0.50', via: ['port 2202'] },
+  { kind: 'radio', make: 'Shure', model: 'ULXD4Q', name: 'RF SL 2', ip: '192.168.0.51', via: ['port 2202'] },
+  { kind: 'radio', make: 'Shure', model: 'P10T', name: 'IEM 1', ip: '192.168.0.52', via: ['port 2202'] },
   { kind: 'radio', make: 'Sennheiser', model: 'Spectera', name: 'Base station', ip: '192.168.0.55', via: ['announces _ssc._udp'] },
-  { kind: 'amp', make: 'd&b', model: 'D80', name: 'Main', ip: '192.168.0.60', via: ['port 30013'] },
-  { kind: 'amp', make: 'd&b', model: 'D40', name: 'Fills', ip: '192.168.0.61', via: ['port 30013'] },
+  { kind: 'amp', make: 'd&b', model: 'D80', name: 'Mains', ip: '192.168.0.60', serial: '10236', via: ['port 30013'] },
+  { kind: 'amp', make: 'd&b', model: 'D80', name: 'Fills', ip: '192.168.0.61', serial: '10511', via: ['port 30013'] },
+  { kind: 'amp', make: 'd&b', model: 'D40', name: 'Delays', ip: '192.168.0.62', serial: '20877', via: ['port 30013'] },
   { kind: 'playback', make: 'Figure 53', model: 'QLab', name: 'Show Mac', ip: '192.168.0.70', via: ['announces _qlab._tcp'] },
 ];
 const STORE = 'kk-demo';
@@ -151,6 +153,17 @@ const routes = {
       send({ done: true, total: lines.length });
     });
   },
+  async '/api/identify'({ host, kind }) {
+    await wait(fast ? 0 : 250);
+    const d = network().find((x) => x.ip === host && (kind === 'amp' ? x.kind === 'amp' : x.make === 'Shure'));
+    if (!d) return json({ error: `No answer from ${host}. Check its IP and that it's on this network.` }, 400);
+    return json(kind === 'amp' ? { host, manufacturer: 'd&b audiotechnik', model: d.model, serial: d.serial, name: d.name } : { host, model: d.model, name: d.name });
+  },
+  async '/api/flash'({ host }) {
+    const d = network().find((x) => x.ip === host && x.make === 'Shure');
+    if (!d) return json({ error: `No answer from ${host}.` }, 400);
+    return json({ host, model: d.model, name: d.name, flashed: true });
+  },
   async '/api/amp/read'({ host }) {
     await wait(fast ? 0 : 900);
     const objects = [];
@@ -162,7 +175,8 @@ const routes = {
         { ono: base + 3, classId: '1.1.1.5', className: 'OcaGain', container: base, role: 'Gain', path: `Channel ${ch}/Gain`, value: { value: 0, min: -57.5, max: 6 } },
         { ono: base + 4, classId: '1.1.1.4', className: 'OcaSwitch', container: base, role: 'Input', path: `Channel ${ch}/Input`, value: { position: c, min: 0, max: 7 }, positionNames: ['A1', 'A2', 'A3', 'A4', 'D1', 'D2', 'D3', 'D4'] });
     });
-    return json({ readAt: new Date().toISOString(), pretend: true, device: { host, manufacturer: 'd&b audiotechnik', model: 'D80 (pretend)', name: 'Demo amp', serial: 'PRETEND' }, objects });
+    const d = network().find((x) => x.ip === host && x.kind === 'amp');
+    return json({ readAt: new Date().toISOString(), pretend: true, device: { host, manufacturer: 'd&b audiotechnik', model: d?.model || 'D80', name: d?.name || 'Demo amp', serial: d?.serial || 'PRETEND' }, objects });
   },
   async '/api/spectera/devices'({ host }) {
     await wait(fast ? 0 : 400);

@@ -1,8 +1,10 @@
-// A pretend Shure receiver for testing without hardware: answers SET and GET for name, frequency and gain.
+// A pretend Shure receiver for testing without hardware: answers SET and GET for name, frequency and gain,
+// its model and device ID, and flashes on request.
 // Run with: node mock-shure.js   (SHURE_PORT to change the port, SHURE_MODEL for the model it reports)
 import net from 'node:net';
 
-export function mockShure({ model = process.env.SHURE_MODEL || 'ULXD4Q', channels = 4 } = {}) {
+export function mockShure({ model = process.env.SHURE_MODEL || 'ULXD4Q', channels = 4, deviceId = process.env.SHURE_ID || 'RX1' } = {}) {
+  const flashes = [];
   const state = {};
   for (let ch = 1; ch <= channels; ch++) state[ch] = { CHAN_NAME: `{${`CH${ch}`.padEnd(31)}}`, FREQUENCY: '470000', AUDIO_GAIN: '018' };
   const server = net.createServer((socket) => {
@@ -15,6 +17,8 @@ export function mockShure({ model = process.env.SHURE_MODEL || 'ULXD4Q', channel
         buf = buf.slice(m.index + m[0].length);
         const [verb, rest] = [m[1], m[2]];
         if (/^MODEL$/.test(rest)) { socket.write(`< REP MODEL {${model.padEnd(32)}} >`); continue; }
+        if (/^DEVICE_ID$/.test(rest)) { socket.write(`< REP DEVICE_ID {${deviceId.padEnd(31)}} >`); continue; }
+        if (/^FLASH ON$/.test(rest) && verb === 'SET') { flashes.push(Date.now()); socket.write('< REP FLASH ON >'); continue; }
         const p = /^(\d)\s+(\w+)\s*(.*)$/.exec(rest);
         if (!p || !state[p[1]] || !(p[2] in state[p[1]])) { socket.write(`< REP ERR >`); continue; }
         const [, ch, param, value] = p;
@@ -25,7 +29,7 @@ export function mockShure({ model = process.env.SHURE_MODEL || 'ULXD4Q', channel
       }
     });
   });
-  return { server, state };
+  return { server, state, flashes };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

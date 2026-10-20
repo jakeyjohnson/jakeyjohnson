@@ -342,3 +342,76 @@ export function ampReadSummary(dump) {
     controls: (dump.objects || []).filter((o) => o.value !== undefined).map((o) => ({ path: o.path, kind: String(o.className || '').replace(/^Oca/, ''), value: value(o) })),
   };
 }
+
+// ---- Racks: the order units sit in, top to bottom. That order is the fill order, so the first amp in
+// the first rack takes the first speaker outputs, and the first receiver the first radio mics. ----
+// kind 'amp' holds show.amps; kind 'rf' holds the Shure receivers and transmitters.
+const rackLists = (show, kind) => (kind === 'amp' ? [show.amps || []] : [show.rf?.receivers || [], show.rf?.transmitters || []]);
+export function makeRack(kind, n) {
+  return { id: `rack${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind, name: `${kind === 'amp' ? 'Amp' : 'RF'} rack ${n}`, units: [] };
+}
+export const racksOf = (show, kind) => (show.racks || []).filter((r) => r.kind === kind);
+// Every unit in exactly one rack (new ones go at the bottom of the last rack), gone ones dropped, and
+// the unit lists put in rack order
+export function normalizeRacks(show) {
+  show.racks ||= [];
+  for (const kind of ['amp', 'rf']) {
+    const units = rackLists(show, kind).flat();
+    if (!units.length && !racksOf(show, kind).length) continue;
+    if (!racksOf(show, kind).length) show.racks.push(makeRack(kind, 1));
+    const racks = racksOf(show, kind);
+    const ids = new Set(units.map((u) => u.id));
+    const seen = new Set();
+    for (const r of racks) r.units = r.units.filter((id) => ids.has(id) && !seen.has(id) && seen.add(id));
+    for (const u of units) if (!seen.has(u.id)) racks.at(-1).units.push(u.id);
+    const pos = new Map(racks.flatMap((r) => r.units).map((id, i) => [id, i]));
+    for (const list of rackLists(show, kind)) list.sort((a, b) => pos.get(a.id) - pos.get(b.id));
+  }
+  return show;
+}
+// Moves a unit to a rack, above `beforeId` (or at the bottom)
+export function moveUnit(show, unitId, rackId, beforeId = null) {
+  for (const r of show.racks || []) r.units = r.units.filter((id) => id !== unitId);
+  const rack = show.racks.find((r) => r.id === rackId);
+  const at = beforeId ? rack.units.indexOf(beforeId) : -1;
+  rack.units.splice(at < 0 ? rack.units.length : at, 0, unitId);
+  return normalizeRacks(show);
+}
+// Moves a unit one place up or down, across into the next rack at the ends
+export function nudgeUnit(show, unitId, dir) {
+  const rack = show.racks.find((r) => r.units.includes(unitId));
+  const racks = racksOf(show, rack.kind);
+  const i = rack.units.indexOf(unitId);
+  const j = i + dir;
+  if (j >= 0 && j < rack.units.length) { rack.units.splice(i, 1); rack.units.splice(j, 0, unitId); return normalizeRacks(show); }
+  const next = racks[racks.indexOf(rack) + dir];
+  if (!next) return show;
+  return moveUnit(show, unitId, next.id, dir > 0 ? next.units[0] || null : null);
+}
+
+// ---- Is it the same box? A unit remembers who it was when it was racked (an amp's serial number, a
+// Shure unit's model and device ID). Anything sent to that address first checks who answers now. ----
+export function identityOf(found) {
+  return { model: String(found.model || '').trim(), serial: String(found.serial || '').trim(), name: String(found.name || '').trim() };
+}
+export function sameDevice(expected, found) {
+  if (!expected) return { ok: true, learn: true };
+  const got = identityOf(found);
+  const who = [got.model, got.name, got.serial && `serial ${got.serial}`].filter(Boolean).join(' · ') || 'something else';
+  if (expected.serial && got.serial) return expected.serial === got.serial ? { ok: true } : { ok: false, who };
+  if (expected.name && got.name && expected.name !== got.name) return { ok: false, who };
+  if (expected.model && got.model && expected.model !== got.model) return { ok: false, who };
+  return { ok: true };
+}
+// Turns what Find devices or an identify call says into a unit's model choice
+export function ampModelFrom(text) {
+  const t = String(text || '').toUpperCase().replace(/\s+/g, '');
+  return Object.keys(AMP_MODELS).find((k) => t.includes(k.toUpperCase())) || null;
+}
+export function shureModelFrom(text) {
+  const t = String(text || '').toUpperCase().replace(/[\s-]+/g, '');
+  const rx = Object.keys(RECEIVER_MODELS).sort((a, b) => b.length - a.length).find((k) => t.includes(k));
+  if (rx) return { kind: 'rx', model: rx };
+  const tx = Object.keys(IEM_MODELS).find((k) => t.includes(k));
+  return tx ? { kind: 'tx', model: tx } : null;
+}

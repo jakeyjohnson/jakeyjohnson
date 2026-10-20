@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { Reader, encodeCommand, encodeString, parseMessages, readDevice, summarise } from '../oca-link.js';
+import { Reader, encodeCommand, encodeString, identifyDevice, parseMessages, readDevice, summarise } from '../oca-link.js';
 import { mockAmp } from '../mock-amp.js';
 
 test('commands are framed as OCP.1 says: sync byte, header, then the command', () => {
@@ -52,4 +52,13 @@ test('an amp that is not there gives a plain error', async () => {
   const { port } = server.address();
   server.close();
   await assert.rejects(readDevice('127.0.0.1', { port }), /refused AES70/);
+});
+
+test('identifying an amp gives its model and serial without reading its controls', async () => {
+  const { server } = mockAmp();
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const who = await identifyDevice('127.0.0.1', { port: server.address().port });
+  server.close();
+  assert.deepEqual([who.model, who.serial, who.name], ['D80 (pretend)', 'PRETEND-0001', 'Amp on the bench']);
 });
