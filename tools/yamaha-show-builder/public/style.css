@@ -364,7 +364,7 @@ body.booting .shell, body.locked .shell { visibility: hidden; }
 .lock-licence { font: 12px var(--mono); color: var(--muted); margin-top: -6px; }
 .lock-field { display: grid; gap: 6px; width: 100%; text-align: left; margin-top: 8px; }
 .lock-field span { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.lock-field input { height: 42px; font: 15px var(--mono); letter-spacing: .04em; }
+.lock-field textarea { font: 13px/1.5 var(--mono); letter-spacing: .02em; text-transform: uppercase; word-break: break-all; }
 .lock-error { min-height: 18px; font-size: 13px; color: var(--bad); }
 .lock-card .primary.big { width: 100%; justify-content: center; }
 .lock-or { display: flex; align-items: center; gap: 10px; width: 100%; color: var(--faint); font-size: 12px; }

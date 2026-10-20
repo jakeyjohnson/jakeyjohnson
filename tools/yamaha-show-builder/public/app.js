@@ -818,6 +818,6 @@ $('paperworkBtn').onclick = () => {
 wireMenus();
 renderTemplates();
 $('footProduct').textContent = `${PRODUCT} v${VERSION}`;
-$('footLicence').textContent = `Licence ${LICENCE}`;
+$('footLicence').textContent = host.demo ? 'Demo' : `Licence ${host.licence || LICENCE}`;
 showLink(link);
 showTab(activeTab);

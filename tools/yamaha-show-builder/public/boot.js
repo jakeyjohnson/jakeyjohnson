@@ -1,7 +1,7 @@
-// Starts the app: the lock screen first when this copy has a password, then either the real app
+// Starts the app: the lock screen first, asking for a licence key, then either the real app
 // (unlocked) or demo mode. With no app server behind the page (the web demo), it goes straight to demo mode.
 const $ = (id) => document.getElementById(id);
-const KEY = 'kk-unlock';
+const KEY = 'kk-licence';
 const MODE = 'kk-mode';
 const store = {
   get: (k) => { try { return sessionStorage.getItem(k) || localStorage.getItem(k); } catch { return null; } },
@@ -15,8 +15,8 @@ async function post(path, body, token) {
   return { ok: res.ok, data: await res.json().catch(() => ({})) };
 }
 
-async function runApp(token) {
-  window.kkHost = { ...(window.kkHost || {}), token, lock: token ? () => { store.clear(KEY); reload(); } : null };
+async function runApp(token, licence) {
+  window.kkHost = { ...(window.kkHost || {}), token, licence, lock: token ? () => { store.clear(KEY); reload(); } : null };
   document.body.classList.remove('booting');
   await import('./app.js');
 }
@@ -27,25 +27,26 @@ async function runDemo(canExit) {
 }
 
 function showLock(info) {
-  $('lockLicence').textContent = `Licence ${info.licence}`;
+  $('lockLicence').textContent = 'Enter your licence key';
   $('lockScreen').hidden = false;
   document.body.classList.remove('booting');
   document.body.classList.add('locked');
-  $('lockPassword').focus();
+  $('lockKey').focus();
+  $('lockKey').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); $('lockForm').requestSubmit(); } };
   $('lockForm').onsubmit = async (e) => {
     e.preventDefault();
     $('lockGo').disabled = true;
     $('lockError').textContent = '';
     try {
-      const { ok, data } = await post('/api/unlock', { password: $('lockPassword').value });
-      if (!ok) throw new Error(data.error || "That password isn't right.");
+      const { ok, data } = await post('/api/unlock', { key: $('lockKey').value });
+      if (!ok) throw new Error(data.error || "That key isn't valid.");
       store.set(KEY, data.token, $('lockRemember').checked);
       $('lockScreen').hidden = true;
       document.body.classList.remove('locked');
-      await runApp(data.token);
+      await runApp(data.token, data.licence);
     } catch (err) {
       $('lockError').textContent = err.message === 'Failed to fetch' ? 'The app has stopped. Open it again.' : err.message;
-      $('lockPassword').select();
+      $('lockKey').select();
     } finally {
       $('lockGo').disabled = false;
     }
@@ -57,9 +58,10 @@ let info = null;
 try { info = await (await fetch('/api/lock')).json(); } catch { /* no app server */ }
 if (!info) await runDemo(false);
 else if (store.get(MODE) === 'demo') await runDemo(true);
-else if (!info.locked) await runApp(null);
+else if (!info.locked) await runApp(null, null);
 else {
   const saved = store.get(KEY);
-  if (saved && (await post('/api/check', {}, saved).catch(() => ({}))).ok) await runApp(saved);
+  const check = saved ? await post('/api/check', {}, saved).catch(() => ({})) : {};
+  if (check.ok) await runApp(saved, check.data.licence);
   else { store.clear(KEY); showLock(info); }
 }

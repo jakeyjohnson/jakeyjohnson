@@ -8,15 +8,25 @@ import { LICENCE, PRODUCT, VERSION } from './public/about.js';
 import { DeskLink } from './desk-link.js';
 import { discover, localTargets } from './discover.js';
 import { allowedShureLine, shureSession, specteraRequest } from './rf-link.js';
-import { checkPassword, loadLock, tokenFor, tokenMatches } from './lock.js';
+import { checkKey, normaliseKey } from './lock.js';
 import { readDevice } from './oca-link.js';
 import { shureMatches, shureReadback } from './public/rig.js';
 import { matchesReadback, readbackCommand } from './public/plan.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const PUBLIC = fileURLToPath(new URL('./public/', import.meta.url));
-// The password for this copy, if one is set (licence.json beside this file)
-const LOCK = loadLock(fileURLToPath(new URL('.', import.meta.url)));
+// Every copy needs a licence key. KK_UNLOCKED=1 skips it, for development only.
+const LOCKED = process.env.KK_UNLOCKED !== '1';
+const goodKeys = new Map(); // keys already checked, so each request isn't re-verified
+function keyCheck(key) {
+  const k = normaliseKey(key);
+  if (!goodKeys.has(k)) {
+    const result = checkKey(k);
+    if (!result.ok) return result;
+    goodKeys.set(k, result);
+  }
+  return goodKeys.get(k);
+}
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.txt': 'text/plain' };
 
 // Only talk to devices on the local network, so the bridge can't be used as an open proxy
@@ -62,19 +72,21 @@ async function handleApi(req, res, path) {
     req.on('close', () => listeners.delete(res));
     return;
   }
-  if (req.method === 'GET' && path === '/api/lock') return json(res, { locked: Boolean(LOCK), licence: LOCK?.licence || LICENCE });
+  if (req.method === 'GET' && path === '/api/lock') return json(res, { locked: LOCKED, product: PRODUCT });
   if (req.method !== 'POST') return res.writeHead(404).end();
   const body = await readJson(req);
 
-  // Unlock: the password is checked here, and the page gets a key to send with every request after
+  // Unlock: the licence key is checked here; the page then sends it with every request
   if (path === '/api/unlock') {
-    if (checkPassword(LOCK, body.password)) return json(res, { token: tokenFor(LOCK) });
-    await new Promise((r) => setTimeout(r, 700)); // slows down guessing
-    return json(res, { error: "That password isn't right." }, 401);
+    const result = keyCheck(body.key);
+    if (result.ok) return json(res, { token: normaliseKey(body.key), licence: result.licence, expires: result.expires });
+    await new Promise((r) => setTimeout(r, 500));
+    return json(res, { error: result.error }, 401);
   }
-  // Nothing reaches the kit until this copy is unlocked
-  if (!tokenMatches(LOCK, req.headers['x-kk-key'])) return json(res, { error: 'Locked. Enter the password to use the app.' }, 401);
-  if (path === '/api/check') return json(res, { ok: true });
+  // Nothing reaches the kit without a valid licence key
+  const licence = LOCKED ? keyCheck(req.headers['x-kk-key']) : { ok: true, licence: LICENCE };
+  if (!licence.ok) return json(res, { error: 'Locked. Enter your licence key to use the app.' }, 401);
+  if (path === '/api/check') return json(res, { ok: true, licence: licence.licence, expires: licence.expires });
 
   if (path === '/api/connect') {
     const { host, port } = target(body);

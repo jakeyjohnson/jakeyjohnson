@@ -4,18 +4,20 @@ Build a labelled, colour-coded, routed show on a Yamaha digital desk in a couple
 
 Pick your inputs (lectern mics, handhelds, playback…), pick your speaker zones (Main L/R, front fills, delays, ceiling…), tick what goes where, and push it to the desk.
 
-## Password and demo mode
+## Licence keys and demo mode
 
-The app opens on a lock screen with the licence number.
-- **Password:** unlocks the real app. The app's own server checks it, and it won't talk to any desk, amp or radio mic until it's unlocked. **Remember on this computer** skips the lock screen next time. The lock button in the header bar locks it again.
+The app opens on a lock screen.
+- **Licence key:** each customer gets their own key (it starts `KK1-`). Paste it in to unlock the real app. The app's own server checks it, offline, and won't talk to any desk, amp or radio mic until it's unlocked. **Remember on this computer** skips the lock screen next time. The lock button in the header bar locks it again. The footer shows the licence number the key belongs to (e.g. `KK-SB-0001`).
 - **Try the demo:** opens the same app with a pretend desk, amps, radio mics and network. Demo shows are kept apart from real ones. **Demo · Exit** in the header goes back to the lock screen.
 
-To set or change the password:
+Keys are signed with KobiKraken's private key. The app only holds the matching public key, so it can check a key but can't make one. To issue a key (on the computer with the private key):
 ```bash
-node set-password.mjs "your new password"   # at least 4 characters
-node set-password.mjs --off                 # no password: the app opens unlocked
+node issue-licence.mjs --name "Venue or customer"                        # never expires
+node issue-licence.mjs --name "Hire company" --expires 2027-12-31        # ends that day
 ```
-Only a scrypt hash is kept, in `licence.json` with the licence number, never the password itself. Rebuild the Mac app after changing it (the GitHub workflow does this on every push).
+The private key lives at `~/.kobikraken/kobikraken-licence-private.pem` (or in `KK_PRIVATE_KEY`). Keep a backup: lose it and you can't issue new keys that work with the shipped app. Never put it in this repo. Every key issued is logged in `~/.kobikraken/licences.csv` with its number, name and dates.
+
+`KK_UNLOCKED=1 npm start` runs without the lock, for working on the app itself.
 
 This keeps people out of the app and away from your kit. It isn't copy protection: someone with the app's files and the know-how could take the lock out.
 
