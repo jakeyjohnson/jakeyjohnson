@@ -3,10 +3,10 @@
 // and which receiver channel gets which mic. Each unit remembers the box it was racked as, and every
 // read or send first checks that the same box still answers at that address.
 import {
-  AMP_CHANNEL_NAMES, AMP_MODELS, IEM_MODELS, RECEIVER_MODELS, ampModelFrom, identityOf, makeAmp, makeRack, makeRfDevice,
-  moveUnit, normalizeRacks, nudgeUnit, racksOf, sameDevice, shureModelFrom,
+  AMP_CHANNEL_NAMES, AMP_MODELS, IEM_MODELS, RACK_ITEMS, RACK_SIZES, RECEIVER_MODELS, ampModelFrom, identityOf, makeAmp, makeRack, makeRackItem, makeRfDevice,
+  moveUnit, normalizeRacks, nudgeUnit, rackEntries, racksOf, sameDevice, shureModelFrom, unitHeight,
 } from './rig.js';
-import { el, info, tag, toast } from './ui.js';
+import { el, info, segmented, tag, toast } from './ui.js';
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const selectOf = (value, options, onchange, extra = {}) => el('select', { onchange: (e) => onchange(e.target.value), ...extra },
@@ -21,6 +21,8 @@ export function makeRackUi({ show, update, transport, session }) {
     const s = show();
     return kind === 'amp' ? (s.amps || []) : [...(s.rf?.receivers || []), ...(s.rf?.transmitters || [])];
   };
+  const onlyOf = (kind) => new Set(unitsOf(kind).map((u) => u.id));
+  const removeUnit = (s, u) => { for (const list of [s.amps, s.rf?.receivers, s.rf?.transmitters, s.rackItems]) { const i = list?.indexOf(u) ?? -1; if (i >= 0) list.splice(i, 1); } };
   const protocolOf = (kind) => (kind === 'amp' ? 'amp' : 'shure');
   const isTx = (u) => (show().rf?.transmitters || []).includes(u);
   const whoText = (found) => [found.model, found.name, found.serial && `serial ${found.serial}`].filter(Boolean).join(' · ');
@@ -63,7 +65,7 @@ export function makeRackUi({ show, update, transport, session }) {
     const s = show();
     const kind = d.kind === 'amp' ? 'amp' : 'rf';
     normalizeRacks(s);
-    const rack = racksOf(s, kind).find((r) => r.id === rackId) || racksOf(s, kind).at(-1) || (s.racks.push(makeRack(kind, 1)), s.racks.at(-1));
+    const rack = s.racks.find((r) => r.id === rackId) || racksOf(s, kind).at(-1) || (s.racks.push(makeRack(kind, 1)), s.racks.at(-1));
     let unit;
     if (kind === 'amp') {
       let found = d;
@@ -152,11 +154,11 @@ export function makeRackUi({ show, update, transport, session }) {
         el('div', { className: 'unit-feeds' }, ...feeds(u).map(([ch, what]) => el('span', { className: what ? 'feed' : 'feed spare' }, el('b', { className: 'mono', textContent: ch }), what || 'spare')))),
       el('div', { className: 'unit-side' },
         ...extra(u),
-        el('button', { className: 'icon', type: 'button', textContent: '↑', 'aria-label': `Move ${u.name} up`, onclick: () => update(() => nudgeUnit(show(), u.id, -1)) }),
-        el('button', { className: 'icon', type: 'button', textContent: '↓', 'aria-label': `Move ${u.name} down`, onclick: () => update(() => nudgeUnit(show(), u.id, 1)) }),
+        el('button', { className: 'icon', type: 'button', textContent: '↑', 'aria-label': `Move ${u.name} up`, onclick: () => update(() => nudgeUnit(show(), u.id, -1, onlyOf(kind))) }),
+        el('button', { className: 'icon', type: 'button', textContent: '↓', 'aria-label': `Move ${u.name} down`, onclick: () => update(() => nudgeUnit(show(), u.id, 1, onlyOf(kind))) }),
         el('button', { className: 'remove', type: 'button', textContent: '×', title: `Remove ${u.name}`, onclick: () => update(() => {
           const s = show();
-          for (const list of [s.amps, s.rf?.receivers, s.rf?.transmitters]) { const i = list?.indexOf(u) ?? -1; if (i >= 0) list.splice(i, 1); }
+          removeUnit(s, u);
           normalizeRacks(s);
         }) })));
   }
@@ -176,6 +178,7 @@ export function makeRackUi({ show, update, transport, session }) {
           el('span', { className: 'panel-meta', textContent: rack.units.length ? plural(rack.units.length, 'unit') : '' }),
           racks.length > 1 && !rack.units.length ? el('button', { className: 'remove', type: 'button', textContent: '×', title: `Remove ${rack.name}`, onclick: () => update(() => { s.racks.splice(s.racks.indexOf(rack), 1); }) }) : null),
         el('ol', { className: 'rack-units', ...dropOn(rack.id, null) },
+          plate(rack),
           ...rack.units.map((id) => byId.get(id)).filter(Boolean).map((u) => unitRow(kind, u, ++slot, rack, feeds, extra)),
           el('li', { className: 'rack-end', textContent: rack.units.length ? 'Drop here for the bottom of the rack' : 'Drag units here', ...dropOn(rack.id, null) }))))),
       tray.length ? el('div', { className: 'tray' },
@@ -185,10 +188,97 @@ export function makeRackUi({ show, update, transport, session }) {
           el('b', { textContent: [d.model, d.name].filter(Boolean).join(' · ') }), el('small', { className: 'mono', textContent: ` ${d.ip}` }),
           el('button', { className: 'ghost small', type: 'button', textContent: 'Add', onclick: () => addFound(d) }))))) : null);
   }
+  // The logo plate at the top of each rack: the KobiKraken K and wordmark, or just the K
+  function plate(rack) {
+    if (rack.plate === 'none') return null;
+    const art = (selector, cls) => {
+      const svg = document.querySelector(selector)?.cloneNode(true);
+      if (!svg) return null;
+      svg.setAttribute('class', cls);
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.setAttribute('aria-hidden', 'true');
+      return svg;
+    };
+    return el('li', { className: `rack-plate plate-${rack.plate}`, role: 'img', 'aria-label': 'KobiKraken logo plate' },
+      art('svg.brand-k', 'plate-k'), rack.plate === 'logo' ? art('svg.brand-word', 'plate-word') : null);
+  }
+
+  // ---- Racks tab: whole racks, everything in them, at true height, with each unit's IP beside it ----
+  const U_PX = 30;
+  const PLATE_U = 2;
+  function rackRoom(main, { feedsOf }) {
+    const s = normalizeRacks(show());
+    s.rackItems ||= [];
+    const entries = new Map(rackEntries(s).map((e) => [e.unit.id, e]));
+    let addType = 'blank';
+    const usedIps = new Set(rackEntries(s).map((e) => e.unit.ip).filter(Boolean));
+    const tray = session.found.filter((d) => d.ip && !usedIps.has(d.ip) && (d.kind === 'amp' || d.make === 'Shure'));
+    const face = (rack, e) => {
+      const { unit: u, family } = e;
+      const h = unitHeight(u, family);
+      const st = session.ident[u.id];
+      const twin = u.ip && family !== 'item' && rackEntries(s).some((x) => x.unit !== u && x.unit.ip === u.ip);
+      const led = twin || (st && !st.ok) ? 'warn' : st?.ok ? 'ok' : '';
+      const feeds = family === 'item' ? [] : feedsOf(family, u);
+      return el('li', { className: `rack-row fam-${family} type-${u.type || ''}`, style: `--u:${h}`, ...dragFrom({ unit: u.id }), ...dropOn(rack.id, u.id) },
+        el('div', { className: 'face' },
+          el('span', { className: `led ${led}`, title: twin ? `Same IP as another unit` : st ? (st.ok ? `Checked: ${st.who}` : st.who) : 'Not checked yet' }),
+          el('span', { className: 'face-model mono', textContent: family === 'item' ? '' : u.model }),
+          family === 'item'
+            ? el('input', { value: u.name, className: 'face-name', 'aria-label': 'Name', onchange: (ev) => update(() => { u.name = ev.target.value.trim() || u.name; }) })
+            : el('b', { className: 'face-name', textContent: u.name }),
+          feeds.length ? el('span', { className: 'face-feeds' }, ...feeds.map(([ch, what]) => el('span', { className: what ? '' : 'spare' }, el('i', { textContent: ch }), what || '–'))) : el('span', { className: 'grow' }),
+          el('span', { className: 'face-tools' },
+            el('button', { className: 'icon', type: 'button', textContent: '↑', 'aria-label': `Move ${u.name} up`, onclick: () => update(() => nudgeUnit(s, u.id, -1)) }),
+            el('button', { className: 'icon', type: 'button', textContent: '↓', 'aria-label': `Move ${u.name} down`, onclick: () => update(() => nudgeUnit(s, u.id, 1)) }),
+            el('button', { className: 'remove', type: 'button', textContent: '×', title: `Remove ${u.name}`, onclick: () => update(() => { removeUnit(s, u); normalizeRacks(s); }) }))),
+        el('div', { className: 'side' },
+          family === 'item' ? el('span', { className: 'grow' }) : el('span', { className: `side-ip mono ${u.ip ? '' : 'dim'}`, textContent: u.ip || 'no IP' }),
+          el('select', { className: 'side-u', 'aria-label': `${u.name} height`, onchange: (ev) => update(() => { u.u = Number(ev.target.value); }) },
+            ...[1, 2, 3, 4].map((n) => el('option', { value: n, textContent: `${n}U`, selected: n === h })))));
+    };
+    const cabinet = (rack) => {
+      const rows = rack.units.map((id) => entries.get(id)).filter(Boolean);
+      const used = rows.reduce((n, e) => n + unitHeight(e.unit, e.family), 0) + (rack.plate === 'none' ? 0 : PLATE_U);
+      const free = rack.size ? Math.max(0, rack.size - used) : 0;
+      return el('section', { className: 'cabinet', 'aria-label': rack.name },
+        el('header', { className: 'rack-head' },
+          el('input', { value: rack.name, className: 'rack-name', 'aria-label': 'Rack name', onchange: (ev) => update(() => { rack.name = ev.target.value.trim() || rack.name; }) }),
+          el('span', { className: `panel-meta ${rack.size && used > rack.size ? 'over' : ''}`, textContent: rack.size ? `${used}/${rack.size}U` : `${used}U` }),
+          el('span', { className: 'grow' }),
+          segmented(rack.plate, [['logo', 'Logo'], ['icon', 'Icon'], ['none', 'No plate']], (v) => update(() => { rack.plate = v; }), `${rack.name} plate`),
+          el('select', { 'aria-label': `${rack.name} size`, onchange: (ev) => update(() => { rack.size = Number(ev.target.value); }) },
+            ...RACK_SIZES.map((n) => el('option', { value: n, textContent: n ? `${n}U` : 'Fit', selected: n === rack.size }))),
+          s.racks.length > 1 && !rack.units.length ? el('button', { className: 'remove', type: 'button', textContent: '×', title: `Remove ${rack.name}`, onclick: () => update(() => { s.racks.splice(s.racks.indexOf(rack), 1); }) }) : null),
+        el('ol', { className: 'cab-rows', style: `--upx:${U_PX}px`, ...dropOn(rack.id, null) },
+          rack.plate === 'none' ? null : el('li', { className: 'rack-row plate-row', style: `--u:${PLATE_U}` }, el('div', { className: 'face' }, plate(rack)), el('div', { className: 'side' })),
+          ...rows.map((e) => face(rack, e)),
+          el('li', { className: 'rack-row free-row', style: `--u:${Math.max(1, free)}`, ...dropOn(rack.id, null) },
+            el('div', { className: 'face' }, el('span', { textContent: free ? `${free}U free` : rows.length ? 'Drop here for the bottom' : 'Drag units here' })), el('div', { className: 'side' }))));
+    };
+    main.replaceChildren(el('section', { className: 'panel' },
+      el('header', { className: 'panel-head' }, el('span', { className: 'step', textContent: '01' }), el('h2', { textContent: 'Racks' }),
+        el('span', { className: 'panel-meta', textContent: s.racks.length ? `${plural(s.racks.length, 'rack')} · ${plural(rackEntries(s).length, 'unit')}` : '' }),
+        el('div', { className: 'panel-tools' },
+          el('select', { 'aria-label': 'Item to add', onchange: (ev) => { addType = ev.target.value; } }, ...Object.entries(RACK_ITEMS).map(([k, v]) => el('option', { value: k, textContent: `${v.label} · ${v.u}U` }))),
+          el('button', { className: 'ghost', type: 'button', textContent: 'Add to rack', onclick: () => update(() => { s.rackItems.push(makeRackItem(addType, s.rackItems.length + 1)); }) }),
+          el('button', { className: 'ghost', type: 'button', textContent: 'Add rack', onclick: () => update(() => { s.racks.push(makeRack('', s.racks.length + 1)); }) }),
+          info('Drag anything to where it sits; amps and RF units fill their channels in this order. Amps and receivers are added on their own tabs or from Find devices. The IP beside each unit is where the app reaches it.'))),
+      el('div', { className: 'panel-body' },
+        s.racks.length ? el('div', { className: 'cabinets' }, ...s.racks.map(cabinet)) : el('div', { className: 'empty', textContent: 'No racks yet. Add amps or RF units, or Add rack.' }),
+        tray.length ? el('div', { className: 'tray' },
+          el('span', { className: 'chip-label' }, 'On the network', info('Found by Find devices and not racked yet. Drag one into a rack at the height it sits.')),
+          el('div', { className: 'chips' }, ...tray.map((d) => el('span', { className: 'pill found', ...dragFrom({ found: d }) },
+            el('span', { className: 'grip', 'aria-hidden': 'true', textContent: '⠿' }),
+            el('b', { textContent: [d.model, d.name].filter(Boolean).join(' · ') }), el('small', { className: 'mono', textContent: ` ${d.ip}` }),
+            el('button', { className: 'ghost small', type: 'button', textContent: 'Add', onclick: () => addFound(d) }))))) : null)));
+  }
+
   const rackTools = (kind) => [
     el('button', { className: 'ghost', type: 'button', textContent: 'Add rack', onclick: () => update(() => { const s = show(); s.racks ||= []; s.racks.push(makeRack(kind, racksOf(s, kind).length + 1)); }) }),
     el('button', { className: 'ghost', type: 'button', textContent: 'Check rack', title: 'Ask every unit who it is, to make sure each address is the unit racked there', onclick: (e) => checkRack(kind, e.currentTarget) }),
   ];
   const ampFeeds = (rows) => (u) => rows.filter((r) => r.amp === u).map((r) => [AMP_CHANNEL_NAMES[r.index] || String(r.index + 1), r.feed?.name || '']);
-  return { racksView, rackTools, confirmUnit, foundOptions, addFound, flash, ampFeeds, setFound: (devices) => { session.found = devices || []; } };
+  return { racksView, rackRoom, rackTools, confirmUnit, foundOptions, addFound, flash, ampFeeds, setFound: (devices) => { session.found = devices || []; } };
 }

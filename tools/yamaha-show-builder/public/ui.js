@@ -91,3 +91,49 @@ export function ask(host, { text, yes, no = 'Cancel', danger = false }) {
     strip.querySelector('.primary').focus();
   });
 }
+
+// A vertical fader: a cap on a short throw with marks beside it. Drag the cap (or anywhere on the
+// track), scroll, or use the arrow keys (Page Up/Down for bigger steps). pos runs 0 (bottom) to 1 (top).
+export function vfader({ pos, label, valueText, marks = [], disabled = false, onmove }) {
+  const cap = el('span', { className: 'vf-cap' });
+  const track = el('div', { className: 'vf-track' }, el('span', { className: 'vf-slot' }), cap);
+  const node = el('div', {
+    className: 'vfader', role: 'slider', tabIndex: disabled ? -1 : 0, 'aria-label': label, 'aria-orientation': 'vertical',
+    'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-disabled': String(disabled),
+  },
+  el('div', { className: 'vf-marks', 'aria-hidden': 'true' }, ...marks.map(([p, text]) => el('span', { style: `bottom:${p * 100}%`, textContent: text }))),
+  track);
+  let now = pos;
+  const place = (p) => {
+    now = Math.min(1, Math.max(0, p));
+    cap.style.bottom = `${now * 100}%`;
+    node.setAttribute('aria-valuenow', String(Math.round(now * 100)));
+    node.setAttribute('aria-valuetext', valueText(now));
+  };
+  const move = (p) => { place(p); onmove(now); };
+  place(pos);
+  if (disabled) return node;
+  const fromPointer = (e) => { const r = track.getBoundingClientRect(); return 1 - (e.clientY - r.top) / r.height; };
+  track.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    node.focus();
+    track.setPointerCapture(e.pointerId);
+    // Grabbing the cap keeps it where it is under the finger; clicking the track jumps there
+    const r = cap.getBoundingClientRect();
+    const offset = e.clientY >= r.top && e.clientY <= r.bottom ? fromPointer(e) - now : 0;
+    if (!offset) move(fromPointer(e));
+    const drag = (ev) => move(fromPointer(ev) - offset);
+    const stop = () => { track.removeEventListener('pointermove', drag); track.removeEventListener('pointerup', stop); track.removeEventListener('pointercancel', stop); };
+    track.addEventListener('pointermove', drag);
+    track.addEventListener('pointerup', stop);
+    track.addEventListener('pointercancel', stop);
+  });
+  node.addEventListener('wheel', (e) => { e.preventDefault(); move(now - Math.sign(e.deltaY) * 0.01); }, { passive: false });
+  node.addEventListener('keydown', (e) => {
+    const step = { ArrowUp: 0.005, ArrowRight: 0.005, ArrowDown: -0.005, ArrowLeft: -0.005, PageUp: 0.05, PageDown: -0.05 }[e.key];
+    if (e.key === 'Home') { e.preventDefault(); return move(1); }
+    if (e.key === 'End') { e.preventDefault(); return move(0); }
+    if (step) { e.preventDefault(); move(now + step); }
+  });
+  return node;
+}
