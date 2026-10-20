@@ -2,8 +2,8 @@
 // page hands in how to reach the devices (the app through its bridge, the demo pretends).
 import { RIO_MODELS, buildPlan } from './plan.js';
 import {
-  AMP_INPUTS, AMP_MODELS, IEM_MODELS, RECEIVER_MODELS, SHURE_GAIN, SPEAKER_SETUPS, SPECTERA_LOWEST, addAmpsFor, ampPlan, defaultRf,
-  isRadio, makeAmp, makeRfDevice, rfPlan, shureCommands, specteraWrites,
+  AMP_INPUTS, AMP_MODELS, IEM_MODELS, RECEIVER_MODELS, SHURE_GAIN, SPEAKER_SETUPS, SPECTERA_LOWEST, addAmpsFor, ampPlan, ampReadSummary, applyShureReads, defaultRf,
+  isRadio, makeAmp, makeRfDevice, parseShureReads, rfPlan, shureCommands, shureReadLines, specteraWrites,
 } from './rig.js';
 import { el, info, panel, segmented, tag, toast } from './ui.js';
 
@@ -26,7 +26,7 @@ const fmt = (f) => (f ? f.toFixed(3) : '');
 const remove = (label, onclick) => el('button', { className: 'remove', type: 'button', textContent: '×', title: `Remove ${label}`, onclick });
 
 export function mountRig({ getShow, update, transport, demo = false }) {
-  const session = { password: '', packs: null, picks: {}, reads: {} };
+  const session = { password: '', packs: null, picks: {} };
   const show = () => getShow();
   // The show's RF settings, with any missing ones filled in place so every caller edits the same object
   const rf = () => {
@@ -67,7 +67,7 @@ export function mountRig({ getShow, update, transport, demo = false }) {
       el('td', {}, select(a.model, modelOptions, (v) => update(() => { a.model = v; }), { 'aria-label': 'Model' })),
       el('td', {}, el('input', { value: a.ip, placeholder: 'IP', inputMode: 'decimal', className: 'ip', 'aria-label': `${a.name} IP`, onchange: (e) => update(() => { a.ip = e.target.value.trim(); }) })),
       el('td', { className: 'ch', textContent: `${AMP_MODELS[a.model]?.channels || 0} ch` }),
-      el('td', { className: 'dim' }, session.reads[a.id] || ''),
+      el('td', { className: 'dim' }, readText(s.ampReads?.[a.id])),
       el('td', {}, el('button', {
         className: 'ghost small', type: 'button', textContent: 'Read', disabled: !a.ip, title: a.ip ? `Read ${a.name}'s control list and save it to a file. Nothing on the amp changes.` : 'Put the amp\'s IP in first',
         onclick: (e) => readAmp(a, e.target),
@@ -100,25 +100,73 @@ export function mountRig({ getShow, update, transport, demo = false }) {
           el('li', { textContent: 'In R1: speaker setup and input per channel, from the patch' }),
           el('li', { textContent: 'Every channel muted, gain right down' }),
           el('li', { textContent: 'Unmute one at a time and bring up to target' }))),
+      ampReadsPanel(s),
     );
   }
 
-  // Reads an amp's AES70 control list and saves it, so the amp's controls can be mapped for live control
+  // Reads an amp's AES70 control list into the show, and saves the full list to a file so the amp's
+  // controls can be mapped for live control
+  const readText = (r) => (r ? `${[r.model, `${r.controls.length} controls`].filter(Boolean).join(' · ')} · read ${r.at.slice(11, 16)}` : '');
   async function readAmp(a, button) {
     button.disabled = true;
     button.textContent = 'Reading…';
     try {
       const dump = await transport.ampRead(a.ip);
-      const d = dump.device;
       const count = (name) => dump.objects.filter((o) => o.className === name).length;
-      session.reads[a.id] = `${[d.model, d.name].filter(Boolean).join(' · ')} · ${dump.objects.length} controls`;
-      transport.save(`amp-${String(d.model || a.model).replace(/[^\w.-]+/g, '-')}-${a.ip}.json`, JSON.stringify(dump, null, 2));
+      show().ampReads = { ...(show().ampReads || {}), [a.id]: ampReadSummary(dump) };
+      transport.save(`amp-${String(dump.device.model || a.model).replace(/[^\w.-]+/g, '-')}-${a.ip}.json`, JSON.stringify(dump, null, 2));
       toast(`${a.name}: ${dump.objects.length} controls, ${count('OcaMute')} mutes, ${count('OcaGain')} gains. Saved.`, 'ok');
     } catch (err) {
-      session.reads[a.id] = '';
       toast(`${a.name}: ${err.message}`, 'bad');
     }
     update(() => {});
+  }
+  // What each amp held when it was last read
+  function ampReadsPanel(s) {
+    const reads = (s.amps || []).filter((a) => s.ampReads?.[a.id]);
+    if (!reads.length) return null;
+    return panel({ step: '04', title: 'From the amps', meta: plural(reads.length, 'amp') },
+      ...reads.map((a) => {
+        const r = s.ampReads[a.id];
+        return el('details', { className: 'amp-read' },
+          el('summary', {}, el('b', { textContent: a.name }), el('span', { className: 'dim', textContent: ` ${[r.model, r.name, r.serial && `#${r.serial}`].filter(Boolean).join(' · ')}` }), el('span', { className: 'mono dim', textContent: `  ${r.controls.length} controls · ${r.at.slice(0, 16).replace('T', ' ')}` })),
+          table(['Control', 'Kind', 'Value'], r.controls.map((c) => el('tr', {},
+            el('td', { textContent: c.path }), el('td', { className: 'dim', textContent: c.kind }), el('td', { className: 'mono', textContent: String(c.value ?? '') })))));
+      }));
+  }
+
+  // Reads every amp and Shure receiver that has an IP (and Spectera, once its password is in) into the show
+  async function readKit(onStep = () => {}) {
+    const s = show();
+    const r = rf();
+    const out = { amps: 0, receivers: 0, mics: 0, packs: 0, errors: [] };
+    for (const a of (s.amps || []).filter((x) => x.ip)) {
+      onStep(a.name);
+      try {
+        s.ampReads = { ...(s.ampReads || {}), [a.id]: ampReadSummary(await transport.ampRead(a.ip)) };
+        out.amps++;
+      } catch (err) { out.errors.push(`${a.name}: ${err.message}`); }
+    }
+    if (r.mics === 'shure') {
+      for (const d of r.receivers.filter((x) => x.ip)) {
+        onStep(d.name);
+        const replies = [];
+        const result = await transport.shure(d.ip, shureReadLines(d), false, (x) => replies.push(x.reply));
+        if (result?.error) { out.errors.push(`${d.name}: ${result.error}`); continue; }
+        out.mics += applyShureReads(s, buildPlan(s), d, parseShureReads(replies));
+        out.receivers++;
+      }
+    }
+    if (r.spectera.ip && session.password) {
+      onStep('Spectera');
+      try {
+        session.packs = await transport.specteraDevices(r.spectera.ip, session.password);
+        r.spectera = { ...r.spectera, packs: session.packs.map((p) => ({ type: p.type, name: p.name || '', serial: p.serial || '' })) };
+        out.packs = session.packs.length;
+      } catch (err) { out.errors.push(`Spectera: ${err.message}`); }
+    }
+    update(() => {});
+    return out;
   }
 
   // ---- RF tab ----
@@ -196,6 +244,12 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     const r = rf();
     const plan = buildPlan(s);
     const rig = rfPlan(s, plan);
+    // What each receiver channel held when it was last read
+    const anyRead = r.mics === 'shure' && Object.keys(r.read || {}).length > 0;
+    const readCell = (m) => {
+      const got = m?.device && r.read?.[m.device.id]?.channels.find((x) => x.ch === m.channel);
+      return got ? [got.name, got.gain != null && `${got.gain > 0 ? '+' : ''}${got.gain} dB`].filter(Boolean).join(' · ') : '';
+    };
     const micRows = plan.channels.filter((c) => c.side !== 'R' && MIC_TYPES.includes(c.source.type)).map((c) => {
       const m = rig.mics.find((x) => x.source === c.source);
       return el('tr', { className: m ? '' : 'spare' },
@@ -204,7 +258,8 @@ export function mountRig({ getShow, update, transport, demo = false }) {
         el('td', {}, el('input', { type: 'checkbox', checked: Boolean(m), 'aria-label': `${c.name} is a radio mic`, onchange: (e) => update(() => { c.source.radio = e.target.checked; }) })),
         el('td', { className: m?.label ? '' : 'dim', textContent: m ? m.label || 'no receiver' : 'wired' }),
         el('td', {}, m && r.mics === 'shure' ? freqCell(m) : m ? el('span', { className: 'dim', textContent: 'Spectera' }) : null),
-        el('td', { className: 'mono dim', textContent: m ? `${r.mics === 'shure' ? SHURE_GAIN.min : m.pack === 'SKM' ? SPECTERA_LOWEST.skmGain : SPECTERA_LOWEST.sekGain} dB` : '' }));
+        el('td', { className: 'mono dim', textContent: m ? `${r.mics === 'shure' ? SHURE_GAIN.min : m.pack === 'SKM' ? SPECTERA_LOWEST.skmGain : SPECTERA_LOWEST.sekGain} dB` : '' }),
+        anyRead ? el('td', { className: 'mono dim', textContent: readCell(m) }) : null);
     });
     const iemRows = rig.iems.map((x) => el('tr', {},
       el('td', { className: 'ch', textContent: x.buses.replace(/MIX/g, '') }),
@@ -278,7 +333,7 @@ export function mountRig({ getShow, update, transport, demo = false }) {
       panel({ step: '01', title: 'Radio mics', meta: rig.mics.length ? plural(rig.mics.length, 'mic') : '',
         tools: [segmented(r.mics, [['shure', 'Shure'], ['spectera', 'Spectera']], (v) => update(() => { rf().mics = v; }), 'Radio mic system'), ...(r.mics === 'shure' ? deviceTools('rx', r.receivers, RECEIVER_MODELS) : [])] },
       r.mics === 'shure' ? deviceTable('rx', r.receivers, RECEIVER_MODELS) : null,
-      micRows.length ? table(['Ch', 'Name', 'Radio', 'Channel', 'MHz', 'Start'], micRows) : empty('Add mics on the Desk tab first.')),
+      micRows.length ? table(['Ch', 'Name', 'Radio', 'Channel', 'MHz', 'Start', ...(anyRead ? ['On receiver'] : [])], micRows) : empty('Add mics on the Desk tab first.')),
       panel({ step: '02', title: 'IEMs', meta: rig.iems.length ? plural(rig.iems.length, 'mix', 'mixes') : '',
         tools: [segmented(r.iems, [['shure', 'Shure PSM'], ['spectera', 'Spectera']], (v) => update(() => { rf().iems = v; }), 'IEM system'), ...(r.iems === 'shure' ? deviceTools('tx', r.transmitters, IEM_MODELS) : [])] },
       r.iems === 'shure' ? deviceTable('tx', r.transmitters, IEM_MODELS) : null,
@@ -317,7 +372,7 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     return { amps: (s.amps || []).length, rf: rig.mics.length + rig.iems.length };
   }
 
-  return { renderRios, renderAmps, renderRf, ipTargets, counts, isRadio };
+  return { renderRios, renderAmps, renderRf, ipTargets, counts, isRadio, readKit };
 }
 
 function plural(n, one, many = `${one}s`) {

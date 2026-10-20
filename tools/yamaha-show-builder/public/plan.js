@@ -870,8 +870,9 @@ export function readDeskFirst(model) {
 export function readReplies(replies) {
   const values = new Map();
   for (const line of replies) {
-    const m = /^OK get MIXER:Current\/(\S+) (\d+) (\d+) (.*)$/.exec(String(line).trim());
-    if (m) values.set(`${m[1]} ${m[2]} ${m[3]}`, m[4].startsWith('"') ? m[4].slice(1, -1) : Number.isNaN(Number(m[4])) ? m[4] : Number(m[4]));
+    // MIXER:Current/... keys go in without the prefix, MIXER:Setup/... ones as "Setup/..."
+    const m = /^OK get MIXER:(Current\/|Setup\/)(\S+) (\d+) (\d+) (.*)$/.exec(String(line).trim());
+    if (m) values.set(`${m[1] === 'Setup/' ? 'Setup/' : ''}${m[2]} ${m[3]} ${m[4]}`, m[5].startsWith('"') ? m[5].slice(1, -1) : Number.isNaN(Number(m[5])) ? m[5] : Number(m[5]));
   }
   return values;
 }

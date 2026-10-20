@@ -376,8 +376,23 @@ body.booting .shell, body.locked .shell { visibility: hidden; }
 .demo-exit span { color: var(--muted); }
 
 /* System check */
-.check-level { display: inline-flex; align-items: center; gap: 6px; }
-.check-level .mono { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
+.check-source { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+/* Fader: a long throw with a cap, dB marks underneath */
+.fader { margin: 14px 0 4px; max-width: 640px; }
+.fader-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.fader-value { color: var(--text); font-size: 20px; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.fader input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; margin: 0; background: transparent; cursor: pointer; touch-action: none; }
+.fader input[type=range]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 8px; }
+.fader input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #0b0e12, #2a323c); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .6); }
+.fader input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #0b0e12, #2a323c); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .6); }
+.fader input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 40px; margin-top: -17px; border-radius: 5px; border: 1px solid #4a535e;
+  background: linear-gradient(180deg, #3a434e 0%, #252c35 45%, #f5f4f0 46%, #f5f4f0 54%, #252c35 55%, #1c2229 100%); box-shadow: 0 4px 10px rgba(0, 0, 0, .5); }
+.fader input[type=range]::-moz-range-thumb { width: 22px; height: 40px; border-radius: 5px; border: 1px solid #4a535e;
+  background: linear-gradient(180deg, #3a434e 0%, #252c35 45%, #f5f4f0 46%, #f5f4f0 54%, #252c35 55%, #1c2229 100%); box-shadow: 0 4px 10px rgba(0, 0, 0, .5); }
+.fader input[type=range]:disabled { opacity: .5; cursor: default; }
+.fader-marks { position: relative; height: 16px; margin: 0 11px; font: 11px/16px var(--mono, ui-monospace, monospace); color: var(--muted); }
+.fader-marks span { position: absolute; transform: translateX(-50%); }
 .check-now { margin: 16px 0 0; padding: 18px 20px; border-radius: 14px; border: 1px solid rgba(99, 203, 232, .45); background: linear-gradient(180deg, rgba(99, 203, 232, .12), rgba(99, 203, 232, .04)); display: grid; gap: 6px; }
 .check-name { display: flex; align-items: baseline; gap: 12px; }
 .check-name strong { font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
