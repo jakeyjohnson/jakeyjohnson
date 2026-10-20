@@ -78,3 +78,27 @@ export function specteraRequest(host, password, method, path, body) {
     req.end();
   });
 }
+
+// Who a Shure receiver or transmitter is: its model and the device ID set on it (the name on its front
+// panel). With flash, it also flashes its front panel so it can be found in the rack.
+export function shureDevice(host, { port = SHURE_PORT, timeoutMs = 2500, flash = false } = {}) {
+  return new Promise((resolve, reject) => {
+    const socket = net.createConnection({ host, port });
+    const got = {};
+    let buffer = '';
+    const finish = () => { clearTimeout(timer); socket.destroy(); resolve({ host, model: got.MODEL || '', name: got.DEVICE_ID || '', flashed: Boolean(got.FLASH) }); };
+    const timer = setTimeout(() => (got.MODEL || got.DEVICE_ID ? finish() : (socket.destroy(), reject(new Error(`No answer from ${host}. Check its IP and that it's on this network.`)))), timeoutMs);
+    socket.setEncoding('utf8');
+    socket.on('error', (err) => { clearTimeout(timer); reject(new Error(err.code === 'ECONNREFUSED' ? `${host} refused the connection on port ${port}.` : `Couldn't reach ${host} (${err.code || err.message}).`)); });
+    socket.on('data', (chunk) => {
+      buffer += chunk;
+      let m;
+      while ((m = /<\s*REP\s+(MODEL|DEVICE_ID|FLASH)\s*\{?([^}>]*)\}?\s*>/.exec(buffer))) {
+        buffer = buffer.slice(m.index + m[0].length);
+        got[m[1]] = m[2].trim() || true;
+      }
+      if (got.MODEL && got.DEVICE_ID && (!flash || got.FLASH)) finish();
+    });
+    socket.on('connect', () => socket.write(`< GET MODEL >< GET DEVICE_ID >${flash ? '< SET FLASH ON >' : ''}`));
+  });
+}

@@ -99,12 +99,21 @@ In step 4 (Patch), add your Rio or Tio units in the order they sit on the desk's
 - **Dante subscriptions:** set them up in Dante Controller or on the desk's Dante patch screen. The Paperwork pack lists every one.
 - **On the Rio:** set its UNIT ID to match the order.
 
+## Racks: the right settings to the right unit
+
+Amps (Amplifiers tab) and Shure receivers and IEM transmitters (RF tab) live in **racks**, drawn the way they sit in the real rack, top to bottom.
+- **The order matters:** units fill in rack order. The top amp of the first rack takes the first speaker outputs (Main L/R first), the next amp the next ones, and so on; receivers take the radio mics in desk channel order the same way. Under each unit you can see what each of its channels carries (A Main L, B Main R…, or 1 HH 1, 2 HH 2…), so the screen matches the rack.
+- **Arranging:** drag a unit by its face to where it sits (onto another unit puts it above that one; onto the dashed line puts it at the bottom), or use ↑ ↓. **Add rack** for a second rack; drag units across. Rename a rack by clicking its name.
+- **From Find devices:** amps and Shure units that were found and aren't racked yet sit under **On the network** below the racks: drag one into a rack at its height, or **Add** puts it at the bottom. In the Find devices list, **Rack it…** does the same, or says which unit it is (**Is Amp 2**) for a unit already in the rack without its IP.
+- **Same unit, every time:** a racked unit remembers the box it was racked as: an amp's serial number, a Shure unit's model and device ID. Before anything is read from or sent to it, the app asks the box at that address who it is, and refuses if it's a different one ("answers as D80 · Fills · serial 10511, not the unit racked here"). A unit typed in by hand learns who it is the first time it's checked. **Check rack** asks every unit and marks each **Checked**, **Wrong unit** or **No answer**. Two units with the same IP are marked **Same IP**.
+- **Flash** (Shure units) flashes the front panel so you can find it in the rack.
+
 ## Amplifiers (d&b)
 
 1. Pick an amp model and press **Fill from outputs**, or add them one at a time with **Add amp**. Supported: D80, D40, D20, D90, 40D, 30D, 10D, 5D, D12 and D6.
 2. Each speaker output gets its own channel, filled in order: one per side for Main L/R, then front fills, delays, ceiling and wedges. IEM and record outputs don't need one.
 3. The table shows which desk socket feeds each amp channel, the amp input (A1–A4 for analogue, D1–D4 for AES, Network for Dante/Milan), a guessed speaker setup (Y10P for main, 44S for fills, M4 for wedges; type any d&b setup) and a target gain.
-4. Set each amp's IP, or pick it up with **Find devices** (d&b amps answer on AES70, port 30013).
+4. Set each amp's IP, or rack the amps that **Find devices** finds (d&b amps answer on AES70, port 30013). See [Racks](#racks-the-right-settings-to-the-right-unit): the rack order decides which amp gets which output.
 
 **Read amp:** each amp with an IP has a **Read** button. It connects over AES70 (TCP 30013), reads the amp's whole control list (every object, its role, and the current mute, gain, input and name values) and saves it as a file. It only reads: nothing on the amp changes. From a terminal, `node amp-read.mjs 192.168.0.60` does the same (add a port number if the amp doesn't use 30013). The AES70 client (`oca-link.js`) is written from the published AES70 standard. `mock-amp.js` is a pretend 4-channel amp for testing.
 
@@ -113,7 +122,7 @@ Once a real d&b amp's file has been read, its controls can be mapped and the app
 ## RF (Shure and Sennheiser Spectera)
 
 **Radio mics:** handhelds and headsets count as radio by default; tick or untick **Radio** for any mic. Then pick the system:
-- **Shure receivers** (ULXD4, ULXD4D, ULXD4Q, QLXD4, AD4D, AD4Q, SLXD4, SLXD4D): **Fill** adds receivers for every radio mic, filling their channels in desk channel order. Give each receiver its IP, or pick it up with Find devices.
+- **Shure receivers** (ULXD4, ULXD4D, ULXD4Q, QLXD4, AD4D, AD4Q, SLXD4, SLXD4D): **Fill** adds receivers for every radio mic, filling their channels in desk channel order, in rack order. Give each receiver its IP, or rack the ones Find devices finds.
 - **Spectera:** handhelds go on SKMs, headsets on SEK bodypacks.
 
 **IEMs:** each mono or stereo IEM output on the Desk tab goes on either:
@@ -143,7 +152,7 @@ It's a starting plan only. Scan the room and check the plan in Wireless Workbenc
 
 ## Find devices
 
-Press **Find devices** (right of the tabs) to see what's on the network, grouped as Desks, Stage boxes, Radio mics, Amps, Playback and Other. On a Yamaha desk, **Connect** fills in its IP and connects.
+Press **Find devices** (right of the tabs) to see what's on the network, grouped as Desks, Stage boxes, Radio mics, Amps, Playback and Other. On a Yamaha desk, **Connect** fills in its IP and connects. Amps and Shure units go into a rack with **Rack it…**, or by dragging them in from **On the network** under the racks.
 
 It works offline and only looks at local addresses:
 - **Control ports:** it checks every address in this computer's network (the /24 around each local IP, plus this computer) for:

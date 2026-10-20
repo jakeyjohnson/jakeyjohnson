@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { mockShure } from '../mock-shure.js';
-import { allowedShureLine, shureSession } from '../rf-link.js';
+import { allowedShureLine, shureDevice, shureSession } from '../rf-link.js';
 import { shureMatches, shureReadback } from '../public/rig.js';
 
 test('the bridge only sends name, frequency and gain lines', () => {
@@ -28,4 +28,16 @@ test('a receiver takes the lines and reads them back', async () => {
   server.close();
   const gone = await shureSession('127.0.0.1', lines, { port });
   assert.match(gone.error, /refused/);
+});
+
+test('a Shure unit says who it is, and flashes when asked', async () => {
+  const { server, flashes } = mockShure({ deviceId: 'SR rack 1' });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const port = server.address().port;
+  const who = await shureDevice('127.0.0.1', { port });
+  assert.deepEqual([who.model, who.name, who.flashed], ['ULXD4Q', 'SR rack 1', false]);
+  assert.equal((await shureDevice('127.0.0.1', { port, flash: true })).flashed, true);
+  assert.equal(flashes.length, 1);
+  server.close();
 });

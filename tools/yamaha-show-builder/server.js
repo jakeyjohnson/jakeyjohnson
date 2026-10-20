@@ -7,9 +7,9 @@ import { fileURLToPath } from 'node:url';
 import { LICENCE, PRODUCT, VERSION } from './public/about.js';
 import { DeskLink } from './desk-link.js';
 import { discover, localTargets } from './discover.js';
-import { allowedShureLine, shureSession, specteraRequest } from './rf-link.js';
+import { allowedShureLine, shureDevice, shureSession, specteraRequest } from './rf-link.js';
 import { checkKey, normaliseKey } from './lock.js';
-import { readDevice } from './oca-link.js';
+import { identifyDevice, readDevice } from './oca-link.js';
 import { shureMatches, shureReadback } from './public/rig.js';
 import { matchesReadback, readbackCommand } from './public/plan.js';
 
@@ -126,6 +126,17 @@ async function handleApi(req, res, path) {
       },
     });
     return res.end(JSON.stringify(error ? { error } : { done: true, total: lines.length, bad }) + '\n');
+  }
+
+  if (path === '/api/identify') {
+    // Who is at this address: an amp's serial number, or a Shure unit's model and device ID. Reading only.
+    const { host } = target(body);
+    return json(res, body.kind === 'amp' ? await identifyDevice(host, { port: Number(body.port) || undefined }) : await shureDevice(host));
+  }
+  if (path === '/api/flash') {
+    // Flashes a Shure unit's front panel so it can be found in the rack
+    const { host } = target(body);
+    return json(res, await shureDevice(host, { flash: true }));
   }
 
   if (path === '/api/amp/read') {
