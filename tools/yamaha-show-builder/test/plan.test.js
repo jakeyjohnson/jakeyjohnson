@@ -58,7 +58,7 @@ test('model limits are checked', () => {
   show.options.model = 'DM3';
   assert.deepEqual(buildPlan(show).warnings, []); // 14 channels, 4 mixes fits a DM3
   addSources(show, 'handheld', 4);
-  assert.match(buildPlan(show).warnings.join('\n'), /needs 18 channels. The DM3 \/ DM3 Standard has 16/);
+  assert.match(buildPlan(show).warnings.join('\n'), /needs 18 channels. The DM3 has 16/);
 
   show.options.model = 'TF5';
   show.options.firstMix = 7;
@@ -333,7 +333,8 @@ test('the desk model is read from the name the desk reports', () => {
   assert.equal(modelFromProduct('CL5'), 'CL5');
   assert.equal(modelFromProduct('DM7 Compact'), 'DM7C');
   assert.equal(modelFromProduct('DM7'), 'DM7');
-  assert.equal(modelFromProduct('DM3 Standard'), 'DM3');
+  assert.equal(modelFromProduct('DM3 Standard'), 'DM3S');
+  assert.equal(modelFromProduct('DM3'), 'DM3');
   assert.equal(modelFromProduct('TF-5'), 'TF5');
   assert.equal(modelFromProduct('RIVAGE PM10'), null);
   assert.equal(modelFromProduct('MockDesk'), null);
