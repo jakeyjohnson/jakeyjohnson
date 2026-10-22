@@ -114,7 +114,7 @@ Amps (Amplifiers tab) and Shure receivers and IEM transmitters (RF tab) live in 
 ## Amplifiers (d&b)
 
 1. Pick an amp model and press **Fill from outputs**, or add them one at a time with **Add amp**. Supported: D80, D40, D20, D90, 40D, 30D, 10D, 5D, D12 and D6.
-2. Each speaker output gets its own channel, filled in order: one per side for Main L/R (and for any output set to L&R), then front fills, delays, ceiling, subs and wedges. IEM and record outputs don't need one.
+2. Each speaker output gets its own channel, filled in order: one per side for Main L/R, then its subs if they come from main, then front fills, delays, ceiling, subs and wedges. IEM and record outputs don't need one.
 3. **Amp mode**, per amp (pick it on the amp, or for the amps Add and Fill make):
    - **Dual channel:** every channel drives its own output.
    - **Sub/Top** (d&b Mix TOP/SUB): channels A+B take one output, the top on A and its sub on B, both from A's input; C+D the next output. The sub's setup is guessed from the top (Y10P → Y-SUB, V → V-SUB, Q/T → Q-SUB, GSL/KSL → SL-SUB). A Subs output on a Sub/Top pair runs both channels as subs.
@@ -169,9 +169,14 @@ It works offline and only looks at local addresses:
 
 A scan takes around 10 seconds. If the laptop is on more than one network, or the kit is on another range, type it into **Other range** (like 192.168.1) and press **Scan**. Hover a device to see how it was found. Devices with remote control turned off, or on a different network with no route, won't show up.
 
-## Outputs: mono or L&R, and subs
+## Subs with the main PA
 
-Front fills, delays, ceiling, subs and record outputs can each be **mono** (one mix) or **L&R** (an odd/even pair of mixes, one per side, with stereo inputs panned): click **mono** / **L&R** under the output's name in the routing grid. An L&R output gets an amp channel per side. **Subs** is an output of its own (a mix, mono or L&R) for subs on an aux, taking band and playback by default; or put subs on Sub/Top amps and they follow their tops.
+Under **Main LR** in the routing grid, pick how its subs are fed:
+- **No subs.**
+- **Subs on an aux:** adds a **Subs** output (its own mix), taking what the main takes apart from speech mics. Route anything else to it in the grid. Switching away removes it again.
+- **Subs from main:** the subs run off Main L and R. They get their own amp channels (Main LR L sub, Main LR R sub), fed from the same desk outputs as the tops, or, on a **Sub/Top** amp, the sub half of the pair, with no extra channels.
+
+You can also add a **Subs** output yourself from the Outputs list.
 
 ## Routing to everything
 

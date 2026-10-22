@@ -55,6 +55,9 @@ export function ampFeeds(plan) {
       });
     });
   }
+  // Subs from main: a sub feed per side, from the same desk output as its top, after the tops
+  const tops = feeds.filter((f) => f.zone.type === 'main' && f.zone.subs === 'main');
+  feeds.splice(tops.length ? feeds.indexOf(tops.at(-1)) + 1 : 0, 0, ...tops.map((t) => ({ ...t, key: `${t.key}:sub`, name: `${t.name} sub`, subOf: t.key })));
   return feeds;
 }
 
@@ -64,9 +67,7 @@ export function makeAmp(model = 'D80', n = 1) {
 // Adds amps of one model until every speaker output has a channel
 export function addAmpsFor(show, plan, model = 'D80', mode = 'dual') {
   show.amps ||= [];
-  const need = ampFeeds(plan).length;
-  const have = () => show.amps.reduce((n, a) => n + (AMP_MODELS[a.model]?.channels || 0) / (a.mode === 'subtop' ? 2 : 1), 0);
-  while (have() < need) show.amps.push({ ...makeAmp(model, show.amps.length + 1), mode });
+  while (ampPlan(show, plan).warnings.length && show.amps.length < 64) show.amps.push({ ...makeAmp(model, show.amps.length + 1), mode });
   return show.amps;
 }
 
@@ -79,31 +80,37 @@ export function ampPlan(show, plan) {
   const settings = show.ampSettings || {};
   const rows = [];
   let next = 0;
+  const covered = new Set(); // tops whose sub already rides on a sub/top pair
+  const take = () => {
+    while (next < feeds.length && feeds[next].subOf && covered.has(feeds[next].subOf)) next++;
+    return feeds[next++] || null;
+  };
   for (const amp of show.amps || []) {
     const n = AMP_MODELS[amp.model]?.channels || 0;
     const subtop = amp.mode === 'subtop';
     for (let k = 0; k < n; k++) {
       const sub = subtop && k % 2 === 1;
-      const feed = sub ? rows.at(-1).feed : feeds[next++] || null;
+      const feed = sub ? rows.at(-1).feed : take();
+      if (sub && feed) covered.add(feed.key);
       const key = feed && (sub ? `${feed.key}:sub` : feed.key);
       const set = (key && settings[key]) || {};
       const top = sub ? rows.at(-1) : null;
       rows.push({
         amp, index: k, label: `${amp.name} · Ch ${AMP_CHANNEL_NAMES[k]}`, feed, sub, settingsKey: key,
         // a subs output on a sub/top pair is just two sub channels
-        setup: feed ? set.setup ?? (sub ? (feed.zone.type === 'sub' ? top.setup : subSetupFor(top.setup)) : SETUP_GUESS[feed.zone.type] ?? '') : '',
+        setup: feed ? set.setup ?? (sub ? (feed.zone.type === 'sub' || feed.subOf ? top.setup : subSetupFor(top.setup)) : feed.subOf ? subSetupFor(SETUP_GUESS.main) : SETUP_GUESS[feed.zone.type] ?? '') : '',
         input: sub ? top.input : set.input || (feed?.deskOut?.bank === 'analog' ? AMP_INPUTS[k] : feed?.dante ? `Network ${k + 1}` : AMP_INPUTS[k]),
         target: set.target ?? 0,
       });
     }
   }
   const warnings = [];
-  const spare = feeds.slice(next);
+  const spare = feeds.slice(next).filter((f) => !(f.subOf && covered.has(f.subOf)));
   if (spare.length) warnings.push(`No amp channel yet for ${spare.map((f) => f.name).join(', ')}. Add an amp.`);
   return { rows, feeds, warnings };
 }
 // What a row carries, for lists: "Main LR L", or "Main LR L sub"
-export const rowFeedName = (r) => (r.feed ? `${r.feed.name}${r.sub && r.feed.zone.type !== 'sub' ? ' sub' : ''}` : '');
+export const rowFeedName = (r) => (r.feed ? `${r.feed.name}${r.sub && r.feed.zone.type !== 'sub' && !r.feed.subOf ? ' sub' : ''}` : '');
 
 // ---- RF: Shure receivers and IEM transmitters, Sennheiser Spectera ----
 export const RECEIVER_MODELS = {

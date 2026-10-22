@@ -217,20 +217,40 @@ export function orderSources(sources) {
 // stereo: takes an odd/even pair of mixes (L, R).
 export const ZONE_TYPES = {
   main:      { label: 'Main L/R',       short: 'Main LR', takes: ['speech', 'band', 'program'], color: 'Red' },
-  frontfill: { label: 'Front fills',    short: 'FrntFil', takes: ['speech', 'band', 'program'], color: 'Magenta', lr: true },
-  delay:     { label: 'Delay',          short: 'Delay',   takes: ['speech', 'band', 'program'], color: 'Purple', numbered: true, lr: true },
-  ceiling:   { label: 'Ceiling',        short: 'Ceiling', takes: ['bgm'],                       color: 'Orange', lr: true },
-  sub:       { label: 'Subs',           short: 'Subs',    takes: ['band', 'program'],           color: 'Blue', lr: true },
-  record:    { label: 'Record/stream',  short: 'Record',  takes: ['speech', 'band', 'program'], color: 'Green', lr: true },
+  frontfill: { label: 'Front fills',    short: 'FrntFil', takes: ['speech', 'band', 'program'], color: 'Magenta' },
+  delay:     { label: 'Delay',          short: 'Delay',   takes: ['speech', 'band', 'program'], color: 'Purple', numbered: true },
+  ceiling:   { label: 'Ceiling',        short: 'Ceiling', takes: ['bgm'],                       color: 'Orange' },
+  sub:       { label: 'Subs',           short: 'Subs',    takes: ['band', 'program'],           color: 'Blue' },
+  record:    { label: 'Record/stream',  short: 'Record',  takes: ['speech', 'band', 'program'], color: 'Green' },
   foldback:  { label: 'Foldback',       short: 'Wedge',   takes: ['program', 'talkback'],       color: 'Yellow', monitor: true, numbered: true },
   iemMono:   { label: 'Mono IEM',       short: 'IEM',     takes: ['program', 'talkback'],       color: 'Cyan',   monitor: true, numbered: true },
   iemStereo: { label: 'Stereo IEM',     short: 'IEM',     takes: ['program', 'talkback'],       color: 'Cyan',   monitor: true, numbered: true, stereo: true },
 };
 
-// A zone is stereo when its type is (stereo IEMs), or when an L&R-capable speaker zone is set to L&R:
-// it then takes an odd/even pair of mixes, one per side.
-export const canLR = (zone) => Boolean(ZONE_TYPES[zone.type]?.lr);
-export const zoneStereo = (zone) => Boolean(ZONE_TYPES[zone.type]?.stereo || (canLR(zone) && zone.lr));
+// Stereo zones (stereo IEMs) take an odd/even pair of mixes, one per side
+export const zoneStereo = (zone) => Boolean(ZONE_TYPES[zone.type]?.stereo);
+
+// Subs with the main PA: none, on an aux of their own (a Subs output), or fed from Main L and R alongside
+// the tops (their own amp channels, or the sub half of a sub/top amp pair)
+export const MAIN_SUBS = { none: 'No subs', aux: 'Subs on an aux', main: 'Subs from main' };
+export function setMainSubs(show, mode) {
+  const main = show.zones.find((z) => z.type === 'main');
+  if (!main) return show;
+  main.subs = mode;
+  const auxSubs = show.zones.find((z) => z.type === 'sub' && z.forMain);
+  if (mode === 'aux' && !show.zones.some((z) => z.type === 'sub')) {
+    const zone = makeZone('sub', 'Subs');
+    zone.forMain = true;
+    show.zones.push(zone);
+    // Subs take what the main takes, apart from speech
+    for (const s of show.sources) if (s.zones.includes(main.id) && SOURCE_TYPES[s.type].category !== 'speech') s.zones.push(zone.id);
+  }
+  if (mode !== 'aux' && auxSubs) {
+    show.zones = show.zones.filter((z) => z !== auxSubs);
+    for (const s of show.sources) s.zones = s.zones.filter((id) => id !== auxSubs.id);
+  }
+  return show;
+}
 
 const NEG_INF = -32768; // RCP value for -inf; levels are in 1/100 dB
 
@@ -932,16 +952,12 @@ export function showFromDesk(modelId, values, name = 'Read from desk') {
     let type = zoneTypeFromName(mixName, v(`InCh/ToMix/PrePost 0 ${m}`) === 0);
     // An IEM on an odd/even pair named "Gtr IEM L" / "Gtr IEM R" (or the same name twice) is one stereo IEM
     const pair = mixList[k + 1] === m + 1 && m % 2 === 0 ? String(v(`Mix/Label/Name ${m + 1} 0`)).trim() : null;
-    // An L/R pair of speaker mixes ("Fill L" / "Fill R") is one L&R output
-    let lr = false;
-    if ((type === 'iemMono' || ZONE_TYPES[type].lr) && pair && sideless(pair) === sideless(mixName) && (pair === mixName || pair !== sideless(pair))) {
-      if (type === 'iemMono') type = 'iemStereo';
-      else lr = true;
+    if (type === 'iemMono' && pair && sideless(pair) === sideless(mixName) && (pair === mixName || pair !== sideless(pair))) {
+      type = 'iemStereo';
       mixName = sideless(mixName);
       k++;
     }
     const zone = makeZone(type, mixName);
-    if (lr) zone.lr = true;
     zone.mix = m + 1;
     const color = v(`Mix/Label/Color ${m} 0`);
     if (color) zone.color = normalizeColor(String(color));

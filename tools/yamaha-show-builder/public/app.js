@@ -8,7 +8,7 @@ import {
   applyTemplate, changedCommands, cueCommand, deskCaps, gainOf, makeTemplate, monitorShow, pairMonitors, paperwork, parseInputList, phantomOf,
   rememberPush, sceneStoreCommand,
 } from './plan.js';
-import { canLR, modelFromProduct, patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, readDeskFirst, readDeskSecond, readReplies, showFromDesk, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
+import { MAIN_SUBS, setMainSubs, modelFromProduct, patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, readDeskFirst, readDeskSecond, readReplies, showFromDesk, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 // The page can run inside the Mac app, a browser, or the demo. The demo hands in its own way to save
 // files and show paperwork, since it can't download or open windows.
@@ -110,11 +110,11 @@ function renderGrid(plan) {
       el('input', { value: zone.name, 'aria-label': 'Output name', onchange: (e) => update(() => { zone.name = e.target.value; }) }),
       el('div', { className: 'zone-sub' },
         el('span', { textContent: busLabel(zone) }),
-        canLR(zone) ? el('button', {
-          className: `send-point ${zone.lr ? 'pre' : 'post'}`, textContent: zone.lr ? 'L&R' : 'mono', type: 'button',
-          title: 'Mono takes one mix; L&R takes an odd/even pair, one per side, with stereo inputs panned. Click to switch.',
-          onclick: () => update(() => { zone.lr = !zone.lr; }),
-        }) : null,
+        zone.type === 'main' ? el('select', {
+          className: `subs-pick ${zone.subs && zone.subs !== 'none' ? 'on' : ''}`, 'aria-label': 'Subs with the main PA',
+          title: 'Subs on an aux: a Subs output of its own. Subs from main: sub channels fed from Main L and R (on a Sub/Top amp, the sub half of the pair).',
+          onchange: (e) => update(() => setMainSubs(show, e.target.value)),
+        }, ...Object.entries(MAIN_SUBS).map(([v, t]) => el('option', { value: v, textContent: t, selected: v === (zone.subs || 'none') }))) : null,
         zone.type === 'main' ? null : el('button', {
           className: `send-point ${sendOf(zone)}`, textContent: sendOf(zone), type: 'button',
           title: 'Sends to this output: pre or post fader. Click to switch.',
