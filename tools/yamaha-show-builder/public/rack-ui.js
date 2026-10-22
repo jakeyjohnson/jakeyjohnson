@@ -20,7 +20,11 @@ import {
   normalizeRacks,
   nudgeUnit,
   rackEntries,
+  rackPresetFrom,
   racksOf,
+  removeFromRack,
+  removeRack,
+  addRackPreset,
   sameDevice,
   shureModelFrom,
   unitHeight,
@@ -35,10 +39,11 @@ const selectOf = (value, options, onchange, extra = {}) =>
     ...options.map(([v, label]) => el('option', { value: v, textContent: label, selected: v === value })),
   );
 
-export function makeRackUi({ show, update, transport, session, prefs = () => ({}) }) {
+export function makeRackUi({ show, update, transport, session, prefs = () => ({}), library = null }) {
   session.ident ||= {}; // unit id: { ok, who }, last check this session
   session.found ||= []; // the last Find devices scan
   let dragging = null; // { unit } or { found }
+  let namingRack = null; // rack being saved as a preset
 
   const unitsOf = (kind) => {
     const s = show();
@@ -48,6 +53,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
   };
   const onlyOf = (kind) => new Set(unitsOf(kind).map((u) => u.id));
   const removeUnit = (s, u) => {
+    removeFromRack(s, u.id); // leaves a space behind in a preset rack
     for (const list of [s.amps, s.ds10s, s.rf?.receivers, s.rf?.transmitters, s.rackItems]) {
       const i = list?.indexOf(u) ?? -1;
       if (i >= 0) list.splice(i, 1);
@@ -237,8 +243,8 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
     return el(
       'li',
       {
-        className: `unit ${st && !st.ok ? 'wrong' : ''}`,
-        ...dragFrom({ unit: u.id }),
+        className: `unit ${st && !st.ok ? 'wrong' : ''} ${u.fixed ? 'fixed' : ''}`,
+        ...(u.fixed ? {} : dragFrom({ unit: u.id })),
         ...dropOn(rack.id, u.id),
       },
       el('span', { className: 'grip', 'aria-hidden': 'true', textContent: '⠿' }),
@@ -267,7 +273,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
                   update(() => {
                     u.model = v;
                   }),
-                { 'aria-label': `${u.name} model` },
+                { 'aria-label': `${u.name} model`, disabled: u.fixed },
               ),
           kind === 'amp' && u.model !== 'DS10'
             ? selectOf(
@@ -296,6 +302,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
               }),
           }),
           status,
+          u.fixed ? tag('Built in', '', 'Part of a preset rack: it stays where it is.') : null,
         ),
         el(
           'div',
@@ -310,39 +317,42 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
           ),
         ),
       ),
-      el(
-        'div',
-        { className: 'unit-side' },
-        ...extra(u),
-        el('button', {
-          className: 'icon',
-          type: 'button',
-          textContent: '↑',
-          'aria-label': `Move ${u.name} up`,
-          onclick: () => update(() => nudgeUnit(show(), u.id, -1, onlyOf(kind))),
-        }),
-        el('button', {
-          className: 'icon',
-          type: 'button',
-          textContent: '↓',
-          'aria-label': `Move ${u.name} down`,
-          onclick: () => update(() => nudgeUnit(show(), u.id, 1, onlyOf(kind))),
-        }),
-        el('button', {
-          className: 'remove',
-          type: 'button',
-          textContent: '×',
-          title: `Remove ${u.name}`,
-          onclick: () =>
-            update(() => {
-              const s = show();
-              removeUnit(s, u);
-              normalizeRacks(s);
-            }),
-        }),
-      ),
+      el('div', { className: 'unit-side' }, ...extra(u), ...(u.fixed ? [] : moveTools(u, onlyOf(kind)))),
     );
   }
+  // up, down, remove: for anything not built into a preset rack
+  const moveTools = (u, only) => [
+    el('button', {
+      className: 'icon',
+      type: 'button',
+      textContent: '↑',
+      'aria-label': `Move ${u.name} up`,
+      onclick: () => update(() => nudgeUnit(show(), u.id, -1, only)),
+    }),
+    el('button', {
+      className: 'icon',
+      type: 'button',
+      textContent: '↓',
+      'aria-label': `Move ${u.name} down`,
+      onclick: () => update(() => nudgeUnit(show(), u.id, 1, only)),
+    }),
+    el('button', {
+      className: 'remove',
+      type: 'button',
+      textContent: '×',
+      title: `Remove ${u.name}`,
+      onclick: () =>
+        update(() => {
+          const s = show();
+          removeUnit(s, u);
+          normalizeRacks(s);
+        }),
+    }),
+  ];
+  const spaceOf = (id) => (show().rackItems || []).find((x) => x.id === id && x.type === 'space');
+  // an empty space in a rack: drop a unit on it to put it there
+  const spaceRow = (rack, sp) =>
+    el('li', { className: 'rack-space', ...dropOn(rack.id, sp.id) }, `${sp.u}U space`);
 
   // feeds and extra (per-unit buttons) come from the tab
   function racksView(kind, { feeds, extra = () => [] }) {
@@ -401,10 +411,13 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
               'ol',
               { className: 'rack-units', ...dropOn(rack.id, null) },
               plate(rack),
-              ...rack.units
-                .map((id) => byId.get(id))
-                .filter(Boolean)
-                .map((u) => unitRow(kind, u, ++slot, rack, feeds, extra)),
+              ...rack.units.map((id) =>
+                byId.get(id)
+                  ? unitRow(kind, byId.get(id), ++slot, rack, feeds, extra)
+                  : spaceOf(id)
+                    ? spaceRow(rack, spaceOf(id))
+                    : null,
+              ),
               el('li', {
                 className: 'rack-end',
                 textContent: rack.units.length ? 'Drop here for the bottom of the rack' : 'Drag units here',
@@ -502,6 +515,38 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
     const face = (rack, e) => {
       const { unit: u, family } = e;
       const h = unitHeight(u, family);
+      if (u.type === 'space')
+        return el(
+          'li',
+          { className: 'rack-row space-row', style: `--u:${h}`, ...dropOn(rack.id, u.id) },
+          el('div', { className: 'face' }, el('span', { textContent: `${h}U space` })),
+          el(
+            'div',
+            { className: 'side' },
+            rack.preset
+              ? null
+              : el(
+                  'select',
+                  {
+                    className: 'side-u',
+                    'aria-label': 'Space height',
+                    onchange: (ev) => update(() => (u.u = Number(ev.target.value))),
+                  },
+                  ...[1, 2, 3, 4, 5, 6, 8, 10, 12].map((n) =>
+                    el('option', { value: n, textContent: `${n}U`, selected: n === h }),
+                  ),
+                ),
+            rack.preset
+              ? null
+              : el('button', {
+                  className: 'remove',
+                  type: 'button',
+                  textContent: '×',
+                  title: 'Remove space',
+                  onclick: () => update(() => removeUnit(s, u)),
+                }),
+          ),
+        );
       const st = session.ident[u.id];
       const twin =
         u.ip && family !== 'item' && rackEntries(s).some((x) => x.unit !== u && x.unit.ip === u.ip);
@@ -510,9 +555,9 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
       return el(
         'li',
         {
-          className: `rack-row fam-${family} type-${u.type || ''}`,
+          className: `rack-row fam-${family} type-${u.type || ''} ${u.fixed ? 'fixed' : ''}`,
           style: `--u:${h}`,
-          ...dragFrom({ unit: u.id }),
+          ...(u.fixed ? {} : dragFrom({ unit: u.id })),
           ...dropOn(rack.id, u.id),
         },
         el(
@@ -535,7 +580,10 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
                 ? ''
                 : `${u.model}${family === 'amp' && u.mode === 'subtop' ? ' · SUB/TOP' : ''}`,
           }),
-          family === 'item'
+          u.fixed
+            ? el('span', { className: 'lock', title: 'Built into this rack', 'aria-label': 'Built in' })
+            : null,
+          family === 'item' && !u.fixed
             ? el('input', {
                 value: u.name,
                 className: 'face-name',
@@ -555,35 +603,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
                 ),
               )
             : el('span', { className: 'grow' }),
-          el(
-            'span',
-            { className: 'face-tools' },
-            el('button', {
-              className: 'icon',
-              type: 'button',
-              textContent: '↑',
-              'aria-label': `Move ${u.name} up`,
-              onclick: () => update(() => nudgeUnit(s, u.id, -1)),
-            }),
-            el('button', {
-              className: 'icon',
-              type: 'button',
-              textContent: '↓',
-              'aria-label': `Move ${u.name} down`,
-              onclick: () => update(() => nudgeUnit(s, u.id, 1)),
-            }),
-            el('button', {
-              className: 'remove',
-              type: 'button',
-              textContent: '×',
-              title: `Remove ${u.name}`,
-              onclick: () =>
-                update(() => {
-                  removeUnit(s, u);
-                  normalizeRacks(s);
-                }),
-            }),
-          ),
+          u.fixed ? null : el('span', { className: 'face-tools' }, ...moveTools(u, null)),
         ),
         el(
           'div',
@@ -591,7 +611,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
           family === 'item'
             ? el('span', { className: 'grow' })
             : el('span', { className: `side-ip mono ${u.ip ? '' : 'dim'}`, textContent: u.ip || 'no IP' }),
-          family === 'item'
+          family === 'item' && !u.fixed
             ? el(
                 'select',
                 {
@@ -614,6 +634,86 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
         ),
       );
     };
+    const namingForm = (rack, s) => {
+      const name = el('input', {
+        value: rack.name,
+        'aria-label': 'Preset name',
+        placeholder: '15U control rack',
+      });
+      const save = () => {
+        const preset = { ...rackPresetFrom(s, rack), name: name.value.trim() || rack.name };
+        library.add(preset);
+        namingRack = null;
+        update(() => {});
+        toast(`${preset.name} saved. Add it to any show from Built racks.`, 'ok');
+      };
+      name.onkeydown = (ev) => ev.key === 'Enter' && save();
+      setTimeout(() => name.focus());
+      return el(
+        'div',
+        { className: 'inline-form preset-form' },
+        el('span', { className: 'chip-label', textContent: 'Save as preset' }),
+        name,
+        el('button', {
+          className: 'ghost',
+          type: 'button',
+          textContent: 'Cancel',
+          onclick: () => {
+            namingRack = null;
+            update(() => {});
+          },
+        }),
+        el('button', { className: 'primary', type: 'button', textContent: 'Save', onclick: save }),
+      );
+    };
+    // your built racks, ready to drop into a show
+    const presets = library ? library.list() : [];
+    const presetRow = presets.length
+      ? el(
+          'div',
+          { className: 'chip-group presets' },
+          el(
+            'span',
+            { className: 'chip-label' },
+            'Built racks',
+            info(
+              'Racks that live built in the warehouse. Click one to add it, kit and all; amps and RF you add go into its spaces. Save any rack as a preset with Save as preset.',
+            ),
+          ),
+          el(
+            'div',
+            { className: 'chips' },
+            ...presets.map((p) =>
+              el(
+                'span',
+                { className: 'pill preset' },
+                el('button', {
+                  className: 'chip',
+                  type: 'button',
+                  textContent: `${p.name}${p.size ? ` · ${p.size}U` : ''}`,
+                  title: `${p.slots.filter((x) => x.kind !== 'space').length} built-in units, ${p.slots.filter((x) => x.kind === 'space').reduce((n, x) => n + x.u, 0)}U of space`,
+                  onclick: () => update(() => addRackPreset(s, p)),
+                }),
+                el('button', {
+                  className: 'remove',
+                  type: 'button',
+                  textContent: '×',
+                  title: `Delete the ${p.name} preset (racks already in shows stay)`,
+                  onclick: (ev) => {
+                    if (ev.currentTarget.dataset.armed !== '1') {
+                      ev.currentTarget.dataset.armed = '1';
+                      ev.currentTarget.textContent = 'Delete?';
+                      return;
+                    }
+                    library.remove(p.id);
+                    update(() => {});
+                  },
+                }),
+              ),
+            ),
+          ),
+        )
+      : null;
     const cabinet = (rack) => {
       const rows = rack.units.map((id) => entries.get(id)).filter(Boolean);
       const used =
@@ -666,19 +766,46 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
               el('option', { value: n, textContent: n ? `${n}U` : 'Fit', selected: n === rack.size }),
             ),
           ),
-          s.racks.length > 1 && !rack.units.length
+          rack.preset
+            ? tag(
+                'Built rack',
+                'on',
+                'From your rack presets. Built-in units stay put; load amps and RF into its spaces.',
+              )
+            : null,
+          library && namingRack !== rack.id
+            ? el('button', {
+                className: 'ghost small',
+                type: 'button',
+                textContent: 'Save as preset',
+                title: 'Keep this rack, as it is built, to add to any show',
+                onclick: () => {
+                  namingRack = rack.id;
+                  update(() => {});
+                },
+              })
+            : null,
+          (s.racks.length > 1 && !rack.units.length) || rack.preset
             ? el('button', {
                 className: 'remove',
                 type: 'button',
                 textContent: '×',
                 title: `Remove ${rack.name}`,
-                onclick: () =>
-                  update(() => {
-                    s.racks.splice(s.racks.indexOf(rack), 1);
-                  }),
+                onclick: (ev) => {
+                  // a built rack takes its kit with it, so ask twice
+                  if (rack.preset && ev.currentTarget.dataset.armed !== '1') {
+                    ev.currentTarget.dataset.armed = '1';
+                    ev.currentTarget.textContent = 'Remove rack?';
+                    return;
+                  }
+                  update(() =>
+                    rack.preset ? removeRack(s, rack) : s.racks.splice(s.racks.indexOf(rack), 1),
+                  );
+                },
               })
             : null,
         ),
+        namingRack === rack.id ? namingForm(rack, s) : null,
         el(
           'ol',
           { className: 'cab-rows', style: `--upx:${U_PX}px`, ...dropOn(rack.id, null) },
@@ -766,6 +893,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
         el(
           'div',
           { className: 'panel-body' },
+          presetRow,
           s.racks.length
             ? el('div', { className: 'cabinets' }, ...s.racks.map(cabinet))
             : el('div', {

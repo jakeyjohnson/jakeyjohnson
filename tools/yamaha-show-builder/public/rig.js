@@ -276,7 +276,7 @@ export function syncDs10s(show, plan) {
     show.ds10s.push(makeDs10(show.ds10s.length + 1));
     changed = true;
   }
-  while (show.ds10s.length > need && !show.ds10s.at(-1).ip) {
+  while (show.ds10s.length > need && !show.ds10s.at(-1).ip && !show.ds10s.at(-1).fixed) {
     show.ds10s.pop();
     changed = true;
   }
@@ -657,8 +657,10 @@ export const RACK_ITEMS = {
   shelf: { label: 'Shelf', u: 1 },
   drawer: { label: 'Drawer', u: 2 },
   other: { label: 'Other', u: 1 },
+  space: { label: 'Space', u: 1 },
 };
-export const RACK_SIZES = [0, 4, 6, 8, 10, 12, 14, 16, 20, 24, 30, 42]; // 0: as tall as what's in it
+export const PLATE_U = 2;
+export const RACK_SIZES = [0, ...Array.from({ length: 48 }, (_, i) => i + 1)]; // 0: as tall as what's in it
 const familyLists = (show, family) =>
   family === 'amp'
     ? [show.amps || [], show.ds10s || []]
@@ -714,6 +716,34 @@ export const racksOf = (show, kind) => {
 };
 // Each unit in exactly one rack (new ones at the bottom of the last rack of their family), gone ones
 // dropped, amp and RF lists reordered to match
+const isSpace = (unit) => unit?.type === 'space';
+export const makeSpace = (u = 1) => ({ ...makeRackItem('space'), name: 'Space', u });
+const entryOf = (show, id) => rackEntries(show).find((e) => e.unit.id === id);
+const heightOf = (show, id) => {
+  const e = entryOf(show, id);
+  return e ? unitHeight(e.unit, e.family) : 1;
+};
+// A space shrinks by what goes into it, and goes when used up
+function useSpace(show, space, h) {
+  space.u -= h;
+  if (space.u <= 0) show.rackItems = show.rackItems.filter((x) => x !== space);
+}
+// Taking a loose unit out of a preset rack leaves a space of its height behind
+function vacate(show, unitId) {
+  const rack = (show.racks || []).find((r) => r.units.includes(unitId));
+  if (!rack) return;
+  const e = entryOf(show, unitId);
+  const i = rack.units.indexOf(unitId);
+  if (rack.preset && e && !e.unit.fixed && !isSpace(e.unit)) {
+    const space = makeSpace(unitHeight(e.unit, e.family));
+    show.rackItems = [...(show.rackItems || []), space];
+    rack.units.splice(i, 1, space.id);
+  } else rack.units.splice(i, 1);
+}
+export function removeFromRack(show, unitId) {
+  vacate(show, unitId);
+}
+
 export function normalizeRacks(show) {
   show.racks ||= [];
   const entries = rackEntries(show);
@@ -725,28 +755,169 @@ export function normalizeRacks(show) {
     r.size ??= 0;
     r.plate ||= 'logo';
   }
+  const byId = new Map(entries.map((e) => [e.unit.id, e]));
+  // spaces next to each other become one
+  for (const r of show.racks) {
+    for (let i = r.units.length - 1; i > 0; i--) {
+      const a = byId.get(r.units[i - 1])?.unit;
+      const b = byId.get(r.units[i])?.unit;
+      if (isSpace(a) && isSpace(b)) {
+        a.u += b.u;
+        show.rackItems = show.rackItems.filter((x) => x !== b);
+        r.units.splice(i, 1);
+      }
+    }
+  }
   for (const { unit, family } of entries) {
     if (seen.has(unit.id)) continue;
-    const home =
-      [...racksOf(show, family)].pop() ||
-      show.racks.at(-1) ||
-      (show.racks.push(makeRack(family, 1)), show.racks.at(-1));
-    home.units.push(unit.id);
+    // first space it fits, racks holding its own kind first; else the bottom of the last such rack
+    const h = unitHeight(unit, family);
+    const order = [...racksOf(show, family), ...show.racks.filter((r) => !racksOf(show, family).includes(r))];
+    let placed = false;
+    for (const r of order) {
+      const space = r.units.map((id) => byId.get(id)?.unit).find((u) => isSpace(u) && u.u >= h);
+      if (space && family !== 'item') {
+        r.units.splice(r.units.indexOf(space.id), 0, unit.id);
+        useSpace(show, space, h);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      const home =
+        [...racksOf(show, family)].pop() ||
+        show.racks.at(-1) ||
+        (show.racks.push(makeRack(family, 1)), show.racks.at(-1));
+      home.units.push(unit.id);
+    }
     seen.add(unit.id);
   }
+  const live = new Set(rackEntries(show).map((e) => e.unit.id));
+  for (const r of show.racks) r.units = r.units.filter((id) => live.has(id));
   const pos = new Map(show.racks.flatMap((r) => r.units).map((id, i) => [id, i]));
   for (const family of FAMILIES)
     for (const list of familyLists(show, family)) list.sort((a, b) => pos.get(a.id) - pos.get(b.id));
   return show;
 }
-// above `beforeId`, or at the bottom
+// Above `beforeId`, or at the bottom. Dropped on a space, it goes into the space.
 export function moveUnit(show, unitId, rackId, beforeId = null) {
-  for (const r of show.racks || []) r.units = r.units.filter((id) => id !== unitId);
+  if (beforeId === unitId) return show;
+  const h = heightOf(show, unitId);
+  vacate(show, unitId);
   const rack = show.racks.find((r) => r.id === rackId);
   const at = beforeId ? rack.units.indexOf(beforeId) : -1;
   rack.units.splice(at < 0 ? rack.units.length : at, 0, unitId);
+  const before = beforeId && entryOf(show, beforeId);
+  if (before && isSpace(before.unit) && !isSpace(entryOf(show, unitId)?.unit)) useSpace(show, before.unit, h);
   return normalizeRacks(show);
 }
+
+// ---- Rack presets: racks that stay built in the warehouse. Everything in one is fixed apart from its
+// spaces, which take whatever amps and RF the show needs. ----
+export function rackPresetFrom(show, rack) {
+  const tx = new Set((show.rf?.transmitters || []).map((u) => u.id));
+  const slots = rack.units
+    .map((id) => entryOf(show, id))
+    .filter(Boolean)
+    .map(({ unit, family }) => {
+      if (isSpace(unit)) return { kind: 'space', u: unit.u };
+      // units loaded into the rack for this show (not built in) become spaces in the preset
+      if (rack.preset && !unit.fixed) return { kind: 'space', u: unitHeight(unit, family) };
+      if (family === 'item') return { kind: 'item', type: unit.type, name: unit.name, u: unit.u };
+      if (unit.model === 'DS10') return { kind: 'ds10', name: unit.name, ip: unit.ip || '' };
+      if (family === 'amp')
+        return {
+          kind: 'amp',
+          model: unit.model,
+          mode: unit.mode || 'dual',
+          name: unit.name,
+          ip: unit.ip || '',
+        };
+      return { kind: tx.has(unit.id) ? 'tx' : 'rx', model: unit.model, name: unit.name, ip: unit.ip || '' };
+    });
+  const used =
+    slots.reduce(
+      (n, x) =>
+        n +
+        (x.kind === 'space' || x.kind === 'item' ? x.u : x.kind === 'amp' ? AMP_MODELS[x.model]?.u || 2 : 1),
+      0,
+    ) + (rack.plate === 'none' ? 0 : PLATE_U);
+  if (rack.size > used) slots.push({ kind: 'space', u: rack.size - used });
+  return {
+    id: `preset${Date.now().toString(36)}`,
+    name: rack.name,
+    size: rack.size,
+    plate: rack.plate,
+    slots,
+  };
+}
+export function addRackPreset(show, preset) {
+  show.rackItems ||= [];
+  show.amps ||= [];
+  show.ds10s ||= [];
+  show.rf ||= defaultRf();
+  show.racks ||= [];
+  const taken = show.racks.filter(
+    (r) => r.name === preset.name || r.name.startsWith(`${preset.name} `),
+  ).length;
+  const rack = {
+    ...makeRack('', 1),
+    name: taken ? `${preset.name} ${taken + 1}` : preset.name,
+    size: preset.size || 0,
+    plate: preset.plate || 'logo',
+    preset: preset.id,
+  };
+  for (const slot of preset.slots) {
+    let unit;
+    if (slot.kind === 'space') {
+      unit = makeSpace(slot.u);
+      show.rackItems.push(unit);
+    } else if (slot.kind === 'item') {
+      unit = { ...makeRackItem(slot.type), name: slot.name, u: slot.u, fixed: true };
+      show.rackItems.push(unit);
+    } else if (slot.kind === 'amp') {
+      unit = {
+        ...makeAmp(slot.model, show.amps.length + 1),
+        mode: slot.mode,
+        name: slot.name,
+        ip: slot.ip,
+        fixed: true,
+      };
+      show.amps.push(unit);
+    } else if (slot.kind === 'ds10') {
+      unit = { ...makeDs10(show.ds10s.length + 1), name: slot.name, ip: slot.ip, fixed: true };
+      show.ds10s.push(unit);
+    } else {
+      const list = slot.kind === 'tx' ? show.rf.transmitters : show.rf.receivers;
+      unit = {
+        ...makeRfDevice(slot.kind, slot.model, list.length + 1),
+        name: slot.name,
+        ip: slot.ip,
+        fixed: true,
+      };
+      list.push(unit);
+    }
+    rack.units.push(unit.id);
+  }
+  show.racks.push(rack);
+  normalizeRacks(show);
+  return rack;
+}
+// Taking a preset rack out of the show: its built-in units go with it, anything loaded into it moves on
+export function removeRack(show, rack) {
+  const ids = new Set(rack.units);
+  const drop = (list) => (list || []).filter((u) => !(ids.has(u.id) && (u.fixed || isSpace(u))));
+  show.amps = drop(show.amps);
+  show.ds10s = drop(show.ds10s);
+  show.rackItems = drop(show.rackItems);
+  if (show.rf) {
+    show.rf.receivers = drop(show.rf.receivers);
+    show.rf.transmitters = drop(show.rf.transmitters);
+  }
+  show.racks = show.racks.filter((r) => r !== rack);
+  return normalizeRacks(show);
+}
+
 // Crosses into the next rack at the ends. `only`: skip units not in it (amps tab steps past the next amp).
 export function nudgeUnit(show, unitId, dir, only = null) {
   const rack = show.racks.find((r) => r.units.includes(unitId));

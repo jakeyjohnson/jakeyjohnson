@@ -63,10 +63,10 @@ const fmt = (f) => (f ? f.toFixed(3) : '');
 const remove = (label, onclick) =>
   el('button', { className: 'remove', type: 'button', textContent: '×', title: `Remove ${label}`, onclick });
 
-export function mountRig({ getShow, update, transport, demo = false, prefs = () => ({}) }) {
+export function mountRig({ getShow, update, transport, demo = false, prefs = () => ({}), library = null }) {
   const session = { password: '', packs: null, picks: {} };
   const show = () => getShow();
-  const racks = makeRackUi({ show, update, transport, session, prefs });
+  const racks = makeRackUi({ show, update, transport, session, prefs, library });
   // fills missing settings in place so every caller edits the same object
   const rf = () => {
     const s = show();

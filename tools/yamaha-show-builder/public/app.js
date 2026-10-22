@@ -786,9 +786,34 @@ function showTab(tab) {
 for (const t of TABS) $(`tabBtn-${t}`).onclick = () => showTab(t);
 
 // amps and RF go through the app server
+// Built racks (presets), kept on this computer like templates
+const RACKS_KEY = `${STORE}-rack-presets`;
+const rackLibrary = {
+  list: () => {
+    try {
+      return JSON.parse(localStorage.getItem(RACKS_KEY)) || [];
+    } catch {
+      return [];
+    }
+  },
+  save(list) {
+    try {
+      localStorage.setItem(RACKS_KEY, JSON.stringify(list));
+    } catch {
+      toast("Couldn't save the preset: this browser's storage is off or full", 'bad');
+    }
+  },
+  add(preset) {
+    this.save([...this.list().filter((p) => p.name !== preset.name), preset]);
+  },
+  remove(id) {
+    this.save(this.list().filter((p) => p.id !== id));
+  },
+};
 const rigUi = mountRig({
   getShow: () => show,
   prefs: () => prefs,
+  library: rackLibrary,
   update,
   demo: Boolean(host.demo),
   transport: {

@@ -245,3 +245,89 @@ test('amps fed from a DS10: AES inputs in order, one DS10 AES out per pair, Dant
   syncDs10s(show, buildPlan(show));
   assert.equal(show.ds10s.length, 0);
 });
+
+test('a preset rack comes in built, with spaces that new amps and RF fill', async () => {
+  const { addRackPreset, makeSpace, rackPresetFrom, removeFromRack, removeRack } = await import(
+    '../public/rig.js'
+  );
+  // Build the warehouse's 15U control rack once: power, a fixed DS10, 6U of space, a switch
+  const build = defaultShow();
+  build.rackItems = [makeRackItem('power', 1), makeSpace(6), makeRackItem('switch', 2)];
+  build.ds10s = [{ id: 'ds', model: 'DS10', name: 'DS10 1', ip: '192.168.1.40' }];
+  normalizeRacks(build);
+  const rack0 = build.racks[0];
+  rack0.units = [build.rackItems[0].id, 'ds', build.rackItems[1].id, build.rackItems[2].id];
+  rack0.name = 'Control rack';
+  rack0.size = 15;
+  const preset = rackPresetFrom(build, rack0);
+  assert.deepEqual(
+    preset.slots.map((x) => `${x.kind}${x.u ? ` ${x.u}U` : ''}`),
+    ['item 1U', 'ds10', 'space 6U', 'item 1U', 'space 4U'],
+  ); // 15 - plate 2 - 9 used
+
+  // A new show gets it built; Fill puts the amps in the space
+  const show = defaultShow();
+  const rack = addRackPreset(show, preset);
+  assert.equal(rack.name, 'Control rack');
+  assert.ok(show.ds10s[0].fixed);
+  assert.equal(show.ds10s[0].ip, '192.168.1.40');
+  addAmpsFor(show, buildPlan(show)); // two D80s, 2U each
+  normalizeRacks(show);
+  const names = (r) =>
+    r.units
+      .map((id) => [...show.amps, ...show.ds10s, ...show.rackItems].find((u) => u.id === id))
+      .map((u) => (u.type === 'space' ? `space ${u.u}U` : u.name));
+  assert.deepEqual(names(rack), [
+    'Power distro',
+    'DS10 1',
+    'Amp 1',
+    'Amp 2',
+    'space 2U',
+    'Network switch',
+    'space 4U',
+  ]);
+  // Taking an amp out gives its space back (merged with the one below)
+  const amp2 = show.amps[1];
+  removeFromRack(show, amp2.id);
+  show.amps = show.amps.filter((a) => a !== amp2);
+  normalizeRacks(show);
+  assert.deepEqual(names(rack), [
+    'Power distro',
+    'DS10 1',
+    'Amp 1',
+    'space 4U',
+    'Network switch',
+    'space 4U',
+  ]);
+  // Dropping a unit on a space puts it there
+  const extra = makeAmp('D40', 9);
+  show.amps.push(extra);
+  normalizeRacks(show); // goes into the first space it fits
+  assert.deepEqual(names(rack), [
+    'Power distro',
+    'DS10 1',
+    'Amp 1',
+    'Amp 9',
+    'space 2U',
+    'Network switch',
+    'space 4U',
+  ]);
+  const space = show.rackItems.find((u) => u.type === 'space' && u.u === 4);
+  moveUnit(show, extra.id, rack.id, space.id);
+  assert.deepEqual(names(rack), [
+    'Power distro',
+    'DS10 1',
+    'Amp 1',
+    'space 4U',
+    'Network switch',
+    'Amp 9',
+    'space 2U',
+  ]);
+  // A second copy is numbered; removing a preset rack takes its built-in kit, loose amps move on
+  const again = addRackPreset(show, preset);
+  assert.equal(again.name, 'Control rack 2');
+  removeRack(show, rack);
+  assert.ok(!show.ds10s.some((d) => d.ip === '192.168.1.40' && rack.units.includes(d.id)));
+  assert.ok(show.amps.includes(extra));
+  assert.ok(again.units.includes(extra.id) || show.racks.some((r) => r.units.includes(extra.id)));
+});

@@ -57,9 +57,15 @@ export function pickList(show, plan) {
 
   const racks = show.racks || [];
   add('Racks', [
-    ...racks.map((r) => ({ qty: 1, item: r.name, note: r.size ? `${r.size}U` : '' })),
+    ...racks.map((r) => ({
+      qty: 1,
+      item: r.name,
+      note: [r.size ? `${r.size}U` : '', r.preset ? 'built rack: comes with its kit' : '']
+        .filter(Boolean)
+        .join(', '),
+    })),
     ...tally(
-      rackEntries(show).filter((e) => e.family === 'item'),
+      rackEntries(show).filter((e) => e.family === 'item' && e.unit.type !== 'space' && !e.unit.fixed),
       (e) => e.unit.name,
     ).map(([name, list]) => ({
       qty: list.length,

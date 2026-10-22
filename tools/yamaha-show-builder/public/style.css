@@ -2480,3 +2480,50 @@ dialog.prefs::backdrop {
 .logo-preview.white img {
   filter: brightness(0) invert(1);
 }
+
+/* Preset (built) racks: spaces to load, built-in units locked */
+.rack-space {
+  padding: 10px;
+  border: 1px dashed rgba(99, 203, 232, 0.45);
+  border-radius: 4px;
+  color: var(--accent);
+  font-size: 12px;
+  text-align: center;
+}
+.rack-space.drop-here,
+.rack-row.space-row.drop-here .face {
+  background: var(--accent-soft);
+}
+.rack-row.space-row .face {
+  justify-content: center;
+  border: 1px dashed rgba(99, 203, 232, 0.45);
+  background: rgba(99, 203, 232, 0.04);
+  box-shadow: none;
+  color: var(--accent);
+  cursor: default;
+}
+.rack-row.fixed .face,
+.unit.fixed {
+  cursor: default;
+}
+.lock {
+  width: 10px;
+  height: 12px;
+  flex: none;
+  background: var(--muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Crect x='0.5' y='5' width='9' height='6.5' rx='1.5'/%3E%3Cpath d='M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5' fill='none' stroke='black' stroke-width='1.4'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Crect x='0.5' y='5' width='9' height='6.5' rx='1.5'/%3E%3Cpath d='M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5' fill='none' stroke='black' stroke-width='1.4'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+.presets {
+  margin-bottom: 16px;
+}
+.pill.preset {
+  height: auto;
+  padding: 2px 4px 2px 2px;
+  gap: 2px;
+}
+.preset-form {
+  margin: 0 0 10px;
+}
