@@ -4,7 +4,7 @@ import net from 'node:net';
 import { once } from 'node:events';
 import { DeskLink } from '../desk-link.js';
 
-// A tiny pretend desk on a random local port
+// Fake desk on a random local port
 async function fakeDesk({ product = 'QL5', speaks = true } = {}) {
   const sockets = new Set();
   const server = net.createServer((socket) => {
@@ -13,7 +13,8 @@ async function fakeDesk({ product = 'QL5', speaks = true } = {}) {
     socket.on('data', (chunk) => {
       for (const line of chunk.split('\n').filter(Boolean)) {
         if (!speaks) continue;
-        if (line.startsWith('devinfo')) socket.write(`NOTIFY something\nOK devinfo productname "${product}"\n`);
+        if (line.startsWith('devinfo'))
+          socket.write(`NOTIFY something\nOK devinfo productname "${product}"\n`);
         else socket.write(`OK ${line}\n`);
       }
     });
@@ -23,7 +24,11 @@ async function fakeDesk({ product = 'QL5', speaks = true } = {}) {
   return {
     port: server.address().port,
     dropAll: () => sockets.forEach((s) => s.destroy()),
-    close: () => new Promise((r) => { sockets.forEach((s) => s.destroy()); server.close(r); }),
+    close: () =>
+      new Promise((r) => {
+        sockets.forEach((s) => s.destroy());
+        server.close(r);
+      }),
   };
 }
 
@@ -35,7 +40,10 @@ test('connects, reads the desk name and sends commands', async () => {
   const status = await link.connect('127.0.0.1', desk.port);
   assert.equal(status.state, 'connected');
   assert.equal(status.product, 'QL5');
-  assert.equal(await link.send('set MIXER:Current/InCh/Fader/On 0 0 1'), 'OK set MIXER:Current/InCh/Fader/On 0 0 1');
+  assert.equal(
+    await link.send('set MIXER:Current/InCh/Fader/On 0 0 1'),
+    'OK set MIXER:Current/InCh/Fader/On 0 0 1',
+  );
   link.disconnect();
   assert.deepEqual(states, ['connecting', 'connected', 'idle']);
   assert.equal(await link.send('set x'), 'NOT CONNECTED');

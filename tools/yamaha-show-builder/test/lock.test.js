@@ -40,7 +40,13 @@ const today = new Date('2026-10-22');
 test('short keys are 20 characters, check out however they are typed, and differ from each other', () => {
   const key = makeShortKey({ serial: 5 }, secret);
   assert.match(key, /^SB-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}$/);
-  assert.deepEqual(checkKey(key, pub, today, secret), { ok: true, licence: 'KK-SB-0005', serial: 5, issued: null, expires: null });
+  assert.deepEqual(checkKey(key, pub, today, secret), {
+    ok: true,
+    licence: 'KK-SB-0005',
+    serial: 5,
+    issued: null,
+    expires: null,
+  });
   assert.ok(checkKey(` ${key.toLowerCase().replace(/-/g, ' ')} `, pub, today, secret).ok);
   assert.ok(checkKey(key.replace(/^SB-/, 'SB').replace(/0/g, 'O').replace(/1/g, 'I'), pub, today, secret).ok); // O for 0, I for 1
   assert.notEqual(makeShortKey({ serial: 6 }, secret).slice(0, 9), key.slice(0, 9));
@@ -53,7 +59,10 @@ test('a short key with a typo, missing a character or made elsewhere is turned d
   assert.match(checkKey(typo, pub, today, secret).error, /isn't valid/);
   assert.match(checkKey(key.slice(0, -1), pub, today, secret).error, /incomplete/);
   assert.match(checkKey(`${key}X`, pub, today, secret).error, /too long/);
-  assert.match(checkKey(makeShortKey({ serial: 9 }, Buffer.alloc(32, 8)), pub, today, secret).error, /isn't valid/);
+  assert.match(
+    checkKey(makeShortKey({ serial: 9 }, Buffer.alloc(32, 8)), pub, today, secret).error,
+    /isn't valid/,
+  );
 });
 
 test('a short key with an end date stops after it', () => {

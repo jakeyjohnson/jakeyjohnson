@@ -1,4 +1,4 @@
-# KobiKraken tools
+# KobiKraken tools: brand rules
 
 Everything under `tools/` is a KobiKraken plugin or tool for live sound. Brand assets and the short guide are in `tools/brand/` (from *KobiKraken Brand Guidelines v1.0*).
 

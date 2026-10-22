@@ -1,15 +1,30 @@
-// A small AES70 (OCA) client over TCP (OCP.1), written from the published standard, for d&b amplifiers
-// and anything else that speaks AES70. It reads: the device's own description, every object in its
-// tree (number, class, role, label) and the current value of the common controls. It never sets anything.
+// Minimal read-only AES70 client (OCP.1 over TCP), from the published standard. Used for d&b amps.
+// Reads device info, the object tree (ONo, class, role, label) and values of common controls.
 import net from 'node:net';
 
 export const OCA_PORT = 30013;
 const SYNC = 0x3b;
-const PROTOCOL = 1; // OCP.1 as first published (2015): what older amps expect, and newer ones still accept
+const PROTOCOL = 1; // OCP.1 as first published (2015); older amps need it, newer ones accept it
 const TYPE = { command: 0, commandRrq: 1, notification: 2, response: 3, keepAlive: 4 };
-export const STATUS = ['OK', 'ProtocolVersionError', 'DeviceError', 'Locked', 'BadFormat', 'BadONo', 'ParameterError', 'ParameterOutOfRange', 'NotImplemented', 'InvalidRequest', 'ProcessingFailed', 'BadMethod', 'PartiallySucceeded', 'Timeout', 'BufferOverflow'];
+export const STATUS = [
+  'OK',
+  'ProtocolVersionError',
+  'DeviceError',
+  'Locked',
+  'BadFormat',
+  'BadONo',
+  'ParameterError',
+  'ParameterOutOfRange',
+  'NotImplemented',
+  'InvalidRequest',
+  'ProcessingFailed',
+  'BadMethod',
+  'PartiallySucceeded',
+  'Timeout',
+  'BufferOverflow',
+];
 
-// The standard classes worth reading a value from, by class ID, with the method that reads it
+// By class ID. read: [def level, method index, decoder]
 export const CLASSES = {
   '1': { name: 'OcaRoot' },
   '1.1': { name: 'OcaWorker' },
@@ -31,12 +46,20 @@ export const CLASSES = {
 };
 export const classNameOf = (id) => {
   if (CLASSES[id]) return CLASSES[id].name;
-  for (let parts = id.split('.'); parts.length; parts.pop()) if (CLASSES[parts.join('.')]) return `${CLASSES[parts.join('.')].name} (extended)`;
+  for (let parts = id.split('.'); parts.length; parts.pop())
+    if (CLASSES[parts.join('.')]) return `${CLASSES[parts.join('.')].name} (extended)`;
   return 'unknown';
 };
 
 // ---- Encoding ----
-export function encodeCommand(handle, ono, level, index, params = Buffer.alloc(0), paramCount = params.length ? 1 : 0) {
+export function encodeCommand(
+  handle,
+  ono,
+  level,
+  index,
+  params = Buffer.alloc(0),
+  paramCount = params.length ? 1 : 0,
+) {
   const pdu = Buffer.alloc(17 + params.length);
   pdu.writeUInt32BE(pdu.length, 0);
   pdu.writeUInt32BE(handle, 4);
@@ -66,11 +89,28 @@ export function encodeString(s) {
 
 // ---- Decoding ----
 export class Reader {
-  constructor(buf) { this.buf = buf; this.pos = 0; }
-  u8() { return this.buf.readUInt8(this.pos++); }
-  u16() { const v = this.buf.readUInt16BE(this.pos); this.pos += 2; return v; }
-  u32() { const v = this.buf.readUInt32BE(this.pos); this.pos += 4; return v; }
-  f32() { const v = this.buf.readFloatBE(this.pos); this.pos += 4; return Math.round(v * 1000) / 1000; }
+  constructor(buf) {
+    this.buf = buf;
+    this.pos = 0;
+  }
+  u8() {
+    return this.buf.readUInt8(this.pos++);
+  }
+  u16() {
+    const v = this.buf.readUInt16BE(this.pos);
+    this.pos += 2;
+    return v;
+  }
+  u32() {
+    const v = this.buf.readUInt32BE(this.pos);
+    this.pos += 4;
+    return v;
+  }
+  f32() {
+    const v = this.buf.readFloatBE(this.pos);
+    this.pos += 4;
+    return Math.round(v * 1000) / 1000;
+  }
   string() {
     const chars = this.u16();
     let end = this.pos;
@@ -82,24 +122,47 @@ export class Reader {
     this.pos = end;
     return s;
   }
-  classId() { const n = this.u16(); const parts = []; for (let i = 0; i < n; i++) parts.push(this.u16()); return parts.join('.'); }
-  list(item) { const n = this.u16(); const out = []; for (let i = 0; i < n; i++) out.push(item(this)); return out; }
+  classId() {
+    const n = this.u16();
+    const parts = [];
+    for (let i = 0; i < n; i++) parts.push(this.u16());
+    return parts.join('.');
+  }
+  list(item) {
+    const n = this.u16();
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(item(this));
+    return out;
+  }
 }
-// Splits a stream into messages, and messages into PDUs. Returns the PDUs found and the bytes left over.
+// Stream to messages to PDUs. Returns the PDUs plus leftover bytes.
 export function parseMessages(buf) {
   const pdus = [];
   let pos = 0;
   while (buf.length - pos >= 10) {
-    if (buf[pos] !== SYNC) { pos++; continue; }
+    if (buf[pos] !== SYNC) {
+      pos++;
+      continue;
+    }
     const size = buf.readUInt32BE(pos + 3);
     if (buf.length - pos < size + 1) break;
     const type = buf.readUInt8(pos + 7);
     const count = buf.readUInt16BE(pos + 8);
     let p = pos + 10;
     for (let i = 0; i < count && p < pos + 1 + size; i++) {
-      if (type === TYPE.keepAlive) { pdus.push({ type }); p = pos + 1 + size; break; }
+      if (type === TYPE.keepAlive) {
+        pdus.push({ type });
+        p = pos + 1 + size;
+        break;
+      }
       const len = buf.readUInt32BE(p);
-      if (type === TYPE.response) pdus.push({ type, handle: buf.readUInt32BE(p + 4), status: buf.readUInt8(p + 8), params: buf.subarray(p + 10, p + len) });
+      if (type === TYPE.response)
+        pdus.push({
+          type,
+          handle: buf.readUInt32BE(p + 4),
+          status: buf.readUInt8(p + 8),
+          params: buf.subarray(p + 10, p + len),
+        });
       else pdus.push({ type, handle: buf.readUInt32BE(p + 4), body: buf.subarray(p, p + len) });
       p += len;
     }
@@ -111,13 +174,31 @@ export function parseMessages(buf) {
 // ---- Connection ----
 export class OcaConnection {
   constructor(host, { port = OCA_PORT, timeoutMs = 2500 } = {}) {
-    Object.assign(this, { host, port, timeoutMs, handle: 1, pending: new Map(), buf: Buffer.alloc(0), socket: null });
+    Object.assign(this, {
+      host,
+      port,
+      timeoutMs,
+      handle: 1,
+      pending: new Map(),
+      buf: Buffer.alloc(0),
+      socket: null,
+    });
   }
   connect() {
     return new Promise((resolve, reject) => {
       const socket = net.createConnection({ host: this.host, port: this.port });
-      const fail = (err) => reject(new Error(err.code === 'ECONNREFUSED' ? `${this.host} refused AES70 on port ${this.port}. Is it a d&b amp with its network control on?` : `Couldn't reach ${this.host} (${err.code || err.message}).`));
-      socket.setTimeout(4000, () => { socket.destroy(); reject(new Error(`No answer from ${this.host}.`)); });
+      const fail = (err) =>
+        reject(
+          new Error(
+            err.code === 'ECONNREFUSED'
+              ? `${this.host} refused AES70 on port ${this.port}. Is it a d&b amp with its network control on?`
+              : `Couldn't reach ${this.host} (${err.code || err.message}).`,
+          ),
+        );
+      socket.setTimeout(4000, () => {
+        socket.destroy();
+        reject(new Error(`No answer from ${this.host}.`));
+      });
       socket.once('error', fail);
       socket.once('connect', () => {
         socket.setTimeout(0);
@@ -136,23 +217,35 @@ export class OcaConnection {
     for (const p of pdus) {
       if (p.type !== TYPE.response) continue;
       const waiter = this.pending.get(p.handle);
-      if (waiter) { this.pending.delete(p.handle); clearTimeout(waiter.timer); waiter.resolve(p); }
+      if (waiter) {
+        this.pending.delete(p.handle);
+        clearTimeout(waiter.timer);
+        waiter.resolve(p);
+      }
     }
   }
   failAll(why) {
-    for (const [, w] of this.pending) { clearTimeout(w.timer); w.resolve({ status: -1, error: why }); }
+    for (const [, w] of this.pending) {
+      clearTimeout(w.timer);
+      w.resolve({ status: -1, error: why });
+    }
     this.pending.clear();
   }
-  // Calls a method and resolves with { status, params } (status 0 is OK). Never rejects.
+  // Resolves { status, params }, status 0 = OK. Never rejects.
   call(ono, level, index, params, paramCount) {
     const handle = this.handle++;
     return new Promise((resolve) => {
-      const timer = setTimeout(() => { this.pending.delete(handle); resolve({ status: 13, error: 'timeout' }); }, this.timeoutMs);
+      const timer = setTimeout(() => {
+        this.pending.delete(handle);
+        resolve({ status: 13, error: 'timeout' });
+      }, this.timeoutMs);
       this.pending.set(handle, { resolve, timer });
       this.socket.write(encodeCommand(handle, ono, level, index, params, paramCount));
     });
   }
-  close() { this.socket?.destroy(); }
+  close() {
+    this.socket?.destroy();
+  }
 }
 
 // ---- Reading a whole device ----
@@ -173,19 +266,21 @@ function readValue(kind, params) {
   if (kind === 'float3') return { value: r.f32(), min: r.f32(), max: r.f32() };
   return null;
 }
-// Runs jobs a few at a time, so a big tree reads quickly without flooding the amp
+// Limited concurrency, so a big tree doesn't flood the amp
 async function inBatches(items, size, fn) {
   for (let i = 0; i < items.length; i += size) await Promise.all(items.slice(i, i + size).map(fn));
 }
 
-// Who an amp is, without reading its controls: maker, model, serial number and the name set on it.
-// The serial is how a rack position knows it is still talking to the same amp.
+// Identity only (maker, model, serial, name). Serial ties a rack position to the same amp.
 export async function identifyDevice(host, { port, timeoutMs } = {}) {
   const conn = await new OcaConnection(host, { port, timeoutMs }).connect();
   try {
     const device = { host };
     const model = await conn.call(DEVICE_MANAGER, 3, 6);
-    if (ok(model)) { const r = new Reader(model.params); Object.assign(device, { manufacturer: r.string(), model: r.string() }); }
+    if (ok(model)) {
+      const r = new Reader(model.params);
+      Object.assign(device, { manufacturer: r.string(), model: r.string() });
+    }
     device.serial = await readString(conn, DEVICE_MANAGER, 3, 3);
     device.name = await readString(conn, DEVICE_MANAGER, 3, 4);
     return device;
@@ -199,23 +294,36 @@ export async function readDevice(host, { port, timeoutMs, onProgress = () => {} 
   try {
     const device = { host };
     const model = await conn.call(DEVICE_MANAGER, 3, 6);
-    if (ok(model)) { const r = new Reader(model.params); Object.assign(device, { manufacturer: r.string(), model: r.string(), version: r.string() }); }
+    if (ok(model)) {
+      const r = new Reader(model.params);
+      Object.assign(device, { manufacturer: r.string(), model: r.string(), version: r.string() });
+    }
     device.serial = await readString(conn, DEVICE_MANAGER, 3, 3);
     device.name = await readString(conn, DEVICE_MANAGER, 3, 4);
     device.role = await readString(conn, DEVICE_MANAGER, 3, 7);
     const oca = await conn.call(DEVICE_MANAGER, 3, 1);
     if (ok(oca)) device.ocaVersion = new Reader(oca.params).u16();
 
-    // Every object in the tree: try the one-call recursive list, then walk block by block
+    // Try the recursive member list first, else walk block by block
     let members = [];
     const rec = await conn.call(ROOT_BLOCK, 3, 6);
     if (ok(rec)) {
-      members = new Reader(rec.params).list((r) => ({ ono: r.u32(), classId: r.classId(), classVersion: r.u16(), container: r.u32() }));
+      members = new Reader(rec.params).list((r) => ({
+        ono: r.u32(),
+        classId: r.classId(),
+        classVersion: r.u16(),
+        container: r.u32(),
+      }));
     } else {
       const walk = async (block) => {
         const res = await conn.call(block, 3, 5);
         if (!ok(res)) return;
-        const kids = new Reader(res.params).list((r) => ({ ono: r.u32(), classId: r.classId(), classVersion: r.u16(), container: block }));
+        const kids = new Reader(res.params).list((r) => ({
+          ono: r.u32(),
+          classId: r.classId(),
+          classVersion: r.u16(),
+          container: block,
+        }));
         members.push(...kids);
         for (const k of kids) if (k.classId.startsWith('1.1.3')) await walk(k.ono);
       };
@@ -241,25 +349,34 @@ export async function readDevice(host, { port, timeoutMs, onProgress = () => {} 
       onProgress(++done, members.length);
     });
 
-    // Role paths, from each object's container
+    // Role paths from each object's container
     const byOno = new Map(members.map((m) => [m.ono, m]));
     for (const m of members) {
       const path = [m.role || `#${m.ono}`];
-      for (let c = byOno.get(m.container), guard = 0; c && guard < 32; c = byOno.get(c.container), guard++) path.unshift(c.role || `#${c.ono}`);
+      for (let c = byOno.get(m.container), guard = 0; c && guard < 32; c = byOno.get(c.container), guard++)
+        path.unshift(c.role || `#${c.ono}`);
       m.path = path.join('/');
     }
-    return { readAt: new Date().toISOString(), device, objects: members.sort((a, b) => a.path.localeCompare(b.path)) };
+    return {
+      readAt: new Date().toISOString(),
+      device,
+      objects: members.sort((a, b) => a.path.localeCompare(b.path)),
+    };
   } finally {
     conn.close();
   }
 }
 
-// A short summary for the screen: how many of each control the amp has
+// Control counts per class, for the UI
 export function summarise(dump) {
   const count = (name) => dump.objects.filter((o) => o.className === name).length;
   return {
     name: dump.device.name || dump.device.model || dump.device.host,
     model: [dump.device.manufacturer, dump.device.model].filter(Boolean).join(' '),
-    objects: dump.objects.length, mutes: count('OcaMute'), gains: count('OcaGain'), switches: count('OcaSwitch'), names: count('OcaStringActuator'),
+    objects: dump.objects.length,
+    mutes: count('OcaMute'),
+    gains: count('OcaGain'),
+    switches: count('OcaSwitch'),
+    names: count('OcaStringActuator'),
   };
 }

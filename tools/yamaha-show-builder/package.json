@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node server.js",
     "mock": "node mock-desk.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "format": "npx prettier@3.3.3 --write \"**/*.{js,mjs,css}\"",
+    "format:check": "npx prettier@3.3.3 --check \"**/*.{js,mjs,css}\""
   },
   "engines": {
     "node": ">=18"

@@ -1,6 +1,5 @@
-// One live connection to a desk over Yamaha's remote protocol (TCP, port 49280 by default).
-// Commands go one at a time and wait for the desk's OK or ERROR line; NOTIFY lines from the desk are
-// ignored. Every change of state is emitted as a 'status' event so the page can show it.
+// Yamaha RCP connection (TCP 49280). One command in flight, waits for OK/ERROR; NOTIFY ignored.
+// State changes emitted as 'status'.
 import net from 'node:net';
 import { EventEmitter } from 'node:events';
 
@@ -10,11 +9,15 @@ const CHECK_EVERY_MS = 5000;
 
 function friendlyError(err, host, port) {
   switch (err.code) {
-    case 'ECONNREFUSED': return `${host} refused the connection on port ${port}. Check it's a Yamaha desk and the port is right.`;
+    case 'ECONNREFUSED':
+      return `${host} refused the connection on port ${port}. Check it's a Yamaha desk and the port is right.`;
     case 'EHOSTUNREACH':
-    case 'ENETUNREACH': return `Can't reach ${host}. Check this computer is on the same network as the desk.`;
-    case 'ETIMEDOUT': return `No answer from ${host}. Check the IP and that the desk is switched on.`;
-    default: return err.message;
+    case 'ENETUNREACH':
+      return `Can't reach ${host}. Check this computer is on the same network as the desk.`;
+    case 'ETIMEDOUT':
+      return `No answer from ${host}. Check the IP and that the desk is switched on.`;
+    default:
+      return err.message;
   }
 }
 
@@ -49,9 +52,18 @@ export class DeskLink extends EventEmitter {
     socket.setKeepAlive(true, CHECK_EVERY_MS);
     try {
       await new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' })), CONNECT_TIMEOUT_MS);
-        socket.once('connect', () => { clearTimeout(timer); resolve(); });
-        socket.once('error', (err) => { clearTimeout(timer); reject(err); });
+        const timer = setTimeout(
+          () => reject(Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' })),
+          CONNECT_TIMEOUT_MS,
+        );
+        socket.once('connect', () => {
+          clearTimeout(timer);
+          resolve();
+        });
+        socket.once('error', (err) => {
+          clearTimeout(timer);
+          reject(err);
+        });
       });
     } catch (err) {
       socket.destroy();
@@ -70,7 +82,7 @@ export class DeskLink extends EventEmitter {
       this.#lost(`Lost the connection to ${host}.`);
     });
 
-    // Ask the desk what it is. A device that accepts the connection but doesn't speak the protocol isn't a desk.
+    // Ask for the model: something that accepts TCP but doesn't speak RCP isn't a desk
     const reply = await this.send('devinfo productname');
     if (!reply.startsWith('OK')) {
       this.disconnect({ quiet: true });
@@ -79,7 +91,7 @@ export class DeskLink extends EventEmitter {
       throw new Error(error);
     }
     this.#set({ state: 'connected', product: /"([^"]*)"/.exec(reply)?.[1] || null });
-    // A quiet check every few seconds, so a pulled cable shows up even when nothing is being sent
+    // keepalive, so a pulled cable shows up while idle
     this.#checker = setInterval(async () => {
       if ((await this.send('devinfo productname')) === 'TIMEOUT') this.#socket?.destroy();
     }, CHECK_EVERY_MS);
@@ -96,14 +108,21 @@ export class DeskLink extends EventEmitter {
     if (!quiet) this.#set({ state: 'idle', error: null });
   }
 
-  // Sends one command and resolves with the desk's reply line, 'TIMEOUT', or 'NOT CONNECTED'
+  // Resolves with the reply line, 'TIMEOUT' or 'NOT CONNECTED'
   send(cmd) {
-    const run = () => new Promise((done) => {
-      if (!this.#socket) return done('NOT CONNECTED');
-      const timer = setTimeout(() => { this.#waiting = null; done('TIMEOUT'); }, REPLY_TIMEOUT_MS);
-      this.#waiting = (line) => { clearTimeout(timer); done(line); };
-      this.#socket.write(cmd + '\n');
-    });
+    const run = () =>
+      new Promise((done) => {
+        if (!this.#socket) return done('NOT CONNECTED');
+        const timer = setTimeout(() => {
+          this.#waiting = null;
+          done('TIMEOUT');
+        }, REPLY_TIMEOUT_MS);
+        this.#waiting = (line) => {
+          clearTimeout(timer);
+          done(line);
+        };
+        this.#socket.write(cmd + '\n');
+      });
     const reply = this.#queue.then(run);
     this.#queue = reply.catch(() => {});
     return reply;

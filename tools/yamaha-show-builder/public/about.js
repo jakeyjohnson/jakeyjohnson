@@ -1,5 +1,4 @@
-// What the footer shows. Change VERSION for each release (package.json's version must match),
-// and LICENCE to the licence number of the copy you hand out.
+// Footer info. VERSION must match package.json; LICENCE is per copy handed out.
 export const PRODUCT = 'Show Builder';
 export const VERSION = '3.3.0';
 export const LICENCE = 'KK-SB-0001';
