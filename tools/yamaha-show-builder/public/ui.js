@@ -1,6 +1,8 @@
 // Small UI building blocks shared by every tab: elements, panels, switches, segmented controls,
 // info tips, drop-down menus and toasts.
 
+import { expandIp, ipTail } from './prefs.js';
+
 // Props are set as properties, except attribute-only ones (aria-*, data-*, list, role)
 export function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
@@ -136,4 +138,16 @@ export function vfader({ pos, label, valueText, marks = [], disabled = false, on
     if (step) { e.preventDefault(); move(now + step); }
   });
   return node;
+}
+
+// An IP box. With a preset ("192.168.1") the start is shown fixed and only the last number is typed;
+// a whole address typed in is kept as it is, for a device on another network.
+export function ipField({ value, prefix, label, onchange, id, className = 'ip', disabled }) {
+  const own = prefix && (!value || String(value).startsWith(`${prefix}.`));
+  const input = el('input', {
+    id, value: own ? ipTail(value, prefix) : value || '', placeholder: own ? 'last no.' : 'IP', inputMode: 'decimal', autocomplete: 'off', spellcheck: false,
+    className, 'aria-label': label, disabled, title: prefix ? `Type the last number, or a whole address for another network` : null,
+    onchange: (e) => onchange(expandIp(e.target.value, prefix)),
+  });
+  return el('span', { className: `ipfield ${own ? 'has-prefix' : ''}` }, own ? el('span', { className: 'ip-prefix', textContent: `${prefix}.` }) : null, input);
 }

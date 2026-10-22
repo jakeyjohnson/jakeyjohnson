@@ -6,7 +6,7 @@ import {
   isRadio, makeAmp, makeRfDevice, parseShureReads, rfPlan, shureCommands, shureReadLines, specteraWrites,
 } from './rig.js';
 import { makeRackUi } from './rack-ui.js';
-import { el, info, panel, segmented, tag, toast } from './ui.js';
+import { el, info, ipField, panel, segmented, tag, toast } from './ui.js';
 
 const MIC_TYPES = ['lectern', 'headset', 'handheld', 'vocal', 'talkback', 'instrument', 'acoustic'];
 export const RANGES = [
@@ -26,15 +26,16 @@ const empty = (text) => el('div', { className: 'empty', textContent: text });
 const fmt = (f) => (f ? f.toFixed(3) : '');
 const remove = (label, onclick) => el('button', { className: 'remove', type: 'button', textContent: '×', title: `Remove ${label}`, onclick });
 
-export function mountRig({ getShow, update, transport, demo = false }) {
+export function mountRig({ getShow, update, transport, demo = false, prefs = () => ({}) }) {
   const session = { password: '', packs: null, picks: {} };
   const show = () => getShow();
-  const racks = makeRackUi({ show, update, transport, session });
+  const racks = makeRackUi({ show, update, transport, session, prefs });
   // The show's RF settings, with any missing ones filled in place so every caller edits the same object
   const rf = () => {
     const s = show();
     s.rf ||= {};
-    for (const [k, v] of Object.entries(defaultRf())) if (s.rf[k] === undefined) s.rf[k] = v;
+    const p = prefs();
+    for (const [k, v] of Object.entries({ ...defaultRf(), ...(p.micRange ? { micRange: [...p.micRange], iemRange: [...p.iemRange] } : {}) })) if (s.rf[k] === undefined) s.rf[k] = v;
     return s.rf;
   };
 
@@ -61,8 +62,8 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     const amp = ampPlan(s, plan);
     const used = amp.rows.filter((r) => r.feed).length;
     const setting = (row, key, value) => update(() => { s.ampSettings[row.settingsKey] = { ...(s.ampSettings[row.settingsKey] || {}), [key]: value }; });
-    let addMode = s.amps.at(-1)?.mode || 'dual';
-    let addModel = s.amps.at(-1)?.model || 'D80';
+    let addMode = s.amps.at(-1)?.mode || prefs().ampMode || 'dual';
+    let addModel = s.amps.at(-1)?.model || prefs().ampModel || 'D80';
     const modelOptions = Object.entries(AMP_MODELS).map(([k, m]) => [k, m.label]);
 
     const chRows = amp.rows.map((r) => el('tr', { className: `${r.feed ? '' : 'spare'} ${r.sub ? 'sub-row' : ''}` },
@@ -177,7 +178,7 @@ export function mountRig({ getShow, update, transport, demo = false }) {
   // Adding and filling Shure units for the RF racks: receivers for the radio mics, transmitters for IEMs
   function rfRackTools(r) {
     const kinds = [...(r.mics === 'shure' ? [['rx', RECEIVER_MODELS]] : []), ...(r.iems === 'shure' ? [['tx', IEM_MODELS]] : [])];
-    let add = `${kinds[0][0]}:${kinds[0][0] === 'rx' ? (r.receivers.at(-1)?.model || 'ULXD4Q') : (r.transmitters.at(-1)?.model || 'P10T')}`;
+    let add = `${kinds[0][0]}:${kinds[0][0] === 'rx' ? (r.receivers.at(-1)?.model || prefs().rxModel || 'ULXD4Q') : (r.transmitters.at(-1)?.model || prefs().txModel || 'P10T')}`;
     const listOf = (kind) => (kind === 'rx' ? rf().receivers : rf().transmitters);
     return [
       el('select', { 'aria-label': 'Unit to add', onchange: (e) => { add = e.target.value; } },
@@ -311,7 +312,7 @@ export function mountRig({ getShow, update, transport, demo = false }) {
       sendBlocks.push(el('div', { className: 'subhead' }, el('span', { className: 'chip-label', textContent: 'Spectera' }),
         info(`Names each pack and sets mic gain and headphone level to their lowest. Turn on third-party access on the base station first. The password is kept only until the page closes.${demo ? ' In the demo any password works.' : ''}`)),
       el('div', { className: 'actionbar' },
-        el('input', { value: r.spectera.ip, inputMode: 'decimal', className: 'ip', placeholder: 'Base station IP', 'aria-label': 'Base station IP', onchange: (e) => update(() => { rf().spectera = { ...rf().spectera, ip: e.target.value.trim() }; }) }),
+        ipField({ value: r.spectera.ip, prefix: prefs().rfPrefix, label: 'Base station IP', onchange: (ip) => update(() => { rf().spectera = { ...rf().spectera, ip }; }) }),
         el('input', { type: 'password', value: session.password, autocomplete: 'off', placeholder: 'Password', 'aria-label': 'Base station password', oninput: (e) => { session.password = e.target.value; } }),
         el('button', {
           className: 'ghost', type: 'button', textContent: 'Read packs', onclick: async () => {

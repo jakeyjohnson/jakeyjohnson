@@ -100,7 +100,7 @@ export function pickList(show, plan) {
   return groups;
 }
 
-export function prepSheet(show, plan, { version = '', licence = '' } = {}) {
+export function prepSheet(show, plan, { version = '', licence = '', company = '', preparedBy = '' } = {}) {
   const model = MODELS[show.options?.model];
   const amp = ampPlan(show, plan);
   const rig = rfPlan(show, plan);
@@ -137,7 +137,7 @@ export function prepSheet(show, plan, { version = '', licence = '' } = {}) {
   const css = `.kk-prep{font:11.5px/1.35 Inter,system-ui,sans-serif;color:#11151a;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .kk-prep h1{font-size:20px;margin:0}.kk-prep h2{font-size:14px;margin:20px 0 6px;padding-bottom:3px;border-bottom:2px solid #11151a;text-transform:uppercase;letter-spacing:.06em}
 .kk-prep h3{font-size:12px;margin:0 0 4px}.kk-prep .meta{color:#5d6670;margin:2px 0 10px}
-.kk-prep .sign{display:flex;gap:24px;margin:6px 0 4px}.kk-prep .sign span{flex:1;border-bottom:1px solid #11151a;padding-bottom:14px;color:#5d6670;font-size:10px}
+.kk-prep .sign{display:flex;gap:24px;margin:6px 0 4px}.kk-prep .sign span{flex:1;border-bottom:1px solid #11151a;padding-bottom:14px;color:#5d6670;font-size:10px}.kk-prep .sign b{display:block;color:#11151a;font-size:12px;margin-top:4px}
 .kk-prep table{border-collapse:collapse;width:100%}.kk-prep th,.kk-prep td{border:1px solid #c8cdd3;padding:3px 6px;text-align:left;vertical-align:middle}
 .kk-prep thead th{background:#eef0f2;font-size:10px;text-transform:uppercase;letter-spacing:.05em}.kk-prep tr.grp th{background:#11151a;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
 .kk-prep td.qty{width:34px;text-align:center;font-weight:700;font-size:13px}.kk-prep td.box{width:30px}.kk-prep td.note{color:#3c444d}
@@ -149,8 +149,8 @@ export function prepSheet(show, plan, { version = '', licence = '' } = {}) {
 @media print{.kk-prep h2{break-after:avoid}.kk-prep tr{break-inside:avoid}}`;
   const body = `<div class="kk-prep">
 <h1>${esc(show.name)} · prep sheet</h1>
-<p class="meta">${esc(model?.inputs ? `Yamaha ${model.label}` : 'Desk not set')} · ${plural(plan.channels.length, 'channel')} · ${plural(plan.outputs.length, 'output')} · printed ${today}</p>
-<div class="sign"><span>Job / date</span><span>Prepped by</span><span>Checked by</span><span>Back in by</span></div>
+<p class="meta">${company ? `<b>${esc(company)}</b> · ` : ''}${esc(model?.inputs ? `Yamaha ${model.label}` : 'Desk not set')} · ${plural(plan.channels.length, 'channel')} · ${plural(plan.outputs.length, 'output')} · printed ${today}</p>
+<div class="sign"><span>Job / date</span><span>Prepped by${preparedBy ? `<b>${esc(preparedBy)}</b>` : ''}</span><span>Checked by</span><span>Back in by</span></div>
 <h2>Pick list</h2>
 <table><thead><tr><th>Qty</th><th>Item</th><th>Notes</th><th>Out</th><th>Back</th></tr></thead><tbody>${picks || '<tr><td colspan="5">Nothing yet</td></tr>'}</tbody></table>
 ${racks ? `<h2 class="page">Racks</h2><p class="meta">Top to bottom, as they sit. Each unit's IP is on the right.</p><div class="racks">${racks}</div>` : ''}

@@ -23,6 +23,18 @@ Every key issued is logged in `~/.kobikraken/licences.csv` with its number, name
 
 This keeps people out of the app and away from your kit.
 
+## Preferences
+
+The gear in the header bar (or ⌘, / Ctrl+,) opens Preferences. They're kept on this computer, not in show files, and saved as you change them.
+- **Network: IP presets.** Type the start of the address your desks, amps and radio kit use (like `192.168.1`). Every IP box for that kind of kit then shows the start fixed and takes just the last number: type `60` for 192.168.1.60. A whole address typed in is kept as it is, for kit on another network. One to three numbers work (`10.0` takes the last two). Also the desk's port.
+- **New shows:** which desk New starts with (or keep the current one), auto channel order, DCAs and mute groups, and how many letters of each name the desk shows.
+- **Kit:** the amp model and mode (Dual channel or Sub/Top), receiver and IEM transmitter models that Add and Fill use, and the radio mic and IEM frequency ranges for new shows.
+- **Sending to the desk:** back up the desk's scene first, and only send what changed. A show can still change these for itself under Send to desk.
+- **System check:** where the noise comes from by default, and the level the fader starts at.
+- **Paperwork:** your company name and who prepared it, on the paperwork and the prep sheet.
+
+**Reset all** puts every preference back to its default.
+
 ## Mac app
 
 There's a Mac app with the bridge built in: download, drag to Applications, open. See [`mac/README.md`](mac/README.md) for installing it, and for building it yourself.
