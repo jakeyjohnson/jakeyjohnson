@@ -1,23 +1,24 @@
-// Issues a Show Builder licence key. Needs KobiKraken's private key, which lives on Jakey's computer only:
-//   ~/.kobikraken/kobikraken-licence-private.pem   (or set KK_PRIVATE_KEY to its path)
+// Issues a Show Builder licence key: a short SB-XXXXX-XXXXX-XXXXX-XXXXX key, or with --long a KK1- key
+// signed with KobiKraken's private key (~/.kobikraken/kobikraken-licence-private.pem, or KK_PRIVATE_KEY).
 // Every key issued is added to ~/.kobikraken/licences.csv, so licence numbers never repeat.
 //
 //   node issue-licence.mjs --name "Acme Audio"                     next free licence number, never ends
 //   node issue-licence.mjs --name "Acme Audio" --expires 2027-12-31  ends on that day
 //   node issue-licence.mjs --name "Jakey Johnson" --serial 1         a particular licence number
+//   node issue-licence.mjs --name "Acme Audio" --long               a long signed key
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { checkKey, licenceNumber, makeKey } from './lock.js';
+import { checkKey, licenceNumber, makeKey, makeShortKey } from './lock.js';
 
 const args = Object.fromEntries(process.argv.slice(2).join(' ').split(/\s*--/).filter(Boolean).map((a) => {
   const [k, ...v] = a.split(' ');
-  return [k, v.join(' ').replace(/^"|"$/g, '')];
+  return [k, v.join(' ').replace(/^"|"$/g, '') || true];
 }));
 const dir = join(homedir(), '.kobikraken');
 const keyFile = process.env.KK_PRIVATE_KEY || join(dir, 'kobikraken-licence-private.pem');
 const ledger = join(dir, 'licences.csv');
-if (!existsSync(keyFile)) {
+if (args.long && !existsSync(keyFile)) {
   console.error(`Can't find the private key at ${keyFile}. Put kobikraken-licence-private.pem there, or set KK_PRIVATE_KEY.`);
   process.exit(1);
 }
@@ -31,9 +32,10 @@ if (args.expires && !/^\d{4}-\d{2}-\d{2}$/.test(args.expires)) {
   console.error('Write --expires as a date, like 2027-12-31.');
   process.exit(1);
 }
-const key = makeKey({ serial, expires: args.expires || null }, readFileSync(keyFile, 'utf8'));
+const key = args.long ? makeKey({ serial, expires: args.expires || null }, readFileSync(keyFile, 'utf8')) : makeShortKey({ serial, expires: args.expires || null });
 const check = checkKey(key);
-if (!check.ok) throw new Error(`The new key didn't check out: ${check.error}. Is the private key the right one?`);
+if (!check.ok) throw new Error(`The new key didn't check out: ${check.error}.${args.long ? ' Is the private key the right one?' : ''}`);
+check.issued ||= new Date().toISOString().slice(0, 10);
 mkdirSync(dir, { recursive: true });
 if (!existsSync(ledger)) appendFileSync(ledger, 'serial,licence,name,issued,expires,key\n');
 appendFileSync(ledger, `${serial},${check.licence},"${(args.name || '').replace(/"/g, "'")}",${check.issued},${check.expires || 'never'},${key}\n`);

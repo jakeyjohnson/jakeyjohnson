@@ -10,7 +10,7 @@
       <div id="lockLicence" class="lock-licence"></div>
       <label class="lock-field">
         <span>Licence key</span>
-        <textarea id="lockKey" rows="3" spellcheck="false" autocomplete="off" autocapitalize="characters" placeholder="KK1-…" required></textarea>
+        <input id="lockKey" spellcheck="false" autocomplete="off" autocapitalize="characters" placeholder="SB-XXXXX-XXXXX-XXXXX-XXXXX" required>
       </label>
       <div id="lockError" class="lock-error" role="alert"></div>
       <button id="lockGo" class="primary big" type="submit">Unlock</button>
@@ -49,6 +49,7 @@
           <summary class="button ghost">Export</summary>
           <div class="menu-list right">
             <button id="paperworkBtn" type="button">Paperwork <small>print</small></button>
+            <button id="prepBtn" type="button">Prep sheet <small>print</small></button>
             <button id="exportCsv" type="button">Patch sheet <small>CSV</small></button>
             <button id="monitorShow" type="button">Monitor desk show</button>
             <button id="saveTemplate" type="button">Save as template</button>

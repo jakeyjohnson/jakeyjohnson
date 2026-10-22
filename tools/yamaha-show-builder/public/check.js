@@ -23,7 +23,7 @@ export function checkSteps(plan, ampRows = []) {
     const st = o.zone.type === 'main';
     o.buses.forEach((bus, k) => {
       const side = o.buses.length === 2 ? (k ? 'R' : 'L') : '';
-      const amp = ampRows.find((r) => r.feed?.key === `${o.zone.id}${side}`);
+      const amp = ampRows.filter((r) => r.feed?.key === `${o.zone.id}${side}`).map((r) => `${r.label}${r.sub ? ' sub' : ''}`).join(' + ');
       steps.push({
         key: `${o.zone.id}${side}`,
         name: side ? `${o.name} ${side}` : o.name,
@@ -31,7 +31,7 @@ export function checkSteps(plan, ampRows = []) {
         st, side,
         mixes: st ? [] : o.buses.map((b) => Number(b.slice(3)) - 1), // 0-based mix numbers of this output
         out: o.patch ? portLabel({ bank: o.patch.bank, port: o.patch.port + k }) : '',
-        amp: amp ? amp.label : '',
+        amp,
       });
     });
   }

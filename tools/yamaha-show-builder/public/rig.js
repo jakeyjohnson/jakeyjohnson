@@ -24,7 +24,20 @@ export const SPEAKER_SETUPS = [
   'GSL8', 'GSL12', 'SL-SUB', 'KSL8', 'KSL12', 'SL-GSUB', 'V8', 'V12', 'V7P', 'V10P', 'V-SUB', 'V-GSUB', 'Y8', 'Y12', 'Y7P', 'Y10P', 'Y-SUB',
   'T10', 'Q7', 'Q10', 'Q-SUB', 'A-SUB', 'E4', 'E5', 'E6', 'E8', 'E12', '4S', '5S', '8S', '10S', '12S', '44S', '24S', 'B6-SUB', 'B22-SUB', 'M2', 'M4', 'MAX2',
 ];
-const SETUP_GUESS = { main: 'Y10P', frontfill: '44S', delay: 'Y10P', ceiling: '5S', foldback: 'M4' };
+const SETUP_GUESS = { main: 'Y10P', frontfill: '44S', delay: 'Y10P', ceiling: '5S', foldback: 'M4', sub: 'Y-SUB' };
+// The sub that goes with a top, for an amp in sub/top mode
+export function subSetupFor(top) {
+  const t = String(top || '').toUpperCase();
+  if (/^GSL|^KSL|^SL/.test(t)) return 'SL-SUB';
+  if (/^V/.test(t)) return 'V-SUB';
+  if (/^Y/.test(t)) return 'Y-SUB';
+  if (/^Q|^T10/.test(t)) return 'Q-SUB';
+  if (/^A/.test(t)) return 'A-SUB';
+  return 'B6-SUB';
+}
+// Amp modes: each channel its own output, or channel pairs as top + sub fed from one input (d&b calls this
+// Mix TOP/SUB): A and B take one output (A the top, B the sub), C and D the next.
+export const AMP_MODES = { dual: 'Dual channel', subtop: 'Sub/Top' };
 
 // Speaker outputs that need an amp channel: every output except IEMs and record feeds. A stereo output
 // (Main L/R, stereo zones) takes one channel per side.
@@ -49,39 +62,48 @@ export function makeAmp(model = 'D80', n = 1) {
   return { id: `amp${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, model, name: `Amp ${n}`, ip: '' };
 }
 // Adds amps of one model until every speaker output has a channel
-export function addAmpsFor(show, plan, model = 'D80') {
+export function addAmpsFor(show, plan, model = 'D80', mode = 'dual') {
   show.amps ||= [];
   const need = ampFeeds(plan).length;
-  const have = () => show.amps.reduce((n, a) => n + (AMP_MODELS[a.model]?.channels || 0), 0);
-  while (have() < need) show.amps.push(makeAmp(model, show.amps.length + 1));
+  const have = () => show.amps.reduce((n, a) => n + (AMP_MODELS[a.model]?.channels || 0) / (a.mode === 'subtop' ? 2 : 1), 0);
+  while (have() < need) show.amps.push({ ...makeAmp(model, show.amps.length + 1), mode });
   return show.amps;
 }
 
-// Speaker outputs fill amp channels in output order. Per-output settings (speaker setup, amp input,
-// target gain) are kept by output, so they follow it when the order changes.
+// Speaker outputs fill amp channels in output order, amp by amp in rack order. An amp in sub/top mode
+// takes one output per channel pair: the top on the first channel, its sub on the second, both from the
+// first channel's input. Per-output settings (speaker setup, amp input, target gain) are kept by output
+// (and ":sub" for its sub channel), so they follow it when the order changes.
 export function ampPlan(show, plan) {
   const feeds = ampFeeds(plan);
   const settings = show.ampSettings || {};
-  const channels = [];
+  const rows = [];
+  let next = 0;
   for (const amp of show.amps || []) {
     const n = AMP_MODELS[amp.model]?.channels || 0;
-    for (let k = 0; k < n; k++) channels.push({ amp, index: k, label: `${amp.name} · Ch ${AMP_CHANNEL_NAMES[k]}` });
+    const subtop = amp.mode === 'subtop';
+    for (let k = 0; k < n; k++) {
+      const sub = subtop && k % 2 === 1;
+      const feed = sub ? rows.at(-1).feed : feeds[next++] || null;
+      const key = feed && (sub ? `${feed.key}:sub` : feed.key);
+      const set = (key && settings[key]) || {};
+      const top = sub ? rows.at(-1) : null;
+      rows.push({
+        amp, index: k, label: `${amp.name} · Ch ${AMP_CHANNEL_NAMES[k]}`, feed, sub, settingsKey: key,
+        // a subs output on a sub/top pair is just two sub channels
+        setup: feed ? set.setup ?? (sub ? (feed.zone.type === 'sub' ? top.setup : subSetupFor(top.setup)) : SETUP_GUESS[feed.zone.type] ?? '') : '',
+        input: sub ? top.input : set.input || (feed?.deskOut?.bank === 'analog' ? AMP_INPUTS[k] : feed?.dante ? `Network ${k + 1}` : AMP_INPUTS[k]),
+        target: set.target ?? 0,
+      });
+    }
   }
-  const rows = channels.map((c, i) => {
-    const feed = feeds[i] || null;
-    const set = (feed && settings[feed.key]) || {};
-    return {
-      ...c, feed,
-      setup: feed ? set.setup ?? SETUP_GUESS[feed.zone.type] ?? '' : '',
-      input: set.input || (feed?.deskOut?.bank === 'analog' ? AMP_INPUTS[c.index] : feed?.dante ? `Network ${c.index + 1}` : AMP_INPUTS[c.index]),
-      target: set.target ?? 0,
-    };
-  });
   const warnings = [];
-  const spare = feeds.slice(channels.length);
+  const spare = feeds.slice(next);
   if (spare.length) warnings.push(`No amp channel yet for ${spare.map((f) => f.name).join(', ')}. Add an amp.`);
   return { rows, feeds, warnings };
 }
+// What a row carries, for lists: "Main LR L", or "Main LR L sub"
+export const rowFeedName = (r) => (r.feed ? `${r.feed.name}${r.sub && r.feed.zone.type !== 'sub' ? ' sub' : ''}` : '');
 
 // ---- RF: Shure receivers and IEM transmitters, Sennheiser Spectera ----
 export const RECEIVER_MODELS = {
@@ -260,7 +282,7 @@ export function rigPaperwork(show, plan) {
   const used = amp.rows.filter((r) => r.feed);
   if (used.length) {
     parts.push(`<h2 class="page">Amplifiers</h2><p class="meta">Every channel starts muted with its gain at the lowest. Unmute and bring up one at a time.</p>
-<table><thead><tr><th>Amp channel</th><th>IP</th><th>Feeds</th><th>From the desk</th><th>Amp input</th><th>Speaker setup</th><th>Start</th><th>Target</th></tr></thead><tbody>${used.map((r) => `<tr><td><b>${esc(r.label)}</b> <small>${esc(r.amp.model)}</small></td><td>${esc(r.amp.ip)}</td><td>${esc(r.feed.name)}</td><td>${esc(r.feed.deskOutLabel)}</td><td>${esc(r.input)}</td><td>${esc(r.setup)}</td><td>Muted, lowest</td><td>${esc(r.target)} dB</td></tr>`).join('')}</tbody></table>`);
+<table><thead><tr><th>Amp channel</th><th>IP</th><th>Feeds</th><th>From the desk</th><th>Amp input</th><th>Speaker setup</th><th>Start</th><th>Target</th></tr></thead><tbody>${used.map((r) => `<tr><td><b>${esc(r.label)}</b> <small>${esc(r.amp.model)}${r.amp.mode === 'subtop' ? ' · Sub/Top' : ''}</small></td><td>${esc(r.amp.ip)}</td><td>${esc(rowFeedName(r))}</td><td>${esc(r.feed.deskOutLabel)}</td><td>${esc(r.input)}</td><td>${esc(r.setup)}</td><td>Muted, lowest</td><td>${esc(r.target)} dB</td></tr>`).join('')}</tbody></table>`);
   }
   const rfRows = [...rig.mics.map((m) => ['Mic', m]), ...rig.iems.map((x) => ['IEM', x])];
   if (rfRows.length) {

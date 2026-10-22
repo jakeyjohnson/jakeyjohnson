@@ -1,13 +1,14 @@
 import { LICENCE, PRODUCT, VERSION } from './about.js';
 import { CHECK_LEVELS, FADER_MARKS, OSC_KEYS, checkKeys, checkState, checkSteps, faderLevel, faderPos, levelText, noiseChannel, readLines, restoreLines, stateLines } from './check.js';
 import { ampPlan, normalizeRacks, rigPaperwork } from './rig.js';
+import { prepSheet } from './prep.js';
 import { mountRig } from './rig-ui.js';
 import { ask, el, info, segmented, tag, toast, toggle, vfader, wireMenus } from './ui.js';
 import {
   applyTemplate, changedCommands, cueCommand, deskCaps, gainOf, makeTemplate, monitorShow, pairMonitors, paperwork, parseInputList, phantomOf,
   rememberPush, sceneStoreCommand,
 } from './plan.js';
-import { modelFromProduct, patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, readDeskFirst, readDeskSecond, readReplies, showFromDesk, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
+import { canLR, modelFromProduct, patchBanks, portLabel, emptyShow, sendOf, nextZoneName, COLORS, MODELS, PACKAGES, SOURCE_TYPES, ZONE_TYPES, addSources, applySuggestion, buildPlan, defaultShow, readDeskFirst, readDeskSecond, readReplies, showFromDesk, hpfOf, makeZone, normalizeColor, orderSources, packageSuggestion, parseRequest, patchSheetCsv } from './plan.js';
 
 // The page can run inside the Mac app, a browser, or the demo. The demo hands in its own way to save
 // files and show paperwork, since it can't download or open windows.
@@ -109,6 +110,11 @@ function renderGrid(plan) {
       el('input', { value: zone.name, 'aria-label': 'Output name', onchange: (e) => update(() => { zone.name = e.target.value; }) }),
       el('div', { className: 'zone-sub' },
         el('span', { textContent: busLabel(zone) }),
+        canLR(zone) ? el('button', {
+          className: `send-point ${zone.lr ? 'pre' : 'post'}`, textContent: zone.lr ? 'L&R' : 'mono', type: 'button',
+          title: 'Mono takes one mix; L&R takes an odd/even pair, one per side, with stereo inputs panned. Click to switch.',
+          onclick: () => update(() => { zone.lr = !zone.lr; }),
+        }) : null,
         zone.type === 'main' ? null : el('button', {
           className: `send-point ${sendOf(zone)}`, textContent: sendOf(zone), type: 'button',
           title: 'Sends to this output: pre or post fader. Click to switch.',
@@ -1006,14 +1012,19 @@ function tickLine(plan, c, ticked) {
 $('lcClear').onclick = () => update(() => { show.lineCheck = {}; });
 
 // ---- Paperwork: input list, outputs, line check, desk tape, labels, amps, RF and Dante, ready to print ----
-$('paperworkBtn').onclick = () => {
-  const plan = buildPlan(show);
-  const p = paperwork(show, plan, { version: VERSION, licence: LICENCE, extra: rigPaperwork(show, plan) });
+// Paperwork and the prep sheet open as their own printable page (in the Mac app, their own window)
+function openDoc(p) {
   if (host.paperwork) return host.paperwork(p);
   const title = p.title.replace(/[<>&]/g, '');
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title><style>body{margin:24px;background:#fff}${p.css}@media print{.noprint{display:none}body{margin:0}}</style></head><body><p class="noprint"><button onclick="print()">Print</button></p>${p.body}</body></html>`;
   window.open(URL.createObjectURL(new Blob([html], { type: 'text/html' })), '_blank');
+}
+const licenceText = () => (host.demo ? '' : host.licence || LICENCE);
+$('paperworkBtn').onclick = () => {
+  const plan = buildPlan(show);
+  openDoc(paperwork(show, plan, { version: VERSION, licence: licenceText(), extra: rigPaperwork(show, plan) }));
 };
+$('prepBtn').onclick = () => openDoc(prepSheet(show, buildPlan(show), { version: VERSION, licence: licenceText() }));
 
 wireMenus();
 renderTemplates();

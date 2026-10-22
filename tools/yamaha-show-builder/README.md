@@ -7,19 +7,21 @@ Pick your inputs (lectern mics, handhelds, playback…), pick your speaker zones
 ## Licence keys and demo mode
 
 The app opens on a lock screen.
-- **Licence key:** each customer gets their own key (it starts `KK1-`). Paste it in to unlock the real app. The app's own server checks it, offline, and won't talk to any desk, amp or radio mic until it's unlocked. **Remember on this computer** skips the lock screen next time. The lock button in the header bar locks it again. The footer shows the licence number the key belongs to (e.g. `KK-SB-0001`).
+- **Licence key:** each customer gets their own 20-character key, `SB-XXXXX-XXXXX-XXXXX-XXXXX`. Type or paste it in (dashes, spaces and capitals don't matter; O and 0, I and 1 are read the same) to unlock the real app. The app's own server checks it, offline, and won't talk to any desk, amp or radio mic until it's unlocked. **Remember on this computer** skips the lock screen next time. The lock button in the header bar locks it again. The footer shows the licence number the key belongs to (e.g. `KK-SB-0001`).
 - **Try the demo:** opens the same app with a pretend desk, amps, radio mics and network. Demo shows are kept apart from real ones. **Demo · Exit** in the header goes back to the lock screen.
 
-Keys are signed with KobiKraken's private key. The app only holds the matching public key, so it can check a key but can't make one. To issue a key (on the computer with the private key):
+To issue a key:
 ```bash
-node issue-licence.mjs --name "Venue or customer"                        # never expires
+node issue-licence.mjs --name "Venue or customer"                        # never ends
 node issue-licence.mjs --name "Hire company" --expires 2027-12-31        # ends that day
 ```
-The private key lives at `~/.kobikraken/kobikraken-licence-private.pem` (or in `KK_PRIVATE_KEY`). Keep a backup: lose it and you can't issue new keys that work with the shipped app. Never put it in this repo. Every key issued is logged in `~/.kobikraken/licences.csv` with its number, name and dates.
+Every key issued is logged in `~/.kobikraken/licences.csv` with its number, name and dates, so numbers never repeat. Keep that file.
+
+**How strong is it?** A short key carries the licence number, the end day and a 70-bit check made with a secret the app holds (it has to, to check keys offline). Typos and made-up keys don't pass, but someone who digs the secret out of the app's files could make keys. The older long keys (`KK1-…`, 120 characters) are signed with KobiKraken's private key, so the app can check them but can't make them; they still work, and `--long` issues one (it needs `~/.kobikraken/kobikraken-licence-private.pem`). Either way it isn't copy protection: someone with the app's files could take the lock out.
 
 `KK_UNLOCKED=1 npm start` runs without the lock, for working on the app itself.
 
-This keeps people out of the app and away from your kit. It isn't copy protection: someone with the app's files and the know-how could take the lock out.
+This keeps people out of the app and away from your kit.
 
 ## Mac app
 
@@ -112,9 +114,12 @@ Amps (Amplifiers tab) and Shure receivers and IEM transmitters (RF tab) live in 
 ## Amplifiers (d&b)
 
 1. Pick an amp model and press **Fill from outputs**, or add them one at a time with **Add amp**. Supported: D80, D40, D20, D90, 40D, 30D, 10D, 5D, D12 and D6.
-2. Each speaker output gets its own channel, filled in order: one per side for Main L/R, then front fills, delays, ceiling and wedges. IEM and record outputs don't need one.
-3. The table shows which desk socket feeds each amp channel, the amp input (A1–A4 for analogue, D1–D4 for AES, Network for Dante/Milan), a guessed speaker setup (Y10P for main, 44S for fills, M4 for wedges; type any d&b setup) and a target gain.
-4. Set each amp's IP, or rack the amps that **Find devices** finds (d&b amps answer on AES70, port 30013). See [Racks](#racks-the-right-settings-to-the-right-unit): the rack order decides which amp gets which output.
+2. Each speaker output gets its own channel, filled in order: one per side for Main L/R (and for any output set to L&R), then front fills, delays, ceiling, subs and wedges. IEM and record outputs don't need one.
+3. **Amp mode**, per amp (pick it on the amp, or for the amps Add and Fill make):
+   - **Dual channel:** every channel drives its own output.
+   - **Sub/Top** (d&b Mix TOP/SUB): channels A+B take one output, the top on A and its sub on B, both from A's input; C+D the next output. The sub's setup is guessed from the top (Y10P → Y-SUB, V → V-SUB, Q/T → Q-SUB, GSL/KSL → SL-SUB). A Subs output on a Sub/Top pair runs both channels as subs.
+4. The table shows which desk socket feeds each amp channel, the amp input (A1–A4 for analogue, D1–D4 for AES, Network for Dante/Milan), a guessed speaker setup (Y10P for main, 44S for fills, M4 for wedges; type any d&b setup) and a target gain.
+5. Set each amp's IP, or rack the amps that **Find devices** finds (d&b amps answer on AES70, port 30013). See [Racks](#racks-the-right-settings-to-the-right-unit): the rack order decides which amp gets which output.
 
 **Read amp:** each amp with an IP has a **Read** button. It connects over AES70 (TCP 30013), reads the amp's whole control list (every object, its role, and the current mute, gain, input and name values) and saves it as a file. It only reads: nothing on the amp changes. From a terminal, `node amp-read.mjs 192.168.0.60` does the same (add a port number if the amp doesn't use 30013). The AES70 client (`oca-link.js`) is written from the published AES70 standard. `mock-amp.js` is a pretend 4-channel amp for testing.
 
@@ -163,6 +168,10 @@ It works offline and only looks at local addresses:
 - **Announcements (mDNS/Bonjour):** Dante devices, QLab, OSC, AES70 and Sennheiser Sound Control. Dante only gives a name, so the type is guessed from it (ULXD4Q-…, Rio3224-…, LabGruppen-D20…); anything it can't place goes under Other.
 
 A scan takes around 10 seconds. If the laptop is on more than one network, or the kit is on another range, type it into **Other range** (like 192.168.1) and press **Scan**. Hover a device to see how it was found. Devices with remote control turned off, or on a different network with no route, won't show up.
+
+## Outputs: mono or L&R, and subs
+
+Front fills, delays, ceiling, subs and record outputs can each be **mono** (one mix) or **L&R** (an odd/even pair of mixes, one per side, with stereo inputs panned): click **mono** / **L&R** under the output's name in the routing grid. An L&R output gets an amp channel per side. **Subs** is an output of its own (a mix, mono or L&R) for subs on an aux, taking band and playback by default; or put subs on Sub/Top amps and they follow their tops.
 
 ## Routing to everything
 
@@ -387,6 +396,7 @@ The footer shows the version and the licence number of the key that unlocked it.
 - **Save / Open**: the show as a `.show.json` file, so you can reuse templates between jobs. The page also autosaves in the browser.
 - **Export → Patch sheet**: a CSV of every input channel and output bus.
 - **Export → Paperwork**: adds Amplifiers, RF and Dante patch pages when the show has them.
+- **Export → Prep sheet**: for the warehouse and the load-in. A sign-off line (job, prepped by, checked by, back in by); a **pick list** with Out and Back tick boxes: desk and stage boxes, racks and what's in them, amps by model and mode, speakers by setup (with the channels each one feeds; count the boxes per channel), receivers, transmitters and IEM packs, wired mics by type, DIs (stereo where the input is), and cables (XLR per wired input, speaker cable per amp channel, network cable per networked unit); **each rack** top to bottom with U numbers, what every unit carries and its IP; and the **input patch** and **output and amp patch** with tick boxes.
 
 ## Demo
 
