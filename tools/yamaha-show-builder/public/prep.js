@@ -2,7 +2,7 @@
 // unit with its IPs, and the patch: inputs to sockets, outputs to amp channels. Printed on white.
 import { MODELS, SOURCE_TYPES, phantomOf, portLabel, safeLogo } from './plan.js';
 import {
-  AMP_MODELS, AMP_MODES, IEM_MODELS, RACK_ITEMS, RECEIVER_MODELS, ampPlan, isRadio, rackEntries, rfPlan, rowFeedName, unitHeight,
+  AMP_MODELS, AMP_MODES, DS10, IEM_MODELS, RACK_ITEMS, RECEIVER_MODELS, ampPlan, ds10Plan, isRadio, rackEntries, rfPlan, rowFeedName, unitHeight,
 } from './rig.js';
 
 const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -47,7 +47,8 @@ export function pickList(show, plan) {
     const [m, mode] = k.split('|');
     network.push(...list.map(() => 'amp'));
     return { qty: list.length, item: AMP_MODELS[m]?.label || m, note: `${AMP_MODES[mode]} · ${list.map((a) => a.name).join(', ')}` };
-  }));
+  }).concat((show.ds10s || []).length ? [{ qty: show.ds10s.length, item: DS10.label, note: `Dante to AES for the amps · ${show.ds10s.map((d) => d.name).join(', ')}` }] : []));
+  network.push(...(show.ds10s || []).map(() => 'DS10'));
   const used = amp.rows.filter((r) => r.feed);
   add('Speakers', tally(used, (r) => r.setup || 'Speaker (setup not set)').map(([setup, rows]) => ({
     qty: '', item: setup, note: `${plural(rows.length, 'amp channel')}: ${rows.map(rowFeedName).join(', ')}. Count the boxes per channel.`,
@@ -94,7 +95,9 @@ export function pickList(show, plan) {
   if (plan.channels.some((c) => isRadio(c.source))) cables.push({ qty: radioMics.length, item: 'XLR (receiver outs)', note: 'Or Dante from the receivers' });
   if (used.length) cables.push({ qty: used.length, item: 'Speaker cable (NL4)', note: `One per amp channel used${used.some((r) => r.sub) ? '; sub/top pairs can share an NL8' : ''}` });
   const analogOuts = plan.outputs.flatMap((o) => o.buses.map((_, k) => o.patch && { bank: o.patch.bank })).filter((p) => p && p.bank !== 'dante').length;
-  if (analogOuts) cables.push({ qty: analogOuts, item: 'XLR (desk outputs to amps)', note: 'Or AES / Dante' });
+  const ds = show.ampFeed === 'ds10' ? ds10Plan(show, plan, amp.rows) : null;
+  if (ds?.cables.length) cables.push({ qty: ds.cables.length, item: 'AES cable (110 Ω XLR)', note: 'DS10 AES outs to the amps, one per pair of amp inputs' });
+  else if (show.ampFeed !== 'dante' && analogOuts) cables.push({ qty: analogOuts, item: 'XLR (desk outputs to amps)', note: '' });
   if (network.length) cables.push({ qty: network.length, item: 'Network cable (Cat)', note: `One per ${[...new Set(network)].join(', ')}, plus a switch with that many ports` });
   add('Cables', cables);
   return groups;
@@ -105,6 +108,8 @@ export function prepSheet(show, plan, { version = '', licence = '', company = ''
   const model = MODELS[show.options?.model];
   const amp = ampPlan(show, plan);
   const rig = rfPlan(show, plan);
+  const ds = show.ampFeed === 'ds10' ? ds10Plan(show, plan, amp.rows) : null;
+  const dsOf = (r) => ds?.cables.find((c) => c.rows.includes(r));
   const today = new Date().toISOString().slice(0, 10);
 
   const picks = pickList(show, plan).map(({ group, rows }) => `<tr class="grp"><th colspan="5">${esc(group)}</th></tr>${rows.map((r) => `<tr><td class="qty">${esc(r.qty)}</td><td><b>${esc(r.item)}</b></td><td class="note">${esc(r.note)}</td><td class="box"></td><td class="box"></td></tr>`).join('')}`).join('');
@@ -121,8 +126,9 @@ export function prepSheet(show, plan, { version = '', licence = '', company = ''
     }
     for (const { unit, family } of rows) {
       const h = unitHeight(unit, family);
-      const kind = family === 'amp' ? `${AMP_MODELS[unit.model]?.label || unit.model}${unit.mode === 'subtop' ? ' · Sub/Top' : ''}` : family === 'rf' ? (RECEIVER_MODELS[unit.model] || IEM_MODELS[unit.model])?.label || unit.model : RACK_ITEMS[unit.type]?.label || '';
-      const feeds = family === 'amp' ? amp.rows.filter((x) => x.amp === unit && x.feed).map((x) => `${x.label.split('Ch ')[1]} ${rowFeedName(x)}`).join(' · ')
+      const kind = unit.model === 'DS10' ? DS10.label : family === 'amp' ? `${AMP_MODELS[unit.model]?.label || unit.model}${unit.mode === 'subtop' ? ' · Sub/Top' : ''}` : family === 'rf' ? (RECEIVER_MODELS[unit.model] || IEM_MODELS[unit.model])?.label || unit.model : RACK_ITEMS[unit.type]?.label || '';
+      const feeds = unit.model === 'DS10' ? (ds?.cables || []).filter((c) => c.ds10 === unit).map((c) => `AES ${c.aesOut} → ${c.amp.name} ${c.ampIn}`).join(' · ')
+        : family === 'amp' ? amp.rows.filter((x) => x.amp === unit && x.feed).map((x) => `${x.label.split('Ch ')[1]} ${rowFeedName(x)}`).join(' · ')
         : family === 'rf' ? [...rig.mics, ...rig.iems].filter((x) => x.device === unit).map((x) => `${x.channel} ${x.name}`).join(' · ') : '';
       lines.push(`<tr class="${family}" style="height:${h * 22}px"><td class="u">${h > 1 ? `${u}–${u + h - 1}` : u}</td><td><b>${esc(unit.name)}</b>${kind && kind !== unit.name ? `<br><small>${esc(kind)}</small>` : ''}</td><td class="note">${esc(feeds)}</td><td class="ip">${esc(unit.ip || '')}</td></tr>`);
       u += h;
@@ -136,7 +142,7 @@ export function prepSheet(show, plan, { version = '', licence = '', company = ''
     const r = radioOf(c);
     return `<tr><td class="box"></td><td>${c.ch}</td><td><b>${esc(c.name)}</b></td><td>${esc(portLabel(c.patch))}</td><td>${esc(r ? (r.label || 'Radio') : DI_TYPES.has(c.source.type) ? 'DI' : c.source.note || SOURCE_TYPES[c.source.type].label)}</td><td>${phantomOf(c.source) && !r ? '48V' : ''}</td><td>${r?.freq ? `${r.freq.toFixed(3)}` : ''}</td></tr>`;
   }).join('');
-  const outs = amp.rows.filter((r) => r.feed).map((r) => `<tr><td class="box"></td><td><b>${esc(rowFeedName(r))}</b></td><td>${esc(r.sub ? '' : r.feed.bus)}</td><td>${esc(r.sub ? '' : r.feed.deskOutLabel)}</td><td>${esc(r.label)}</td><td>${esc(r.input)}</td><td>${esc(r.setup)}</td><td class="ip">${esc(r.amp.ip)}</td></tr>`).join('');
+  const outs = amp.rows.filter((r) => r.feed).map((r) => `<tr><td class="box"></td><td><b>${esc(rowFeedName(r))}</b></td><td>${esc(r.sub ? '' : r.feed.bus)}</td><td>${esc(r.sub ? '' : dsOf(r) ? `${r.feed.dante ? `Dante ${r.feed.dante}` : r.feed.deskOutLabel} → ${dsOf(r).ds10?.name || 'DS10'} AES ${dsOf(r).aesOut}` : r.feed.deskOutLabel)}</td><td>${esc(r.label)}</td><td>${esc(r.input)}</td><td>${esc(r.setup)}</td><td class="ip">${esc(r.amp.ip)}</td></tr>`).join('');
   const otherOuts = plan.outputs.filter((o) => !amp.feeds.some((f) => f.zone === o.zone)).map((o) => `<tr><td class="box"></td><td><b>${esc(o.name)}</b></td><td>${esc(o.buses.join('/'))}</td><td>${o.patch ? esc(o.buses.map((_, k) => portLabel({ bank: o.patch.bank, port: o.patch.port + k })).join(' + ')) : 'unpatched'}</td><td colspan="4">${o.zone.type.startsWith('iem') ? 'IEM transmitter' : 'Feed'}</td></tr>`).join('');
 
   const css = `.kk-prep{font:11.5px/1.35 Inter,system-ui,sans-serif;color:#11151a;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}

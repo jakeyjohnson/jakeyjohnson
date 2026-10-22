@@ -2,7 +2,7 @@
 // page hands in how to reach the devices (the app through its bridge, the demo pretends).
 import { RIO_MODELS, buildPlan } from './plan.js';
 import {
-  AMP_CHANNEL_NAMES, AMP_INPUTS, AMP_MODELS, AMP_MODES, rowFeedName, IEM_MODELS, RECEIVER_MODELS, SHURE_GAIN, SPEAKER_SETUPS, SPECTERA_LOWEST, addAmpsFor, ampPlan, ampReadSummary, applyShureReads, defaultRf,
+  AMP_CHANNEL_NAMES, AMP_FEEDS, AMP_INPUTS, AMP_MODELS, AMP_MODES, ds10Plan, rowFeedName, IEM_MODELS, RECEIVER_MODELS, SHURE_GAIN, SPEAKER_SETUPS, SPECTERA_LOWEST, addAmpsFor, ampPlan, ampReadSummary, applyShureReads, defaultRf,
   isRadio, makeAmp, makeRfDevice, parseShureReads, rfPlan, shureCommands, shureReadLines, specteraWrites,
 } from './rig.js';
 import { makeRackUi } from './rack-ui.js';
@@ -66,10 +66,14 @@ export function mountRig({ getShow, update, transport, demo = false, prefs = () 
     let addModel = s.amps.at(-1)?.model || prefs().ampModel || 'D80';
     const modelOptions = Object.entries(AMP_MODELS).map(([k, m]) => [k, m.label]);
 
+    const feedMode = s.ampFeed || (amp.feeds.some((f) => f.dante) ? 'dante' : 'analog');
+    const ds = s.ampFeed === 'ds10' ? ds10Plan(s, plan, amp.rows) : null;
+    const dsName = (r) => { const c = ds?.cables.find((x) => x.rows.includes(r)); return c ? `${c.ds10?.name || `DS10 ${c.ds10Index + 1}`} AES ${c.aesOut} · ch ${r.ds10Channel}` : ''; };
+    const fromDesk = (r) => (!r.feed || r.sub ? '' : ds ? `${r.feed.dante ? `Dante ${r.feed.dante}` : r.feed.deskOutLabel} → ${dsName(r)}` : r.feed.deskOutLabel);
     const chRows = amp.rows.map((r) => el('tr', { className: `${r.feed ? '' : 'spare'} ${r.sub ? 'sub-row' : ''}` },
       el('td', {}, el('b', { textContent: r.label }), r.sub ? el('small', { className: 'dim', textContent: ' sub' }) : null),
       el('td', { textContent: r.feed ? rowFeedName(r) : 'spare' }),
-      el('td', { className: 'mono dim', textContent: r.feed && !r.sub ? r.feed.deskOutLabel : '' }),
+      el('td', { className: 'mono dim', textContent: fromDesk(r) }),
       el('td', {}, r.feed && (r.sub ? el('span', { className: 'dim', textContent: `${r.input}, with Ch ${AMP_CHANNEL_NAMES[r.index - 1]}` })
         : select(r.input, AMP_INPUTS.map((x) => [x, x]), (v) => setting(r, 'input', v), { 'aria-label': 'Amp input' }))),
       el('td', {}, r.feed && el('input', { value: r.setup, className: 'setup', 'aria-label': 'Speaker setup', list: 'kkSetups', onchange: (e) => setting(r, 'setup', e.target.value.trim()) })),
@@ -86,23 +90,35 @@ export function mountRig({ getShow, update, transport, demo = false, prefs = () 
           ...racks.rackTools('amp'),
         ],
       }, s.amps.length || session.found.some((d) => d.kind === 'amp') ? racks.racksView('amp', {
-        feeds: racks.ampFeeds(amp.rows),
-        extra: (a) => [el('button', {
+        feeds: (u) => (u.model === 'DS10' ? (ds?.cables || []).filter((c) => c.ds10 === u).map((c) => [`AES ${c.aesOut}`, `${c.amp.name} ${c.ampIn}`]) : racks.ampFeeds(amp.rows)(u)),
+        extra: (a) => a.model === 'DS10' ? [] : [el('button', {
           className: 'ghost small', type: 'button', textContent: 'Read', disabled: !a.ip, title: a.ip ? `${readText(s.ampReads?.[a.id]) || 'Read'}: reads ${a.name}'s control list and saves it to a file. Nothing on the amp changes.` : 'Put the amp\'s IP in first',
           onclick: (e) => readAmp(a, e.currentTarget),
         })],
       }) : empty('No amps yet. Fill from outputs adds enough for every speaker output, or rack the ones Find devices finds.')),
-      panel({ step: '02', title: 'Amp patch', meta: amp.feeds.length ? plural(amp.feeds.length, 'feed') : '', tools: [tag('Starts muted, gain lowest', 'on')] },
-        amp.rows.length ? table(['Amp channel', 'Feeds', 'From desk', 'Amp input', 'Speaker setup', 'Target'], chRows) : empty('Add an amp to see which output goes where.'),
+      panel({ step: '02', title: 'Amp patch', meta: amp.feeds.length ? plural(amp.feeds.length, 'feed') : '', tools: [
+        el('span', { className: 'chip-label' }, 'Feed the amps'),
+        segmented(feedMode, Object.entries(AMP_FEEDS), (v) => update(() => { s.ampFeed = v; }), 'How the amps get their signal'),
+        info('Analogue: XLR from the desk outputs. Dante: straight into the amps\' network inputs. DS10: Dante to a d&b DS10, then AES3 to each amp (two inputs per cable). DS10s are added to the rack as needed.'),
+        tag('Starts muted, gain lowest', 'on')] },
+        amp.rows.length ? table(['Amp channel', 'Feeds', ds ? 'From desk → DS10' : 'From desk', 'Amp input', 'Speaker setup', 'Target'], chRows) : empty('Add an amp to see which output goes where.'),
         el('datalist', { id: 'kkSetups' }, ...SPEAKER_SETUPS.map((x) => el('option', { value: x }))),
-        warnList(amp.warnings)),
-      panel({ step: '03', title: 'Set up in R1', tools: [tag('Not sent from here yet', '', 'Live control comes once a real amp\'s control list has been read: press Read on an amp above and send the file it saves. Until then these settings go in R1; print them from Export → Paperwork.')] },
+        warnList([...amp.warnings, ...(ds?.warnings || [])])),
+      ds && ds.cables.length ? panel({ step: '03', title: 'DS10 to the amps', meta: `${plural(s.ds10s?.length || 0, 'DS10')} · ${plural(ds.cables.length, 'AES cable')}` },
+        table(['DS10', 'AES out', 'Channels', 'To amp', 'Carries'], ds.cables.map((c) => el('tr', {},
+          el('td', {}, el('b', { textContent: c.ds10?.name || `DS10 ${c.ds10Index + 1}` }), c.ds10?.ip ? el('small', { className: 'mono dim', textContent: ` ${c.ds10.ip}` }) : null),
+          el('td', { className: 'mono', textContent: `AES ${c.aesOut}` }),
+          el('td', { className: 'mono dim', textContent: `${c.aesOut * 2 - 1}/${c.aesOut * 2}` }),
+          el('td', { textContent: `${c.amp.name} · ${c.ampIn} (${c.inputs})` }),
+          el('td', { className: 'dim', textContent: c.rows.map((r) => `${r.input} ${rowFeedName(r)}`).join(' · ') })))),
+        el('p', { className: 'dim small-note', textContent: 'In Dante Controller (or the desk\'s Dante patch), subscribe each DS10 channel to its desk Dante output; Paperwork lists them.' })) : null,
+      panel({ step: ds?.cables.length ? '04' : '03', title: 'Set up in R1', tools: [tag('Not sent from here yet', '', 'Live control comes once a real amp\'s control list has been read: press Read on an amp above and send the file it saves. Until then these settings go in R1; print them from Export → Paperwork.')] },
         el('ol', { className: 'steps' },
           el('li', { textContent: 'Fixed IP on each amp, racked above in the order they sit' }),
           el('li', { textContent: 'In R1: speaker setup and input per channel, from the patch' }),
           el('li', { textContent: 'Every channel muted, gain right down' }),
           el('li', { textContent: 'Unmute one at a time and bring up to target' }))),
-      ampReadsPanel(s),
+      ampReadsPanel(s, ds?.cables.length ? '05' : '04'),
     ].filter(Boolean));
   }
 
@@ -125,10 +141,10 @@ export function mountRig({ getShow, update, transport, demo = false, prefs = () 
     update(() => {});
   }
   // What each amp held when it was last read
-  function ampReadsPanel(s) {
+  function ampReadsPanel(s, step) {
     const reads = (s.amps || []).filter((a) => s.ampReads?.[a.id]);
     if (!reads.length) return null;
-    return panel({ step: '04', title: 'From the amps', meta: plural(reads.length, 'amp') },
+    return panel({ step, title: 'From the amps', meta: plural(reads.length, 'amp') },
       ...reads.map((a) => {
         const r = s.ampReads[a.id];
         return el('details', { className: 'amp-read' },
@@ -377,9 +393,12 @@ export function mountRig({ getShow, update, transport, demo = false, prefs = () 
   function renderRacks(main) {
     const s = show();
     const plan = buildPlan(s);
-    const amps = racks.ampFeeds(ampPlan(s, plan).rows);
+    const rows = ampPlan(s, plan).rows;
+    const amps = racks.ampFeeds(rows);
+    const ds = s.ampFeed === 'ds10' ? ds10Plan(s, plan, rows) : null;
     const radios = rfFeeds(rfPlan(s, plan));
-    racks.rackRoom(main, { feedsOf: (family, u) => (family === 'amp' ? amps(u) : radios(u)) });
+    const dsFeeds = (u) => (ds?.cables || []).filter((c) => c.ds10 === u).map((c) => [`AES ${c.aesOut}`, `${c.amp.name} ${c.ampIn}`]);
+    racks.rackRoom(main, { feedsOf: (family, u) => (u.model === 'DS10' ? dsFeeds(u) : family === 'amp' ? amps(u) : radios(u)) });
   }
 
   // What Find devices can do with a device: rack an amp or Shure unit, or say which unit or base station it is

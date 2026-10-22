@@ -3,7 +3,7 @@
 // and which receiver channel gets which mic. Each unit remembers the box it was racked as, and every
 // read or send first checks that the same box still answers at that address.
 import {
-  AMP_CHANNEL_NAMES, AMP_MODELS, AMP_MODES, rowFeedName, IEM_MODELS, RACK_ITEMS, RACK_SIZES, RECEIVER_MODELS, ampModelFrom, identityOf, makeAmp, makeRack, makeRackItem, makeRfDevice,
+  AMP_CHANNEL_NAMES, AMP_MODELS, AMP_MODES, rowFeedName, IEM_MODELS, RACK_ITEMS, RACK_SIZES, RECEIVER_MODELS, ampModelFrom, identityOf, makeAmp, makeDs10, makeRack, makeRackItem, makeRfDevice,
   moveUnit, normalizeRacks, nudgeUnit, rackEntries, racksOf, sameDevice, shureModelFrom, unitHeight,
 } from './rig.js';
 import { el, info, ipField, segmented, tag, toast } from './ui.js';
@@ -19,10 +19,10 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
 
   const unitsOf = (kind) => {
     const s = show();
-    return kind === 'amp' ? (s.amps || []) : [...(s.rf?.receivers || []), ...(s.rf?.transmitters || [])];
+    return kind === 'amp' ? [...(s.amps || []), ...(s.ds10s || [])] : [...(s.rf?.receivers || []), ...(s.rf?.transmitters || [])];
   };
   const onlyOf = (kind) => new Set(unitsOf(kind).map((u) => u.id));
-  const removeUnit = (s, u) => { for (const list of [s.amps, s.rf?.receivers, s.rf?.transmitters, s.rackItems]) { const i = list?.indexOf(u) ?? -1; if (i >= 0) list.splice(i, 1); } };
+  const removeUnit = (s, u) => { for (const list of [s.amps, s.ds10s, s.rf?.receivers, s.rf?.transmitters, s.rackItems]) { const i = list?.indexOf(u) ?? -1; if (i >= 0) list.splice(i, 1); } };
   const protocolOf = (kind) => (kind === 'amp' ? 'amp' : 'shure');
   const isTx = (u) => (show().rf?.transmitters || []).includes(u);
   const whoText = (found) => [found.model, found.name, found.serial && `serial ${found.serial}`].filter(Boolean).join(' · ');
@@ -70,10 +70,16 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
     if (kind === 'amp') {
       let found = d;
       try { found = { ...d, ...(await transport.identify('amp', d.ip)) }; } catch { /* keep what the scan said */ }
-      s.amps ||= [];
-      unit = makeAmp(ampModelFrom(found.model) || 'D80', s.amps.length + 1);
+      if (/DS10/i.test(found.model || '')) {
+        s.ds10s ||= [];
+        unit = makeDs10(s.ds10s.length + 1);
+        s.ds10s.push(unit);
+      } else {
+        s.amps ||= [];
+        unit = makeAmp(ampModelFrom(found.model) || 'D80', s.amps.length + 1);
+        s.amps.push(unit);
+      }
       Object.assign(unit, { ip: d.ip, name: found.name || unit.name, ident: identityOf(found) });
-      s.amps.push(unit);
     } else {
       s.rf ||= {};
       s.rf.receivers ||= [];
@@ -148,8 +154,8 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
       el('div', { className: 'unit-main' },
         el('div', { className: 'unit-top' },
           el('input', { value: u.name, className: 'unit-name', 'aria-label': 'Name', onchange: (e) => update(() => { u.name = e.target.value.trim() || u.name; }) }),
-          selectOf(u.model, Object.entries(models).map(([k, m]) => [k, m.label]), (v) => update(() => { u.model = v; }), { 'aria-label': `${u.name} model` }),
-          kind === 'amp' ? selectOf(u.mode || 'dual', Object.entries(AMP_MODES), (v) => update(() => { u.mode = v; }), { 'aria-label': `${u.name} mode`, title: 'Dual channel: every channel its own output. Sub/Top: A+B and C+D each take one output, the top on A (C) and its sub on B (D), from one input (d&b Mix TOP/SUB).' }) : null,
+          u.model === 'DS10' ? el('span', { className: 'unit-fixed', textContent: 'd&b DS10 · Dante to AES' }) : selectOf(u.model, Object.entries(models).map(([k, m]) => [k, m.label]), (v) => update(() => { u.model = v; }), { 'aria-label': `${u.name} model` }),
+          kind === 'amp' && u.model !== 'DS10' ? selectOf(u.mode || 'dual', Object.entries(AMP_MODES), (v) => update(() => { u.mode = v; }), { 'aria-label': `${u.name} mode`, title: 'Dual channel: every channel its own output. Sub/Top: A+B and C+D each take one output, the top on A (C) and its sub on B (D), from one input (d&b Mix TOP/SUB).' }) : null,
           ipField({ value: u.ip, prefix: kind === 'amp' ? prefs().ampPrefix : prefs().rfPrefix, label: `${u.name} IP`, onchange: (ip) => update(() => { u.ip = ip; delete u.ident; delete session.ident[u.id]; }) }),
           status),
         el('div', { className: 'unit-feeds' }, ...feeds(u).map(([ch, what]) => el('span', { className: what ? 'feed' : 'feed spare' }, el('b', { className: 'mono', textContent: ch }), what || 'spare')))),
@@ -242,8 +248,10 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
             el('button', { className: 'remove', type: 'button', textContent: '×', title: `Remove ${u.name}`, onclick: () => update(() => { removeUnit(s, u); normalizeRacks(s); }) }))),
         el('div', { className: 'side' },
           family === 'item' ? el('span', { className: 'grow' }) : el('span', { className: `side-ip mono ${u.ip ? '' : 'dim'}`, textContent: u.ip || 'no IP' }),
-          el('select', { className: 'side-u', 'aria-label': `${u.name} height`, onchange: (ev) => update(() => { u.u = Number(ev.target.value); }) },
-            ...[1, 2, 3, 4].map((n) => el('option', { value: n, textContent: `${n}U`, selected: n === h })))));
+          family === 'item'
+            ? el('select', { className: 'side-u', 'aria-label': `${u.name} height`, onchange: (ev) => update(() => { u.u = Number(ev.target.value); }) },
+              ...[1, 2, 3, 4].map((n) => el('option', { value: n, textContent: `${n}U`, selected: n === h })))
+            : el('span', { className: 'side-u-fixed mono dim', textContent: `${h}U`, title: 'Set by the model' })));
     };
     const cabinet = (rack) => {
       const rows = rack.units.map((id) => entries.get(id)).filter(Boolean);

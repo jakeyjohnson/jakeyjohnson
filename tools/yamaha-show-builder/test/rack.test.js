@@ -82,7 +82,8 @@ test('one rack can hold amps, RF units and items, and each tab still fills in ra
   nudgeUnit(show, show.amps[1].id, -1, new Set(show.amps.map((a) => a.id)));
   assert.deepEqual(rack.units, [power.id, rx.id, blank.id, show.amps[0].id, show.amps[1].id].map((id) => id));
   assert.deepEqual(show.amps.map((a) => a.name), ['Amp 1', 'Amp 2']);
-  assert.deepEqual([unitHeight(show.amps[0], 'amp'), unitHeight(rx, 'rf'), unitHeight(makeRackItem('drawer'), 'item'), unitHeight({ ...rx, u: 2 }, 'rf')], [2, 1, 2, 2]);
+  // Heights come from the model: d&b amps 2U (the 5D 1U), every RF unit 1U, even if a size was saved
+  assert.deepEqual([unitHeight(show.amps[0], 'amp'), unitHeight(makeAmp('5D'), 'amp'), unitHeight({ ...makeAmp('D20'), u: 4 }, 'amp'), unitHeight(rx, 'rf'), unitHeight({ ...rx, u: 2 }, 'rf'), unitHeight(makeRackItem('drawer'), 'item'), unitHeight({ ...makeRackItem('other'), u: 3 }, 'item')], [2, 1, 2, 1, 1, 2, 3]);
   show.rackItems.splice(0, 1);
   normalizeRacks(show);
   assert.equal(rack.units.length, 4);
@@ -116,4 +117,29 @@ test('Main L&R can have subs: on an aux, or from main on their own channels or t
   show.amps = [];
   addAmpsFor(show, buildPlan(show), 'D80', 'subtop');
   assert.equal(show.amps.length, 2); // Main L+sub, Main R+sub on one; the fill on the next
+});
+
+test('amps fed from a DS10: AES inputs in order, one DS10 AES out per pair, Dante routes into it', async () => {
+  const { ds10Plan, syncDs10s } = await import('../public/rig.js');
+  const show = defaultShow();
+  show.options.model = 'CL5';
+  show.options.outPatch = { bank: 'dante', port: 1 };
+  show.ampFeed = 'ds10';
+  show.amps = [{ ...makeAmp('D80', 1), mode: 'subtop' }, makeAmp('D80', 2), makeAmp('D80', 3)];
+  const plan = buildPlan(show);
+  const rows = ampPlan(show, plan).rows;
+  // Amp 1 sub/top: Main L on D1 (A + its sub B), Main R on D2 (C + D): one AES cable. Amp 2: four outputs, D1–D4: two cables
+  assert.deepEqual(rows.filter((r) => r.feed).slice(0, 8).map((r) => `${r.label.slice(-4)} ${r.input}`), ['Ch A D1', 'Ch B D1', 'Ch C D2', 'Ch D D2', 'Ch A D1', 'Ch B D2', 'Ch C D3', 'Ch D D4']);
+  assert.ok(syncDs10s(show, plan));
+  assert.equal(show.ds10s.length, 1);
+  const ds = ds10Plan(show, plan);
+  assert.deepEqual(ds.cables.map((c) => `${c.amp.name} ${c.ampIn} (${c.inputs}) ← DS10 AES out ${c.aesOut}`), [
+    'Amp 1 AES in 1 (D1/D2) ← DS10 AES out 1', 'Amp 2 AES in 1 (D1/D2) ← DS10 AES out 2', 'Amp 2 AES in 2 (D3/D4) ← DS10 AES out 3',
+  ]); // six speaker outputs fill Amp 1 and Amp 2; Amp 3 is spare
+  assert.deepEqual(ds.dante.slice(0, 3).map((d) => `${d.row.feed.name} desk Dante ${d.deskOut} → DS10 ch ${d.channel}`), ['Main LR L desk Dante 1 → DS10 ch 1', 'Main LR R desk Dante 2 → DS10 ch 2', 'FrntFil desk Dante 3 → DS10 ch 3']);
+  assert.deepEqual(ds.warnings, []);
+  // Back to analogue: the spare DS10 goes
+  show.ampFeed = 'analog';
+  syncDs10s(show, buildPlan(show));
+  assert.equal(show.ds10s.length, 0);
 });

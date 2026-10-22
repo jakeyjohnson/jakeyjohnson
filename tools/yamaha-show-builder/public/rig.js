@@ -4,18 +4,25 @@
 import { danteChannel, isMonitor, portLabel } from './plan.js';
 
 // ---- d&b amplifiers ----
+// u: rack units. d&b amps are 2U, apart from the 5D (1U).
 export const AMP_MODELS = {
-  D80: { label: 'd&b D80', channels: 4 },
-  D40: { label: 'd&b D40', channels: 4 },
-  D20: { label: 'd&b D20', channels: 4 },
-  D90: { label: 'd&b D90', channels: 4 },
-  '40D': { label: 'd&b 40D', channels: 4 },
-  '30D': { label: 'd&b 30D', channels: 4 },
-  '10D': { label: 'd&b 10D', channels: 4 },
-  '5D': { label: 'd&b 5D', channels: 4 },
-  D12: { label: 'd&b D12', channels: 2 },
-  D6: { label: 'd&b D6', channels: 2 },
+  D80: { label: 'd&b D80', channels: 4, u: 2 },
+  D40: { label: 'd&b D40', channels: 4, u: 2 },
+  D20: { label: 'd&b D20', channels: 4, u: 2 },
+  D90: { label: 'd&b D90', channels: 4, u: 2 },
+  '40D': { label: 'd&b 40D', channels: 4, u: 2 },
+  '30D': { label: 'd&b 30D', channels: 4, u: 2 },
+  '10D': { label: 'd&b 10D', channels: 4, u: 2 },
+  '5D': { label: 'd&b 5D', channels: 4, u: 1 },
+  D12: { label: 'd&b D12', channels: 2, u: 2 },
+  D6: { label: 'd&b D6', channels: 2, u: 2 },
 };
+// d&b DS10 audio network bridge: 1U, Dante in, 16 channels out as AES3 (two channels per AES out, so
+// AES out 1 carries channels 1/2), with a 5-port network switch for the amps
+export const DS10 = { label: 'd&b DS10', u: 1, aesOuts: 8, channels: 16 };
+// How the amps get their signal: analogue XLR from the desk, Dante straight into the amps, or Dante to a
+// DS10 and AES3 from it to the amps
+export const AMP_FEEDS = { analog: 'Analogue', dante: 'Dante', ds10: 'DS10 (AES)' };
 export const AMP_CHANNEL_NAMES = ['A', 'B', 'C', 'D'];
 // Amp inputs: analogue A1-A4, AES D1-D4, and network audio where the amp has it
 export const AMP_INPUTS = ['A1', 'A2', 'A3', 'A4', 'D1', 'D2', 'D3', 'D4', 'Network 1', 'Network 2', 'Network 3', 'Network 4'];
@@ -71,6 +78,11 @@ export function addAmpsFor(show, plan, model = 'D80', mode = 'dual') {
   return show.amps;
 }
 
+function defaultInput(ampFeed, feed, k) {
+  if (ampFeed === 'ds10') return null; // set below, in order of the amp's inputs used
+  if (ampFeed === 'dante' || (!ampFeed && feed?.dante)) return `Network ${k + 1}`;
+  return AMP_INPUTS[k];
+}
 // Speaker outputs fill amp channels in output order, amp by amp in rack order. An amp in sub/top mode
 // takes one output per channel pair: the top on the first channel, its sub on the second, both from the
 // first channel's input. Per-output settings (speaker setup, amp input, target gain) are kept by output
@@ -99,9 +111,20 @@ export function ampPlan(show, plan) {
         amp, index: k, label: `${amp.name} · Ch ${AMP_CHANNEL_NAMES[k]}`, feed, sub, settingsKey: key,
         // a subs output on a sub/top pair is just two sub channels
         setup: feed ? set.setup ?? (sub ? (feed.zone.type === 'sub' || feed.subOf ? top.setup : subSetupFor(top.setup)) : feed.subOf ? subSetupFor(SETUP_GUESS.main) : SETUP_GUESS[feed.zone.type] ?? '') : '',
-        input: sub ? top.input : set.input || (feed?.deskOut?.bank === 'analog' ? AMP_INPUTS[k] : feed?.dante ? `Network ${k + 1}` : AMP_INPUTS[k]),
+        input: sub ? top.input : set.input || defaultInput(show.ampFeed, feed, k),
         target: set.target ?? 0,
       });
+    }
+  }
+  // From a DS10, each amp takes AES inputs D1, D2… in channel order (a sub/top pair needs one)
+  if (show.ampFeed === 'ds10') {
+    for (const amp of show.amps || []) {
+      let d = 0;
+      for (const r of rows.filter((x) => x.amp === amp)) {
+        if (!r.feed) continue;
+        if (r.sub) { r.input = rows[rows.indexOf(r) - 1].input; continue; }
+        r.input = (settings[r.settingsKey] || {}).input || `D${++d}`;
+      }
     }
   }
   const warnings = [];
@@ -111,6 +134,48 @@ export function ampPlan(show, plan) {
 }
 // What a row carries, for lists: "Main LR L", or "Main LR L sub"
 export const rowFeedName = (r) => (r.feed ? `${r.feed.name}${r.sub && r.feed.zone.type !== 'sub' && !r.feed.subOf ? ' sub' : ''}` : '');
+
+// ---- DS10: Dante to AES3 for the amps ----
+export function makeDs10(n) {
+  return { id: `ds${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, model: 'DS10', name: `DS10 ${n}`, ip: '' };
+}
+// One AES cable per pair of AES inputs an amp uses (D1/D2 on its AES in 1, D3/D4 on AES in 2), each from
+// the next DS10 AES out. Returns the cables, the Dante routes into the DS10s and how many DS10s it takes.
+export function ds10Plan(show, plan, rows = ampPlan(show, plan).rows) {
+  const cables = [];
+  for (const amp of show.amps || []) {
+    const ins = rows.filter((r) => r.amp === amp && r.feed && !r.sub && /^D\d$/.test(r.input));
+    const pairs = new Map();
+    for (const r of ins) {
+      const n = Number(r.input.slice(1));
+      const pair = Math.ceil(n / 2);
+      pairs.set(pair, [...(pairs.get(pair) || []), r]);
+    }
+    for (const [pair, list] of [...pairs].sort((a, b) => a[0] - b[0])) cables.push({ amp, ampIn: `AES in ${pair}`, inputs: `D${pair * 2 - 1}/D${pair * 2}`, rows: list });
+  }
+  const units = show.ds10s || [];
+  cables.forEach((c, i) => {
+    c.ds10 = units[Math.floor(i / DS10.aesOuts)] || null;
+    c.ds10Index = Math.floor(i / DS10.aesOuts);
+    c.aesOut = (i % DS10.aesOuts) + 1;
+    // each amp input's channel on the DS10: AES out 3 carries 5 (first input of the pair) and 6
+    for (const r of c.rows) r.ds10Channel = (c.aesOut - 1) * 2 + (Number(r.input.slice(1)) % 2 === 1 ? 1 : 2);
+  });
+  const dante = cables.flatMap((c) => c.rows.map((r) => ({ ds10: c.ds10, ds10Index: c.ds10Index, channel: r.ds10Channel, row: r, deskOut: r.feed.dante })));
+  const warnings = [];
+  if (cables.length && !dante.some((d) => d.deskOut)) warnings.push('Patch the outputs to Dante (Patch, on the Desk tab) so the desk can send them to the DS10.');
+  return { cables, dante, needed: Math.ceil(cables.length / DS10.aesOuts), warnings };
+}
+// Keeps the number of DS10s in the show to what the amps need (only when the amps are fed from a DS10);
+// spare ones with no IP go. Returns true if it changed anything.
+export function syncDs10s(show, plan) {
+  show.ds10s ||= [];
+  const need = show.ampFeed === 'ds10' ? ds10Plan(show, plan).needed : 0;
+  let changed = false;
+  while (show.ds10s.length < need) { show.ds10s.push(makeDs10(show.ds10s.length + 1)); changed = true; }
+  while (show.ds10s.length > need && !show.ds10s.at(-1).ip) { show.ds10s.pop(); changed = true; }
+  return changed;
+}
 
 // ---- RF: Shure receivers and IEM transmitters, Sennheiser Spectera ----
 export const RECEIVER_MODELS = {
@@ -308,6 +373,11 @@ export function rigPaperwork(show, plan) {
       if (n) dante.push(`<tr><td>Desk Dante out ${n}</td><td>${esc(portLabel(p))}</td><td>${esc(o.name)} (${esc(bus)})</td></tr>`);
     });
   }
+  if (show.ampFeed === 'ds10') {
+    const ds = ds10Plan(show, plan, amp.rows);
+    for (const d of ds.dante) if (d.deskOut) dante.push(`<tr><td>Desk Dante out ${d.deskOut}</td><td>${esc(d.ds10?.name || 'DS10')} channel ${d.channel}</td><td>${esc(rowFeedName(d.row))} → ${esc(d.row.label)}</td></tr>`);
+    if (ds.cables.length) parts.push(`<h2>DS10 to the amps</h2><p class="meta">AES3 cables (110 Ω): each carries two channels.</p><table><thead><tr><th>DS10</th><th>AES out</th><th>To amp</th><th>Carries</th></tr></thead><tbody>${ds.cables.map((c) => `<tr><td>${esc(c.ds10?.name || 'DS10')}${c.ds10?.ip ? ` <small>${esc(c.ds10.ip)}</small>` : ''}</td><td>AES ${c.aesOut} (ch ${c.aesOut * 2 - 1}/${c.aesOut * 2})</td><td>${esc(c.amp.name)} · ${esc(c.ampIn)} (${esc(c.inputs)})</td><td>${c.rows.map((r) => `${esc(r.input)} ${esc(rowFeedName(r))}`).join(' · ')}</td></tr>`).join('')}</tbody></table>`);
+  }
   if (dante.length) parts.push(`<h2 class="page">Dante patch</h2><p class="meta">Subscribe these in Dante Controller or the desk's Dante patch.</p><table><thead><tr><th>From</th><th>To</th><th>Signal</th></tr></thead><tbody>${dante.join('')}</tbody></table>`);
   return parts.join('\n');
 }
@@ -387,7 +457,7 @@ export const RACK_ITEMS = {
   other: { label: 'Other', u: 1 },
 };
 export const RACK_SIZES = [0, 4, 6, 8, 10, 12, 14, 16, 20, 24, 30, 42]; // 0: as tall as what's in it
-const familyLists = (show, family) => (family === 'amp' ? [show.amps || []] : family === 'rf' ? [show.rf?.receivers || [], show.rf?.transmitters || []] : [show.rackItems || []]);
+const familyLists = (show, family) => (family === 'amp' ? [show.amps || [], show.ds10s || []] : family === 'rf' ? [show.rf?.receivers || [], show.rf?.transmitters || []] : [show.rackItems || []]);
 const FAMILIES = ['amp', 'rf', 'item'];
 // The plate new racks get: 'logo' (KobiKraken), or 'company' once a logo is set in Preferences
 export const RACK_DEFAULTS = { plate: 'logo' };
@@ -401,12 +471,12 @@ export function makeRackItem(type, n) {
 export function rackEntries(show) {
   return FAMILIES.flatMap((family) => familyLists(show, family).flat().map((unit) => ({ unit, family })));
 }
-// How many rack units tall: what was set, else d&b amps 2U, Shure units 1U, items by type
+// How many rack units tall: d&b amps by model (2U, the 5D 1U), the DS10 and every RF unit 1U, items as set
 export function unitHeight(unit, family) {
-  if (unit.u) return unit.u;
-  if (family === 'amp') return 2;
-  if (family === 'item') return RACK_ITEMS[unit.type]?.u || 1;
-  return 1;
+  if (family === 'item') return unit.u || RACK_ITEMS[unit.type]?.u || 1;
+  if (unit.model === 'DS10') return DS10.u;
+  if (family === 'amp') return AMP_MODELS[unit.model]?.u || 2;
+  return 1; // every Shure receiver and IEM transmitter is 1U
 }
 // Racks a tab shows: ones holding that family, or made on that tab and still empty
 export const racksOf = (show, kind) => {
