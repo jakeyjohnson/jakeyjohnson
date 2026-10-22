@@ -455,7 +455,22 @@ window.kkHost = {
   ...(window.kkHost || {}),
   demo: true,
   store: STORE,
-  download(name, text) {
+  download(name, text, type) {
+    if (typeof text !== 'string') {
+      // a .kk show: binary, so offer it rather than print it
+      const url = URL.createObjectURL(new Blob([text], { type }));
+      return sheet(
+        name,
+        el(
+          'div',
+          { className: 'panel-body' },
+          el('p', {
+            textContent: `KobiKraken show file, ${(text.length / 1024).toFixed(1)} KB: compressed, with a checksum so a damaged file is caught. Open it again with Open.`,
+          }),
+        ),
+        [el('a', { className: 'button primary small', href: url, download: name, textContent: 'Download' })],
+      );
+    }
     const pre = el('pre', { className: 'log sheet-text', textContent: text });
     sheet(
       name,

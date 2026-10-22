@@ -417,7 +417,9 @@ The footer shows the version and the licence number of the key that unlocked it.
 
 ## Files
 
-- **Save / Open**: the show as a `.show.json` file, so you can reuse templates between jobs. The page also autosaves in the browser.
+- **Save / Open**: the show as a **`.kk`** file (KobiKraken show). It's compressed, so it's small, and has a checksum, so a damaged or cut-short file is caught rather than opened wrong. It also records the show name, desk, app version and date at the start, readable without opening the show. On the Mac app, double-clicking a `.kk` in Finder opens it in Show Builder, and File → Open Show… (⌘O) does too. Older `.json` show files still open. The page also autosaves in the browser.
+
+  The format, for anyone writing tools around it: `KKSB` (4 bytes), format version (1 byte, currently 1), flags (1 byte; bit 0 means the body is gzip), header length (2 bytes, big-endian), the header as UTF-8 JSON (`app`, `version`, `saved`, `name`, `desk`), the body (gzip of the show as UTF-8 JSON), then a CRC-32 of everything before it (4 bytes, big-endian). See `public/kkfile.js`.
 - **Export → Patch sheet**: a CSV of every input channel and output bus.
 - **Export → Paperwork**: adds Amplifiers, RF and Dante patch pages when the show has them.
 - **Export → Prep sheet**: for the warehouse and the load-in. A sign-off line (job, prepped by, checked by, back in by); a **pick list** with Out and Back tick boxes: desk and stage boxes, racks and what's in them, amps by model and mode, speakers by setup (with the channels each one feeds; count the boxes per channel), receivers, transmitters and IEM packs, wired mics by type, DIs (stereo where the input is), and cables (XLR per wired input, speaker cable per amp channel, network cable per networked unit); **each rack** top to bottom with U numbers, what every unit carries and its IP; and the **input patch** and **output and amp patch** with tick boxes.

@@ -15,6 +15,7 @@ import {
   stateLines,
 } from './check.js';
 import { RACK_DEFAULTS, ampPlan, normalizeRacks, rigPaperwork, syncDs10s } from './rig.js';
+import { readShowFile, writeKk } from './kkfile.js';
 import { prepSheet } from './prep.js';
 import { expandIp, loadPrefs, savePrefs } from './prefs.js';
 import { clearLog, logError, logText, readLog } from './log.js';
@@ -1178,25 +1179,45 @@ $('exampleShow').onclick = () =>
   );
 $('readShow').onclick = () => readDesk();
 $('readAll').onclick = () => readDesk({ everything: true });
-$('saveShow').onclick = () =>
-  download(`${fileBase()}.show.json`, JSON.stringify(show, null, 2), 'application/json');
+$('saveShow').onclick = async () => {
+  try {
+    const desk = MODELS[show.options.model]?.inputs ? MODELS[show.options.model].label : '';
+    download(
+      `${fileBase()}.kk`,
+      await writeKk(show, { version: VERSION, desk }),
+      'application/x-kobikraken-show',
+    );
+  } catch (err) {
+    toast(`Couldn't save: ${err.message}`, 'bad');
+  }
+};
 $('exportCsv').onclick = () =>
   download(`${fileBase()}-patch.csv`, patchSheetCsv(show, buildPlan(show)), 'text/csv');
-$('openFile').onchange = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+
+// .kk, or a .json show from before 3.5
+async function openShowBytes(bytes) {
   try {
-    const data = JSON.parse(await file.text());
-    if (!Array.isArray(data.sources) || !Array.isArray(data.zones)) throw new Error('not a show file');
+    const { show: data, header } = await readShowFile(bytes);
+    if (!Array.isArray(data.sources) || !Array.isArray(data.zones)) throw new Error("that isn't a show");
     update(() => {
       show = data;
     });
-    toast(`Opened ${show.name}`, 'ok');
+    toast(`Opened ${show.name}${header?.version ? ` (saved by ${header.version})` : ''}`, 'ok');
   } catch (err) {
     toast(`Couldn't open that file: ${err.message}`, 'bad');
   }
+}
+$('openFile').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (file) await openShowBytes(new Uint8Array(await file.arrayBuffer()));
   e.target.value = '';
 };
+// Mac app: a .kk double-clicked in Finder arrives here (sent before this script loaded, or after)
+window.kkOpenFile = (b64) => openShowBytes(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+if (window.kkPendingFile) {
+  window.kkOpenFile(window.kkPendingFile);
+  window.kkPendingFile = null;
+}
 $('toggleCommands').onclick = () => {
   showCommands = !showCommands;
   $('toggleCommands').textContent = showCommands ? 'Hide commands' : 'Commands';
