@@ -1,22 +1,15 @@
-// System check: walk noise through every output, one speaker at a time, so each one can be heard and
-// checked against its amp channel. Everything touched is read first and put back on Stop.
-//
-// The noise comes from one of two places (src):
-// - { kind: 'channel', ch }: an input channel fed with pink noise. Only that channel's sends change, and
-//   the output under test opens to 0 dB. The fader sets the channel's level.
-// - { kind: 'osc', setup }: the desk's oscillator, assigned on the desk to every output. Every output
-//   master closes except the one under test, and balance picks its side. The fader sets that master.
-//   CL/QL, TF and DM don't offer the oscillator over the network, so it is switched on at the desk;
-//   when the desk does offer it (setup: true, RIVAGE), it is switched on to pink noise from here too.
+// System check: noise through each output in turn. Everything touched is snapshotted and restored on Stop.
+// src 'channel': pink noise on an input; only its sends change, output under test at 0 dB, fader = channel.
+// src 'osc': desk osc routed to all outputs; other masters closed, balance picks side, fader = master.
+// CL/QL, TF, DM have no osc over RCP so it's switched on at the desk; setup: true (RIVAGE) does it here.
 import { portLabel } from './plan.js';
 
 const NEG_INF = -32768;
 const PAN = { L: -63, R: 63 };
-export const CHECK_LEVELS = { start: -4000, min: -6000, max: 0 }; // fader, 1/100 dB; below min is -inf
+export const CHECK_LEVELS = { start: -4000, min: -6000, max: 0 }; // 1/100 dB; below min = -inf
 export const OSC_KEYS = ['Setup/Oscillator/On 0 0', 'Setup/Oscillator/Type 0 0'];
 
-// One step per speaker: Main L, Main R, then each mix (both sides of a stereo mix).
-// ampRows (from rig.js ampPlan) name the amp channel each one feeds.
+// Main L, Main R, then each mix (both sides if stereo). ampRows from rig.js ampPlan.
 export function checkSteps(plan, ampRows = []) {
   const steps = [];
   for (const o of plan.outputs) {
@@ -24,13 +17,17 @@ export function checkSteps(plan, ampRows = []) {
     o.buses.forEach((bus, k) => {
       const side = o.buses.length === 2 ? (k ? 'R' : 'L') : '';
       const key = `${o.zone.id}${side}`;
-      const amp = ampRows.filter((r) => r.feed?.key === key || r.feed?.subOf === key).map((r) => `${r.label}${r.sub || r.feed.subOf ? ' sub' : ''}`).join(' + ');
+      const amp = ampRows
+        .filter((r) => r.feed?.key === key || r.feed?.subOf === key)
+        .map((r) => `${r.label}${r.sub || r.feed.subOf ? ' sub' : ''}`)
+        .join(' + ');
       steps.push({
         key,
         name: side ? `${o.name} ${side}` : o.name,
         bus: st ? bus : bus.replace('MIX', 'Mix '),
-        st, side,
-        mixes: st ? [] : o.buses.map((b) => Number(b.slice(3)) - 1), // 0-based mix numbers of this output
+        st,
+        side,
+        mixes: st ? [] : o.buses.map((b) => Number(b.slice(3)) - 1), // 0-based
         out: o.patch ? portLabel({ bank: o.patch.bank, port: o.patch.port + k }) : '',
         amp,
       });
@@ -39,26 +36,43 @@ export function checkSteps(plan, ampRows = []) {
   return steps;
 }
 
-const mixBuses = (plan) => plan.outputs.filter((o) => o.zone.type !== 'main').map((o) => ({ stereo: o.buses.length === 2, mixes: o.buses.map((b) => Number(b.slice(3)) - 1) }));
+const mixBuses = (plan) =>
+  plan.outputs
+    .filter((o) => o.zone.type !== 'main')
+    .map((o) => ({ stereo: o.buses.length === 2, mixes: o.buses.map((b) => Number(b.slice(3)) - 1) }));
 const hasMain = (plan) => plan.outputs.some((o) => o.zone.type === 'main');
 
-// Every desk setting the check can change, as "Addr x y" (the same keys readReplies gives).
-// "Setup/..." keys live under MIXER:Setup, the rest under MIXER:Current.
+// keys as readReplies gives them; "Setup/..." is MIXER:Setup, the rest MIXER:Current
 export function checkKeys(plan, src) {
   if (src.kind === 'osc') {
     const keys = src.setup ? [...OSC_KEYS] : [];
     if (hasMain(plan)) keys.push('St/Fader/Level 0 0', 'St/Fader/On 0 0', 'St/Out/Balance 0 0');
     for (const { stereo, mixes } of mixBuses(plan)) {
-      for (const m of mixes) keys.push(`Mix/Fader/Level ${m} 0`, `Mix/Fader/On ${m} 0`, ...(stereo ? [`Mix/Out/Balance ${m} 0`] : []));
+      for (const m of mixes)
+        keys.push(
+          `Mix/Fader/Level ${m} 0`,
+          `Mix/Fader/On ${m} 0`,
+          ...(stereo ? [`Mix/Out/Balance ${m} 0`] : []),
+        );
     }
     return keys;
   }
   const i = src.ch - 1;
-  const keys = [`InCh/Fader/On ${i} 0`, `InCh/Fader/Level ${i} 0`, `InCh/ToSt/On ${i} 0`, `InCh/ToSt/Pan ${i} 0`];
+  const keys = [
+    `InCh/Fader/On ${i} 0`,
+    `InCh/Fader/Level ${i} 0`,
+    `InCh/ToSt/On ${i} 0`,
+    `InCh/ToSt/Pan ${i} 0`,
+  ];
   if (hasMain(plan)) keys.push('St/Fader/On 0 0', 'St/Fader/Level 0 0');
   for (const { stereo, mixes } of mixBuses(plan)) {
     for (const m of mixes) {
-      keys.push(`InCh/ToMix/On ${i} ${m}`, `InCh/ToMix/Level ${i} ${m}`, `Mix/Fader/On ${m} 0`, `Mix/Fader/Level ${m} 0`);
+      keys.push(
+        `InCh/ToMix/On ${i} ${m}`,
+        `InCh/ToMix/Level ${i} ${m}`,
+        `Mix/Fader/On ${m} 0`,
+        `Mix/Fader/Level ${m} 0`,
+      );
       if (stereo) keys.push(`InCh/ToMix/Pan ${i} ${m}`);
     }
   }
@@ -67,12 +81,14 @@ export function checkKeys(plan, src) {
 const address = (k) => (k.startsWith('Setup/') ? `MIXER:${k}` : `MIXER:Current/${k}`);
 export const readLines = (keys) => keys.map((k) => `get ${address(k)}`);
 
-// What the desk should hold for one step, with the fader at `level`.
-// Anything this step doesn't need goes back to how it was (snapshot).
+// anything the step doesn't need comes from the snapshot
 export function checkState(plan, src, step, level, snapshot) {
   const state = new Map(checkKeys(plan, src).map((k) => [k, snapshot.get(k)]));
   if (src.kind === 'osc') {
-    if (src.setup) { state.set(OSC_KEYS[0], 1); state.set(OSC_KEYS[1], 'PINK NOISE'); }
+    if (src.setup) {
+      state.set(OSC_KEYS[0], 1);
+      state.set(OSC_KEYS[1], 'PINK NOISE');
+    }
     for (const k of state.keys()) if (/^(St|Mix)\/Fader\/Level /.test(k)) state.set(k, NEG_INF);
     const buses = step.st ? ['St 0'] : step.mixes.map((m) => `Mix ${m}`);
     for (const b of buses) {
@@ -94,7 +110,7 @@ export function checkState(plan, src, step, level, snapshot) {
   }
   for (const k of state.keys()) if (k.startsWith('InCh/ToMix/On ')) state.set(k, 0);
   for (const m of step.mixes) {
-    // A stereo mix gets the noise on both buses, panned to the side under test
+    // stereo mix: both buses, panned to the side under test
     state.set(`InCh/ToMix/On ${i} ${m}`, 1);
     state.set(`InCh/ToMix/Level ${i} ${m}`, 0);
     if (step.side) state.set(`InCh/ToMix/Pan ${i} ${m}`, PAN[step.side]);
@@ -104,42 +120,58 @@ export function checkState(plan, src, step, level, snapshot) {
   return state;
 }
 
-// The set lines that turn the desk from one state into another (all of `to` when `from` is empty)
 const value = (v) => (typeof v === 'string' ? `"${v}"` : v);
 export function stateLines(to, from = new Map()) {
   const lines = [];
   for (const [k, v] of to) if (v != null && from.get(k) !== v) lines.push(`set ${address(k)} ${value(v)}`);
   return lines;
 }
-// Put back. The noise stops first (noise fader closed, or the oscillator back as it was and the output
-// masters down), then everything goes back as it was, the noise fader's own level last.
+// kill the noise first, restore everything, noise fader level last
 export function restoreLines(plan, src, snapshot) {
   const keys = checkKeys(plan, src);
   const back = (list) => stateLines(new Map(list.map((k) => [k, snapshot.get(k)])));
   if (src.kind === 'osc') {
     const levels = keys.filter((k) => /Fader\/Level/.test(k));
-    return [...back(keys.filter((k) => k.startsWith('Setup/'))), ...back(levels), ...back(keys.filter((k) => !k.startsWith('Setup/') && !levels.includes(k)))];
+    return [
+      ...back(keys.filter((k) => k.startsWith('Setup/'))),
+      ...back(levels),
+      ...back(keys.filter((k) => !k.startsWith('Setup/') && !levels.includes(k))),
+    ];
   }
   const fader = `InCh/Fader/Level ${src.ch - 1} 0`;
   const lines = [`set ${address(fader)} ${NEG_INF}`, ...back(keys.filter((k) => k !== fader))];
-  if (snapshot.get(fader) != null && snapshot.get(fader) !== NEG_INF) lines.push(`set ${address(fader)} ${snapshot.get(fader)}`);
+  if (snapshot.get(fader) != null && snapshot.get(fader) !== NEG_INF)
+    lines.push(`set ${address(fader)} ${snapshot.get(fader)}`);
   return lines;
 }
-// A good noise channel: playback or laptop first, else the last input
+// prefer playback/laptop, else last input
 export function noiseChannel(plan) {
   const pb = plan.channels.find((c) => ['playback', 'laptop'].includes(c.source.type));
   return (pb || plan.channels[plan.channels.length - 1])?.ch || null;
 }
-export const levelText = (v) => (v <= NEG_INF ? '−∞' : v === 0 ? '0 dB' : `−${Math.abs(v / 100).toFixed(1).replace(/\.0$/, '')} dB`);
-// The fader, as on a desk: travel (0 bottom, 1 top) to level, with more travel near 0 dB than at the
-// bottom. The very bottom is off.
-const LAW = [[0.04, -6000], [0.15, -4000], [0.3, -3000], [0.5, -2000], [0.75, -1000], [1, 0]];
+export const levelText = (v) =>
+  v <= NEG_INF
+    ? '−∞'
+    : v === 0
+      ? '0 dB'
+      : `−${Math.abs(v / 100)
+          .toFixed(1)
+          .replace(/\.0$/, '')} dB`;
+// desk-style taper: pos 0..1, more travel near 0 dB, bottom is off
+const LAW = [
+  [0.04, -6000],
+  [0.15, -4000],
+  [0.3, -3000],
+  [0.5, -2000],
+  [0.75, -1000],
+  [1, 0],
+];
 export function faderLevel(pos) {
   if (pos < LAW[0][0]) return NEG_INF;
   for (let i = 1; i < LAW.length; i++) {
     const [p0, l0] = LAW[i - 1];
     const [p1, l1] = LAW[i];
-    if (pos <= p1) return Math.round((l0 + ((pos - p0) / (p1 - p0)) * (l1 - l0)) / 50) * 50; // 0.5 dB steps
+    if (pos <= p1) return Math.round((l0 + ((pos - p0) / (p1 - p0)) * (l1 - l0)) / 50) * 50;
   }
   return 0;
 }

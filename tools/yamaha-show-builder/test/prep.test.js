@@ -1,9 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  applySuggestion, applyTemplate, buildPlan, changedCommands, commandKey, cueCommand, defaultShow, emptyShow, makeTemplate,
-  matchesReadback, monitorShow, MODELS, packageSuggestion, pairMonitors, paperwork, parseInputList, parseRequest,
-  patchSheetCsv, readbackCommand, rememberPush, sceneStoreCommand,
+  applySuggestion,
+  applyTemplate,
+  buildPlan,
+  changedCommands,
+  commandKey,
+  cueCommand,
+  defaultShow,
+  emptyShow,
+  makeTemplate,
+  matchesReadback,
+  monitorShow,
+  MODELS,
+  packageSuggestion,
+  pairMonitors,
+  paperwork,
+  parseInputList,
+  parseRequest,
+  patchSheetCsv,
+  readbackCommand,
+  rememberPush,
+  sceneStoreCommand,
 } from '../public/plan.js';
 
 test('a pasted input list keeps its names, order, notes and 48V, and pairs L/R lines', () => {
@@ -21,9 +39,19 @@ test('a pasted input list keeps its names, order, notes and 48V, and pairs L/R l
     '10\tKeys R',
   ].join('\n');
   const s = parseInputList(pasted);
-  assert.deepEqual(s.sources.map((x) => `${x.name}:${x.type}${x.stereo ? ':st' : ''}`), [
-    'Kick In:kick', 'Kick Out:kick', 'Snare Top:snare', 'OH:overhead:st', 'Bass DI:bass', 'Lead Vox:vocal', 'Sax:instrument', 'Keys:keys:st',
-  ]);
+  assert.deepEqual(
+    s.sources.map((x) => `${x.name}:${x.type}${x.stereo ? ':st' : ''}`),
+    [
+      'Kick In:kick',
+      'Kick Out:kick',
+      'Snare Top:snare',
+      'OH:overhead:st',
+      'Bass DI:bass',
+      'Lead Vox:vocal',
+      'Sax:instrument',
+      'Keys:keys:st',
+    ],
+  );
   assert.equal(s.sources[0].note, 'Beta 91');
   assert.equal(s.sources[3].phantom, true);
   assert.equal(s.sources[4].phantom, true); // "48v" inside the note
@@ -32,12 +60,20 @@ test('a pasted input list keeps its names, order, notes and 48V, and pairs L/R l
   const show = emptyShow();
   show.options.autoOrder = false;
   applySuggestion(show, s);
-  assert.deepEqual(buildPlan(show).channels.map((c) => c.name).slice(0, 6), ['Kick In', 'Kick Out', 'Snare Top', 'OH L', 'OH R', 'Bass DI']);
+  assert.deepEqual(
+    buildPlan(show)
+      .channels.map((c) => c.name)
+      .slice(0, 6),
+    ['Kick In', 'Kick Out', 'Snare Top', 'OH L', 'OH R', 'Bass DI'],
+  );
 });
 
 test('comma and dash separated lists work too', () => {
   const s = parseInputList('1. Lectern 1, gooseneck, 48V\n2 - Handheld 1\n3, Playback st');
-  assert.deepEqual(s.sources.map((x) => `${x.name}:${x.type}${x.stereo ? ':st' : ''}${x.phantom ? ':48' : ''}`), ['Lectern 1:lectern:48', 'Handheld 1:handheld', 'Playback:playback:st']);
+  assert.deepEqual(
+    s.sources.map((x) => `${x.name}:${x.type}${x.stereo ? ':st' : ''}${x.phantom ? ':48' : ''}`),
+    ['Lectern 1:lectern:48', 'Handheld 1:handheld', 'Playback:playback:st'],
+  );
 });
 
 test('a saved template brings back its inputs, outputs and routing', () => {
@@ -49,9 +85,15 @@ test('a saved template brings back its inputs, outputs and routing', () => {
   const fresh = emptyShow();
   applyTemplate(fresh, tpl);
   assert.equal(fresh.sources.length, show.sources.length);
-  assert.deepEqual(fresh.zones.map((z) => z.name), show.zones.map((z) => z.name));
+  assert.deepEqual(
+    fresh.zones.map((z) => z.name),
+    show.zones.map((z) => z.name),
+  );
   const l = fresh.sources.find((x) => x.name === 'Lect 1');
-  assert.deepEqual(l.zones.map((id) => fresh.zones.find((z) => z.id === id).name), ['Main LR']);
+  assert.deepEqual(
+    l.zones.map((id) => fresh.zones.find((z) => z.id === id).name),
+    ['Main LR'],
+  );
   assert.equal(l.gain, 45);
   // applying again doesn't duplicate outputs
   applyTemplate(fresh, tpl);
@@ -73,7 +115,10 @@ test('DCAs and mute groups are made from the input types', () => {
   applySuggestion(show, packageSuggestion('band'));
   show.options.model = 'CL5';
   const plan = buildPlan(show);
-  assert.deepEqual(plan.groups.map((g) => `${g.number}:${g.name}:${g.channels.length}`), ['1:Speech:6', '2:Drums:10', '3:Band:10', '4:Vox:3', '5:Playback:6', '6:BGM:2']);
+  assert.deepEqual(
+    plan.groups.map((g) => `${g.number}:${g.name}:${g.channels.length}`),
+    ['1:Speech:6', '2:Drums:10', '3:Band:10', '4:Vox:3', '5:Playback:6', '6:BGM:2'],
+  );
   const has = (cmd) => plan.commands.includes(cmd);
   assert.ok(has('set MIXER:Current/DCA/Label/Name 0 0 "Speech"'));
   assert.ok(has('set MIXER:Current/DCA/Label/Color 1 0 Red'));
@@ -101,14 +146,22 @@ test('safe start: every head-amp at its lowest and every output fader closed', (
   assert.ok(plan.commands.includes('set MIXER:Current/St/Fader/Level 0 0 -32768'));
   assert.ok(plan.commands.filter((c) => c.includes('Mix/Fader/Level')).every((c) => c.endsWith(' -32768')));
   show.options.model = 'DM7';
-  assert.ok(buildPlan(show).commands.filter((c) => c.includes('HA/Gain')).every((c) => c.endsWith(' -6')));
+  assert.ok(
+    buildPlan(show)
+      .commands.filter((c) => c.includes('HA/Gain'))
+      .every((c) => c.endsWith(' -6')),
+  );
   show.options.model = 'DM3';
-  assert.ok(buildPlan(show).commands.filter((c) => c.includes('HAGain')).every((c) => c.endsWith(' 0')));
+  assert.ok(
+    buildPlan(show)
+      .commands.filter((c) => c.includes('HAGain'))
+      .every((c) => c.endsWith(' 0')),
+  );
   // the gain on each row stays as the line-check target
   assert.match(patchSheetCsv(show, buildPlan(show)).split('\n')[1], /"40 dB"/);
 });
 
-test('gain and 48V defaults go out in each desk family\'s format', () => {
+test("gain and 48V defaults go out in each desk family's format", () => {
   const show = defaultShow();
   applySuggestion(show, packageSuggestion('band'));
   show.options.safeStart = false;
@@ -135,10 +188,16 @@ test('each singer gets their own monitor mix, and a monitor-desk show is made fr
   assert.deepEqual(pairs, ['Vox 1 → Wedge 1', 'Vox 2 → Wedge 2', 'Vox 3 → Wedge 3', 'Lect 1 → IEM 1']);
   const mon = monitorShow(show);
   assert.equal(mon.name, 'New show · Monitors');
-  assert.deepEqual(mon.zones.map((z) => z.name), ['Wedge 1', 'Wedge 2', 'Wedge 3', 'IEM 1']);
+  assert.deepEqual(
+    mon.zones.map((z) => z.name),
+    ['Wedge 1', 'Wedge 2', 'Wedge 3', 'IEM 1'],
+  );
   assert.equal(mon.sources.length, show.sources.length);
   const plan = buildPlan(mon);
-  assert.equal(plan.channels.find((c) => c.name === 'Kick In').patch.port, buildPlan(show).channels.find((c) => c.name === 'Kick In').patch.port); // same input patch
+  assert.equal(
+    plan.channels.find((c) => c.name === 'Kick In').patch.port,
+    buildPlan(show).channels.find((c) => c.name === 'Kick In').patch.port,
+  ); // same input patch
   assert.ok(!plan.outputs.some((o) => o.zone.type === 'main'));
 });
 
@@ -150,7 +209,10 @@ test('a later push only sends what changed', () => {
   show.sources[0].name = 'Podium';
   const changed = changedCommands(buildPlan(show).commands, last);
   assert.deepEqual(changed, ['set MIXER:Current/InCh/Label/Name 0 0 "Podium"']);
-  assert.equal(commandKey('set MIXER:Current/InCh/Label/Name 0 0 "X"'), 'set MIXER:Current/InCh/Label/Name 0 0');
+  assert.equal(
+    commandKey('set MIXER:Current/InCh/Label/Name 0 0 "X"'),
+    'set MIXER:Current/InCh/Label/Name 0 0',
+  );
 });
 
 test('read-back checks compare the value the desk reports', () => {
@@ -158,7 +220,12 @@ test('read-back checks compare the value the desk reports', () => {
   assert.equal(readbackCommand(cmd), 'get MIXER:Current/InCh/Label/Name 0 0');
   assert.ok(matchesReadback(cmd, 'OK get MIXER:Current/InCh/Label/Name 0 0 "Lect 1"'));
   assert.ok(!matchesReadback(cmd, 'OK get MIXER:Current/InCh/Label/Name 0 0 "ch 1"'));
-  assert.ok(matchesReadback('set MIXER:Current/InCh/Fader/Level 0 0 -32768', 'OK get MIXER:Current/InCh/Fader/Level 0 0 -32768'));
+  assert.ok(
+    matchesReadback(
+      'set MIXER:Current/InCh/Fader/Level 0 0 -32768',
+      'OK get MIXER:Current/InCh/Fader/Level 0 0 -32768',
+    ),
+  );
   assert.ok(!matchesReadback(cmd, 'ERROR get UnknownAddress'));
 });
 
@@ -167,7 +234,8 @@ test('the paperwork pack has every section and escapes names', () => {
   show.sources[0].name = 'Lect <1>';
   const plan = buildPlan(show);
   const p = paperwork(show, plan, { version: '0.9.0', licence: 'KK-SB-0001' });
-  for (const h of ['Input list', 'Outputs', 'Line check', 'Desk tape', 'Stage-box labels']) assert.ok(p.body.includes(h), h);
+  for (const h of ['Input list', 'Outputs', 'Line check', 'Desk tape', 'Stage-box labels'])
+    assert.ok(p.body.includes(h), h);
   assert.ok(p.body.includes('Lect &lt;1&gt;') && !p.body.includes('Lect <1>'));
   assert.ok(p.body.includes('Licence KK-SB-0001'));
 });
@@ -182,7 +250,10 @@ test('the patch sheet carries gain, 48V, group and notes', () => {
 
 test('backing vocals are vocals', () => {
   const s = parseInputList('1 BVox\n2 BV 2\n3 Backing vocal\n4 Lead Vox');
-  assert.deepEqual(s.sources.map((x) => x.type), ['vocal', 'vocal', 'vocal', 'vocal']);
+  assert.deepEqual(
+    s.sources.map((x) => x.type),
+    ['vocal', 'vocal', 'vocal', 'vocal'],
+  );
 });
 
 test('a template keeps a hand-made channel order when it starts a show', () => {
@@ -192,5 +263,8 @@ test('a template keeps a hand-made channel order when it starts a show', () => {
   const tpl = makeTemplate(show, 'Odd order');
   const fresh = emptyShow();
   applyTemplate(fresh, tpl);
-  assert.deepEqual(buildPlan(fresh).channels.map((c) => c.name), ['Sax', 'Lectern', 'Kick In']);
+  assert.deepEqual(
+    buildPlan(fresh).channels.map((c) => c.name),
+    ['Sax', 'Lectern', 'Kick In'],
+  );
 });

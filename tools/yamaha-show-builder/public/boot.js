@@ -1,27 +1,67 @@
-// Starts the app: the lock screen first, asking for a licence key, then either the real app
-// (unlocked) or demo mode. With no app server behind the page (the web demo), it goes straight to demo mode.
+// Lock screen, then the real app or demo. No app server (web demo) goes straight to demo.
 const $ = (id) => document.getElementById(id);
 const KEY = 'kk-licence';
 const MODE = 'kk-mode';
 const store = {
-  get: (k) => { try { return sessionStorage.getItem(k) || localStorage.getItem(k); } catch { return null; } },
-  set: (k, v, remember) => { try { (remember ? localStorage : sessionStorage).setItem(k, v); } catch { /* storage off */ } },
-  clear: (k) => { try { sessionStorage.removeItem(k); localStorage.removeItem(k); } catch { /* storage off */ } },
+  get: (k) => {
+    try {
+      return sessionStorage.getItem(k) || localStorage.getItem(k);
+    } catch {
+      return null;
+    }
+  },
+  set: (k, v, remember) => {
+    try {
+      (remember ? localStorage : sessionStorage).setItem(k, v);
+    } catch {
+      /* storage off */
+    }
+  },
+  clear: (k) => {
+    try {
+      sessionStorage.removeItem(k);
+      localStorage.removeItem(k);
+    } catch {
+      /* storage off */
+    }
+  },
 };
 const reload = () => location.reload();
 
 async function post(path, body, token) {
-  const res = await fetch(path, { method: 'POST', headers: { 'x-kk-key': token || '' }, body: JSON.stringify(body || {}) });
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'x-kk-key': token || '' },
+    body: JSON.stringify(body || {}),
+  });
   return { ok: res.ok, data: await res.json().catch(() => ({})) };
 }
 
 async function runApp(token, licence) {
-  window.kkHost = { ...(window.kkHost || {}), token, licence, lock: token ? () => { store.clear(KEY); reload(); } : null };
+  window.kkHost = {
+    ...(window.kkHost || {}),
+    token,
+    licence,
+    lock: token
+      ? () => {
+          store.clear(KEY);
+          reload();
+        }
+      : null,
+  };
   document.body.classList.remove('booting');
   await import('./app.js');
 }
 async function runDemo(canExit) {
-  window.kkHost = { ...(window.kkHost || {}), exitDemo: canExit ? () => { store.clear(MODE); reload(); } : null };
+  window.kkHost = {
+    ...(window.kkHost || {}),
+    exitDemo: canExit
+      ? () => {
+          store.clear(MODE);
+          reload();
+        }
+      : null,
+  };
   document.body.classList.remove('booting');
   await import('./demo-bridge.js');
 }
@@ -32,7 +72,12 @@ function showLock(info) {
   document.body.classList.remove('booting');
   document.body.classList.add('locked');
   $('lockKey').focus();
-  $('lockKey').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); $('lockForm').requestSubmit(); } };
+  $('lockKey').onkeydown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      $('lockForm').requestSubmit();
+    }
+  };
   $('lockForm').onsubmit = async (e) => {
     e.preventDefault();
     $('lockGo').disabled = true;
@@ -45,17 +90,25 @@ function showLock(info) {
       document.body.classList.remove('locked');
       await runApp(data.token, data.licence);
     } catch (err) {
-      $('lockError').textContent = err.message === 'Failed to fetch' ? 'The app has stopped. Open it again.' : err.message;
+      $('lockError').textContent =
+        err.message === 'Failed to fetch' ? 'The app has stopped. Open it again.' : err.message;
       $('lockKey').select();
     } finally {
       $('lockGo').disabled = false;
     }
   };
-  $('lockDemo').onclick = () => { store.set(MODE, 'demo', false); reload(); };
+  $('lockDemo').onclick = () => {
+    store.set(MODE, 'demo', false);
+    reload();
+  };
 }
 
 let info = null;
-try { info = await (await fetch('/api/lock')).json(); } catch { /* no app server */ }
+try {
+  info = await (await fetch('/api/lock')).json();
+} catch {
+  /* no app server */
+}
 if (!info) await runDemo(false);
 else if (store.get(MODE) === 'demo') await runDemo(true);
 else if (!info.locked) await runApp(null, null);
@@ -63,5 +116,8 @@ else {
   const saved = store.get(KEY);
   const check = saved ? await post('/api/check', {}, saved).catch(() => ({})) : {};
   if (check.ok) await runApp(saved, check.data.licence);
-  else { store.clear(KEY); showLock(info); }
+  else {
+    store.clear(KEY);
+    showLock(info);
+  }
 }
