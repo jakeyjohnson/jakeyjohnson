@@ -3,7 +3,7 @@
 // and which receiver channel gets which mic. Each unit remembers the box it was racked as, and every
 // read or send first checks that the same box still answers at that address.
 import {
-  AMP_CHANNEL_NAMES, AMP_MODELS, IEM_MODELS, RACK_ITEMS, RACK_SIZES, RECEIVER_MODELS, ampModelFrom, identityOf, makeAmp, makeRack, makeRackItem, makeRfDevice,
+  AMP_CHANNEL_NAMES, AMP_MODELS, AMP_MODES, rowFeedName, IEM_MODELS, RACK_ITEMS, RACK_SIZES, RECEIVER_MODELS, ampModelFrom, identityOf, makeAmp, makeRack, makeRackItem, makeRfDevice,
   moveUnit, normalizeRacks, nudgeUnit, rackEntries, racksOf, sameDevice, shureModelFrom, unitHeight,
 } from './rig.js';
 import { el, info, segmented, tag, toast } from './ui.js';
@@ -149,6 +149,7 @@ export function makeRackUi({ show, update, transport, session }) {
         el('div', { className: 'unit-top' },
           el('input', { value: u.name, className: 'unit-name', 'aria-label': 'Name', onchange: (e) => update(() => { u.name = e.target.value.trim() || u.name; }) }),
           selectOf(u.model, Object.entries(models).map(([k, m]) => [k, m.label]), (v) => update(() => { u.model = v; }), { 'aria-label': `${u.name} model` }),
+          kind === 'amp' ? selectOf(u.mode || 'dual', Object.entries(AMP_MODES), (v) => update(() => { u.mode = v; }), { 'aria-label': `${u.name} mode`, title: 'Dual channel: every channel its own output. Sub/Top: A+B and C+D each take one output, the top on A (C) and its sub on B (D), from one input (d&b Mix TOP/SUB).' }) : null,
           el('input', { value: u.ip, placeholder: 'IP', inputMode: 'decimal', className: 'ip', 'aria-label': `${u.name} IP`, onchange: (e) => update(() => { u.ip = e.target.value.trim(); delete u.ident; delete session.ident[u.id]; }) }),
           status),
         el('div', { className: 'unit-feeds' }, ...feeds(u).map(([ch, what]) => el('span', { className: what ? 'feed' : 'feed spare' }, el('b', { className: 'mono', textContent: ch }), what || 'spare')))),
@@ -224,7 +225,7 @@ export function makeRackUi({ show, update, transport, session }) {
       return el('li', { className: `rack-row fam-${family} type-${u.type || ''}`, style: `--u:${h}`, ...dragFrom({ unit: u.id }), ...dropOn(rack.id, u.id) },
         el('div', { className: 'face' },
           el('span', { className: `led ${led}`, title: twin ? `Same IP as another unit` : st ? (st.ok ? `Checked: ${st.who}` : st.who) : 'Not checked yet' }),
-          el('span', { className: 'face-model mono', textContent: family === 'item' ? '' : u.model }),
+          el('span', { className: 'face-model mono', textContent: family === 'item' ? '' : `${u.model}${family === 'amp' && u.mode === 'subtop' ? ' · SUB/TOP' : ''}` }),
           family === 'item'
             ? el('input', { value: u.name, className: 'face-name', 'aria-label': 'Name', onchange: (ev) => update(() => { u.name = ev.target.value.trim() || u.name; }) })
             : el('b', { className: 'face-name', textContent: u.name }),
@@ -279,6 +280,6 @@ export function makeRackUi({ show, update, transport, session }) {
     el('button', { className: 'ghost', type: 'button', textContent: 'Add rack', onclick: () => update(() => { const s = show(); s.racks ||= []; s.racks.push(makeRack(kind, racksOf(s, kind).length + 1)); }) }),
     el('button', { className: 'ghost', type: 'button', textContent: 'Check rack', title: 'Ask every unit who it is, to make sure each address is the unit racked there', onclick: (e) => checkRack(kind, e.currentTarget) }),
   ];
-  const ampFeeds = (rows) => (u) => rows.filter((r) => r.amp === u).map((r) => [AMP_CHANNEL_NAMES[r.index] || String(r.index + 1), r.feed?.name || '']);
+  const ampFeeds = (rows) => (u) => rows.filter((r) => r.amp === u).map((r) => [AMP_CHANNEL_NAMES[r.index] || String(r.index + 1), rowFeedName(r)]);
   return { racksView, rackRoom, rackTools, confirmUnit, foundOptions, addFound, flash, ampFeeds, setFound: (devices) => { session.found = devices || []; } };
 }

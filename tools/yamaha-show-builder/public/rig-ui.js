@@ -2,7 +2,7 @@
 // page hands in how to reach the devices (the app through its bridge, the demo pretends).
 import { RIO_MODELS, buildPlan } from './plan.js';
 import {
-  AMP_INPUTS, AMP_MODELS, IEM_MODELS, RECEIVER_MODELS, SHURE_GAIN, SPEAKER_SETUPS, SPECTERA_LOWEST, addAmpsFor, ampPlan, ampReadSummary, applyShureReads, defaultRf,
+  AMP_CHANNEL_NAMES, AMP_INPUTS, AMP_MODELS, AMP_MODES, rowFeedName, IEM_MODELS, RECEIVER_MODELS, SHURE_GAIN, SPEAKER_SETUPS, SPECTERA_LOWEST, addAmpsFor, ampPlan, ampReadSummary, applyShureReads, defaultRf,
   isRadio, makeAmp, makeRfDevice, parseShureReads, rfPlan, shureCommands, shureReadLines, specteraWrites,
 } from './rig.js';
 import { makeRackUi } from './rack-ui.js';
@@ -60,25 +60,28 @@ export function mountRig({ getShow, update, transport, demo = false }) {
     const plan = buildPlan(s);
     const amp = ampPlan(s, plan);
     const used = amp.rows.filter((r) => r.feed).length;
-    const setting = (feed, key, value) => update(() => { s.ampSettings[feed.key] = { ...(s.ampSettings[feed.key] || {}), [key]: value }; });
+    const setting = (row, key, value) => update(() => { s.ampSettings[row.settingsKey] = { ...(s.ampSettings[row.settingsKey] || {}), [key]: value }; });
+    let addMode = s.amps.at(-1)?.mode || 'dual';
     let addModel = s.amps.at(-1)?.model || 'D80';
     const modelOptions = Object.entries(AMP_MODELS).map(([k, m]) => [k, m.label]);
 
-    const chRows = amp.rows.map((r) => el('tr', { className: r.feed ? '' : 'spare' },
-      el('td', {}, el('b', { textContent: r.label })),
-      el('td', { textContent: r.feed ? r.feed.name : 'spare' }),
-      el('td', { className: 'mono dim', textContent: r.feed ? r.feed.deskOutLabel : '' }),
-      el('td', {}, r.feed && select(r.input, AMP_INPUTS.map((x) => [x, x]), (v) => setting(r.feed, 'input', v), { 'aria-label': 'Amp input' })),
-      el('td', {}, r.feed && el('input', { value: r.setup, className: 'setup', 'aria-label': 'Speaker setup', list: 'kkSetups', onchange: (e) => setting(r.feed, 'setup', e.target.value.trim()) })),
-      el('td', {}, r.feed && el('input', { type: 'number', step: '0.5', min: '-57.5', max: '6', value: r.target, className: 'port', 'aria-label': 'Target gain in dB', onchange: (e) => setting(r.feed, 'target', Number(e.target.value) || 0) }), r.feed ? el('span', { className: 'dim', textContent: ' dB' }) : null)));
+    const chRows = amp.rows.map((r) => el('tr', { className: `${r.feed ? '' : 'spare'} ${r.sub ? 'sub-row' : ''}` },
+      el('td', {}, el('b', { textContent: r.label }), r.sub ? el('small', { className: 'dim', textContent: ' sub' }) : null),
+      el('td', { textContent: r.feed ? rowFeedName(r) : 'spare' }),
+      el('td', { className: 'mono dim', textContent: r.feed && !r.sub ? r.feed.deskOutLabel : '' }),
+      el('td', {}, r.feed && (r.sub ? el('span', { className: 'dim', textContent: `${r.input}, with Ch ${AMP_CHANNEL_NAMES[r.index - 1]}` })
+        : select(r.input, AMP_INPUTS.map((x) => [x, x]), (v) => setting(r, 'input', v), { 'aria-label': 'Amp input' }))),
+      el('td', {}, r.feed && el('input', { value: r.setup, className: 'setup', 'aria-label': 'Speaker setup', list: 'kkSetups', onchange: (e) => setting(r, 'setup', e.target.value.trim()) })),
+      el('td', {}, r.feed && el('input', { type: 'number', step: '0.5', min: '-57.5', max: '6', value: r.target, className: 'port', 'aria-label': 'Target gain in dB', onchange: (e) => setting(r, 'target', Number(e.target.value) || 0) }), r.feed ? el('span', { className: 'dim', textContent: ' dB' }) : null)));
 
     main.replaceChildren(...[
       panel({
         step: '01', title: 'Amp racks', meta: s.amps.length ? `${plural(s.amps.length, 'amp')} · ${used}/${amp.rows.length} ch` : '',
         tools: [
           select(addModel, modelOptions, (v) => { addModel = v; }, { 'aria-label': 'Amp model to add' }),
-          el('button', { className: 'ghost', type: 'button', textContent: 'Add amp', onclick: () => update(() => s.amps.push(makeAmp(addModel, s.amps.length + 1))) }),
-          el('button', { className: 'primary', type: 'button', textContent: 'Fill from outputs', title: 'Add amps until every speaker output has a channel', onclick: () => update(() => addAmpsFor(s, plan, addModel)) }),
+          select(addMode, Object.entries(AMP_MODES), (v) => { addMode = v; }, { 'aria-label': 'Mode for amps added' }),
+          el('button', { className: 'ghost', type: 'button', textContent: 'Add amp', onclick: () => update(() => s.amps.push({ ...makeAmp(addModel, s.amps.length + 1), mode: addMode })) }),
+          el('button', { className: 'primary', type: 'button', textContent: 'Fill from outputs', title: 'Add amps until every speaker output has a channel', onclick: () => update(() => addAmpsFor(s, plan, addModel, addMode)) }),
           ...racks.rackTools('amp'),
         ],
       }, s.amps.length || session.found.some((d) => d.kind === 'amp') ? racks.racksView('amp', {

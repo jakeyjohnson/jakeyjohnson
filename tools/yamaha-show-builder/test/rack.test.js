@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPlan, defaultShow } from '../public/plan.js';
-import { addAmpsFor, ampModelFrom, ampPlan, defaultRf, makeAmp, makeRack, makeRackItem, makeRfDevice, moveUnit, normalizeRacks, nudgeUnit, racksOf, rfPlan, sameDevice, shureModelFrom, unitHeight } from '../public/rig.js';
+import { buildPlan, defaultShow, makeZone } from '../public/plan.js';
+import { addAmpsFor, ampModelFrom, ampPlan, defaultRf, makeAmp, makeRack, makeRackItem, makeRfDevice, moveUnit, normalizeRacks, nudgeUnit, racksOf, rfPlan, rowFeedName, sameDevice, shureModelFrom, unitHeight } from '../public/rig.js';
 
 test('units land in a rack, and the rack order is the fill order', () => {
   const show = defaultShow();
@@ -86,4 +86,29 @@ test('one rack can hold amps, RF units and items, and each tab still fills in ra
   show.rackItems.splice(0, 1);
   normalizeRacks(show);
   assert.equal(rack.units.length, 4);
+});
+
+test('outputs can be L&R, subs are an output, and sub/top amps put a top and its sub on one output', async () => {
+  const show = defaultShow();
+  show.options.model = 'CL5';
+  show.zones = show.zones.filter((z) => z.type === 'main' || z.type === 'frontfill');
+  const fill = show.zones.find((z) => z.type === 'frontfill');
+  fill.lr = true;
+  const subs = makeZone('sub', 'Subs');
+  show.zones.push(subs);
+  for (const s of show.sources.filter((x) => x.type === 'playback')) s.zones.push(subs.id);
+  const p = buildPlan(show);
+  assert.deepEqual(p.outputs.map((o) => [o.name, o.buses.join('/')]), [['Main LR', 'ST L/ST R'], ['FrntFil', 'MIX1/MIX2'], ['Subs', 'MIX3']]);
+  // Amp 1 in sub/top: Main L top + sub, Main R top + sub. Amp 2 dual: fill L, fill R, subs, spare
+  show.amps = [{ ...makeAmp('D80', 1), mode: 'subtop' }, makeAmp('D80', 2)];
+  const rows = ampPlan(show, p).rows;
+  assert.deepEqual(rows.map((r) => `${r.label}: ${rowFeedName(r) || 'spare'} ${r.setup}`.trim()), [
+    'Amp 1 · Ch A: Main LR L Y10P', 'Amp 1 · Ch B: Main LR L sub Y-SUB', 'Amp 1 · Ch C: Main LR R Y10P', 'Amp 1 · Ch D: Main LR R sub Y-SUB',
+    'Amp 2 · Ch A: FrntFil L 44S', 'Amp 2 · Ch B: FrntFil R 44S', 'Amp 2 · Ch C: Subs Y-SUB', 'Amp 2 · Ch D: spare',
+  ]);
+  assert.equal(rows[1].input, rows[0].input); // the sub runs off the top's input
+  // Fill from outputs counts sub/top amps as two outputs each
+  show.amps = [];
+  addAmpsFor(show, p, 'D80', 'subtop');
+  assert.equal(show.amps.length, 3); // 5 outputs, 2 per sub/top amp
 });
