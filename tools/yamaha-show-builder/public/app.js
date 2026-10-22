@@ -2,8 +2,10 @@ import { LICENCE, PRODUCT, VERSION } from './about.js';
 import { CHECK_LEVELS, FADER_MARKS, OSC_KEYS, checkKeys, checkState, checkSteps, faderLevel, faderPos, levelText, noiseChannel, readLines, restoreLines, stateLines } from './check.js';
 import { ampPlan, normalizeRacks, rigPaperwork } from './rig.js';
 import { prepSheet } from './prep.js';
+import { expandIp, loadPrefs, savePrefs } from './prefs.js';
+import { openPrefs } from './prefs-ui.js';
 import { mountRig } from './rig-ui.js';
-import { ask, el, info, segmented, tag, toast, toggle, vfader, wireMenus } from './ui.js';
+import { ask, el, info, ipField, segmented, tag, toast, toggle, vfader, wireMenus } from './ui.js';
 import {
   applyTemplate, changedCommands, cueCommand, deskCaps, gainOf, makeTemplate, monitorShow, pairMonitors, paperwork, parseInputList, phantomOf,
   rememberPush, sceneStoreCommand,
@@ -16,6 +18,8 @@ const host = window.kkHost || {};
 const SWATCH = { Blue: '#4d7cff', Cyan: '#2fd6d6', Green: '#3fcf6e', Yellow: '#ffd23f', Orange: '#ff9234', Red: '#ff4d4d', Magenta: '#ff4fd8', Purple: '#9b6bff' };
 const $ = (id) => document.getElementById(id);
 const STORE = host.store || 'yamaha-show-builder'; // demo mode keeps its own shows
+const PREFS_KEY = `${STORE}-prefs`;
+const prefs = loadPrefs(PREFS_KEY);
 // Every request to the app's server carries the unlock key
 const api = (path, opts = {}) => fetch(path, { ...opts, headers: { ...(opts.headers || {}), 'x-kk-key': host.token || '' } });
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -241,7 +245,7 @@ async function connectDesk() {
     await api('/api/disconnect', { method: 'POST' });
     return;
   }
-  const hostIp = $('host').value.trim();
+  const hostIp = expandIp($('host').value, prefs.deskPrefix);
   if (!hostIp) {
     showLink({ state: 'idle', error: 'Type the desk IP' });
     return $('host').focus();
@@ -249,7 +253,7 @@ async function connectDesk() {
   try { localStorage.setItem(`${STORE}-host`, hostIp); } catch { /* ignore */ }
   showLink({ state: 'connecting', host: hostIp });
   try {
-    const res = await api('/api/connect', { method: 'POST', body: JSON.stringify({ host: hostIp, port: Number($('port').value) || 49280 }) });
+    const res = await api('/api/connect', { method: 'POST', body: JSON.stringify({ host: hostIp, port: Number($('port').value) || prefs.deskPort }) });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     showLink(data);
@@ -261,7 +265,11 @@ const events = new EventSource('/api/events');
 events.onmessage = (e) => showLink(JSON.parse(e.data));
 events.onerror = () => { if (link.state === 'connected') showLink({ state: 'lost', host: link.host, error: 'Lost touch with the app' }); };
 $('connectBtn').onclick = connectDesk;
-$('host').onkeydown = (e) => { if (e.key === 'Enter') connectDesk(); };
+// The desk IP box: with a desk IP preset it takes just the last number
+function renderHost(value) {
+  $('hostWrap').replaceChildren(ipField({ id: 'host', value, prefix: prefs.deskPrefix, label: 'Desk IP address', disabled: link.state === 'connected' || link.state === 'connecting', onchange: () => {} }));
+  $('host').onkeydown = (e) => { if (e.key === 'Enter') connectDesk(); };
+}
 if (host.lock) $('lockBtn').onclick = host.lock; else $('lockBtn').remove();
 $('linkPill').onclick = () => { showTab('desk'); $('host').disabled ? $('connectBtn').focus() : $('host').focus(); };
 
@@ -305,8 +313,8 @@ function showDevices({ devices, subnets }) {
           className: 'primary small', type: 'button', textContent: 'Connect',
           onclick: async () => {
             if (link.state === 'connected') await api('/api/disconnect', { method: 'POST' });
-            $('host').value = d.ip;
-            $('port').value = d.port || 49280;
+            renderHost(d.ip);
+            $('port').value = d.port || prefs.deskPort;
             link.state = 'idle';
             showTab('desk');
             connectDesk();
@@ -349,6 +357,7 @@ for (const t of TABS) $(`tabBtn-${t}`).onclick = () => showTab(t);
 // How the Amplifiers and RF tabs reach the kit: through this app's server
 const rigUi = mountRig({
   getShow: () => show,
+  prefs: () => prefs,
   update,
   demo: Boolean(host.demo),
   transport: {
@@ -435,13 +444,13 @@ async function pushDesk() {
   if (!plan.commands.length) return setStatus('Add inputs or outputs first', 'bad');
   if (needDesk()) return;
   const last = loadLast();
-  const onlyChanges = Boolean(last) && show.options.onlyChanges !== false;
+  const onlyChanges = Boolean(last) && (show.options.onlyChanges ?? prefs.onlyChanges) !== false;
   const commands = onlyChanges ? changedCommands(plan.commands, last) : plan.commands;
   if (!commands.length) return setStatus('Nothing has changed since the last send', 'ok');
   const caps = deskCaps(model);
   const backup = show.options.backup || {};
   const scene = backup.scene || caps?.sceneMax;
-  const backupCmd = caps && backup.on !== false ? sceneStoreCommand(model, scene) : null;
+  const backupCmd = caps && (backup.on ?? prefs.backup) !== false ? sceneStoreCommand(model, scene) : null;
   const what = onlyChanges ? plural(commands.length, 'changed line') : `${commands.length} lines`;
   const ok = await ask($('pushAsk'), {
     text: backupCmd
@@ -610,8 +619,13 @@ async function askToReplace(next, text, yes) {
   }
   startShow(next);
 }
-$('newShow').onclick = () => askToReplace(emptyShow(show.options.model), 'Start an empty show? Everything on this page goes.', 'Start empty');
-$('exampleShow').onclick = () => askToReplace({ ...defaultShow(), options: { ...defaultShow().options, model: show.options.model } }, 'Load the conference example? It replaces this show.', 'Load example');
+// A new show takes the desk and options from Preferences (or keeps the current desk)
+function withPrefs(next) {
+  Object.assign(next.options, { model: prefs.deskModel || show.options.model, autoOrder: prefs.autoOrder, groups: prefs.groups, maxNameLength: prefs.maxNameLength });
+  return next;
+}
+$('newShow').onclick = () => askToReplace(withPrefs(emptyShow()), 'Start an empty show? Everything on this page goes.', 'Start empty');
+$('exampleShow').onclick = () => askToReplace(withPrefs(defaultShow()), 'Load the conference example? It replaces this show.', 'Load example');
 $('readShow').onclick = () => readDesk();
 $('readAll').onclick = () => readDesk({ everything: true });
 $('saveShow').onclick = () => download(`${fileBase()}.show.json`, JSON.stringify(show, null, 2), 'application/json');
@@ -737,7 +751,8 @@ $('typeAdd').onclick = () => {
 };
 $('typeDiscard').onclick = () => { $('typePreview').hidden = true; };
 $('pushDesk').onclick = pushDesk;
-try { $('host').value = localStorage.getItem(`${STORE}-host`) || ''; } catch { /* ignore */ }
+renderHost((() => { try { return localStorage.getItem(`${STORE}-host`) || ''; } catch { return ''; } })());
+$('port').value = prefs.deskPort;
 
 // ---- Your templates: saved on this computer, shown as chips next to the packages ----
 const TPL_KEY = `${STORE}-templates`;
@@ -822,9 +837,9 @@ function renderSendOptions(plan, model) {
     setting(toggle({ label: 'Reset faders', checked: show.options.setLevels, onchange: (v) => update(() => { show.options.setLevels = v; }), tip: 'Inputs to -∞, outputs to -∞ with safe start (0 dB without). Off leaves the desk\'s levels alone.' })),
     setting(toggle({ label: 'Gain and 48V', checked: show.options.setGain !== false, disabled: !caps?.gain, onchange: (v) => update(() => { show.options.setGain = v; }) }),
       el('span', { className: 'value', textContent: !caps ? 'pick a desk' : !caps.gain ? 'not on this desk' : caps.phantom ? '' : 'gain only' })),
-    setting(toggle({ label: 'Back up scene first', checked: Boolean(caps) && backup.on !== false, disabled: !caps, onchange: (v) => update(() => { show.options.backup = { ...show.options.backup, on: v }; }) }),
+    setting(toggle({ label: 'Back up scene first', checked: Boolean(caps) && (backup.on ?? prefs.backup) !== false, disabled: !caps, onchange: (v) => update(() => { show.options.backup = { ...show.options.backup, on: v }; }) }),
       el('input', { type: 'number', min: 1, value: backup.scene || caps?.sceneMax || 100, disabled: !caps, 'aria-label': 'Backup scene number', onchange: (e) => update(() => { show.options.backup = { ...show.options.backup, scene: Math.max(1, Math.round(Number(e.target.value) || 1)) }; }) })),
-    setting(toggle({ label: 'Only changes', checked: Boolean(last) && show.options.onlyChanges !== false, disabled: !last, onchange: (v) => update(() => { show.options.onlyChanges = v; }), tip: 'After the first send to a desk, later sends only include what changed.' }),
+    setting(toggle({ label: 'Only changes', checked: Boolean(last) && (show.options.onlyChanges ?? prefs.onlyChanges) !== false, disabled: !last, onchange: (v) => update(() => { show.options.onlyChanges = v; }), tip: 'After the first send to a desk, later sends only include what changed.' }),
       last ? el('span', { className: 'value', textContent: `${changed} changed` }) : null,
       last ? el('button', { className: 'link', type: 'button', textContent: 'Reset', title: 'Send everything next time', onclick: () => { saveLast(null); render(); toast('Next send includes everything'); } }) : null),
     numberSetting('First channel', 'firstChannel', 1, 288),
@@ -864,7 +879,7 @@ function renderLineCheck(plan, model) {
 }
 // ---- System check: noise through each output in turn, everything put back on Stop ----
 let check = null; // { plan, src, steps, i, level, snapshot, last } while running
-const checkPick = { kind: 'channel', ch: null };
+const checkPick = { kind: prefs.checkSource, ch: null };
 let checkBusy = false;
 let deskQueue = Promise.resolve(); // check changes go to the desk one batch at a time, in order
 const CHECK_KEY = `${STORE}-check`; // what to put back, kept until Stop in case the page closes mid-check
@@ -900,7 +915,7 @@ function startCheck(plan) {
     const missing = checkKeys(plan, src).filter((k) => snapshot.get(k) == null);
     if (missing.length) throw new Error(`The desk didn't answer for ${plural(missing.length, 'setting')}, so nothing was changed`);
     try { localStorage.setItem(CHECK_KEY, JSON.stringify(restoreLines(plan, src, snapshot))); } catch { /* storage off */ }
-    check = { plan, src, steps: checkSteps(plan, ampPlan(show, plan).rows), i: 0, level: CHECK_LEVELS.start, snapshot, last: snapshot };
+    check = { plan, src, steps: checkSteps(plan, ampPlan(show, plan).rows), i: 0, level: prefs.checkStart ?? CHECK_LEVELS.start, snapshot, last: snapshot };
     await checkTo(0);
   });
 }
@@ -1022,9 +1037,16 @@ function openDoc(p) {
 const licenceText = () => (host.demo ? '' : host.licence || LICENCE);
 $('paperworkBtn').onclick = () => {
   const plan = buildPlan(show);
-  openDoc(paperwork(show, plan, { version: VERSION, licence: licenceText(), extra: rigPaperwork(show, plan) }));
+  openDoc(paperwork(show, plan, { version: VERSION, licence: licenceText(), company: prefs.company, preparedBy: prefs.preparedBy, extra: rigPaperwork(show, plan) }));
 };
-$('prepBtn').onclick = () => openDoc(prepSheet(show, buildPlan(show), { version: VERSION, licence: licenceText() }));
+$('prepBtn').onclick = () => openDoc(prepSheet(show, buildPlan(show), { version: VERSION, licence: licenceText(), company: prefs.company, preparedBy: prefs.preparedBy }));
+
+// ---- Preferences ----
+function showPrefs() {
+  openPrefs({ prefs, save: () => { savePrefs(PREFS_KEY, prefs); renderHost(expandIp($('host').value, prefs.deskPrefix) || $('host').value); render(); } });
+}
+$('prefsBtn').onclick = showPrefs;
+document.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === ',') { e.preventDefault(); showPrefs(); } });
 
 wireMenus();
 renderTemplates();

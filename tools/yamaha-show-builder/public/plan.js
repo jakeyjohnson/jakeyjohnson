@@ -850,7 +850,7 @@ export function matchesReadback(cmd, reply) {
 
 // ---- Paperwork pack: input list, outputs, line check, stage-box and desk labels ----
 const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-export function paperwork(show, plan, { version = '', licence = '', extra = '' } = {}) {
+export function paperwork(show, plan, { version = '', licence = '', company = '', preparedBy = '', extra = '' } = {}) {
   const model = MODELS[show.options?.model] || MODELS.custom;
   const zoneName = (id) => show.zones.find((z) => z.id === id)?.name ?? '';
   const groupOf = (c) => plan.groups?.find((g) => g.channels.includes(c))?.name || '';
@@ -869,7 +869,7 @@ export function paperwork(show, plan, { version = '', licence = '', extra = '' }
 .kk-paper small{font-weight:400;color:#5d6670}.kk-paper .page{page-break-before:always}
 .kk-paper footer{margin-top:24px;color:#5d6670;font-size:10px}`;
   const body = `<div class="kk-paper">
-<h1>${esc(show.name)}</h1><p class="meta">${esc(model.inputs ? model.label : 'Desk not set')} · ${plan.channels.length} channels · ${plan.outputs.length} outputs</p>
+<h1>${esc(show.name)}</h1><p class="meta">${company ? `${esc(company)} · ` : ''}${esc(model.inputs ? model.label : 'Desk not set')} · ${plan.channels.length} channels · ${plan.outputs.length} outputs${preparedBy ? ` · prepared by ${esc(preparedBy)}` : ''}</p>
 <h2>Input list</h2><table><thead><tr><th>Ch</th><th>Name</th><th>Plugs into</th><th>Type</th><th>Mic / note</th><th>48V</th><th>HPF</th><th>Group</th><th>Goes to</th></tr></thead><tbody>${inputs}</tbody></table>
 <h2>Outputs</h2><table><thead><tr><th>Bus</th><th>Output</th><th>Comes out of</th><th>Sends</th></tr></thead><tbody>${outputs}</tbody></table>
 <h2 class="page">Line check</h2><table><thead><tr><th>✓</th><th>Ch</th><th>Name</th><th>Plugs into</th><th>Mic / note</th><th>Notes</th></tr></thead><tbody>${check}</tbody></table>

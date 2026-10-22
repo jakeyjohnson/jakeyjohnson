@@ -6,13 +6,13 @@ import {
   AMP_CHANNEL_NAMES, AMP_MODELS, AMP_MODES, rowFeedName, IEM_MODELS, RACK_ITEMS, RACK_SIZES, RECEIVER_MODELS, ampModelFrom, identityOf, makeAmp, makeRack, makeRackItem, makeRfDevice,
   moveUnit, normalizeRacks, nudgeUnit, rackEntries, racksOf, sameDevice, shureModelFrom, unitHeight,
 } from './rig.js';
-import { el, info, segmented, tag, toast } from './ui.js';
+import { el, info, ipField, segmented, tag, toast } from './ui.js';
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const selectOf = (value, options, onchange, extra = {}) => el('select', { onchange: (e) => onchange(e.target.value), ...extra },
   ...options.map(([v, label]) => el('option', { value: v, textContent: label, selected: v === value })));
 
-export function makeRackUi({ show, update, transport, session }) {
+export function makeRackUi({ show, update, transport, session, prefs = () => ({}) }) {
   session.ident ||= {}; // unit id -> { ok, who } from the last check this session
   session.found ||= []; // the last Find devices scan
   let dragging = null; // what's being dragged: { unit } or { found }
@@ -150,7 +150,7 @@ export function makeRackUi({ show, update, transport, session }) {
           el('input', { value: u.name, className: 'unit-name', 'aria-label': 'Name', onchange: (e) => update(() => { u.name = e.target.value.trim() || u.name; }) }),
           selectOf(u.model, Object.entries(models).map(([k, m]) => [k, m.label]), (v) => update(() => { u.model = v; }), { 'aria-label': `${u.name} model` }),
           kind === 'amp' ? selectOf(u.mode || 'dual', Object.entries(AMP_MODES), (v) => update(() => { u.mode = v; }), { 'aria-label': `${u.name} mode`, title: 'Dual channel: every channel its own output. Sub/Top: A+B and C+D each take one output, the top on A (C) and its sub on B (D), from one input (d&b Mix TOP/SUB).' }) : null,
-          el('input', { value: u.ip, placeholder: 'IP', inputMode: 'decimal', className: 'ip', 'aria-label': `${u.name} IP`, onchange: (e) => update(() => { u.ip = e.target.value.trim(); delete u.ident; delete session.ident[u.id]; }) }),
+          ipField({ value: u.ip, prefix: kind === 'amp' ? prefs().ampPrefix : prefs().rfPrefix, label: `${u.name} IP`, onchange: (ip) => update(() => { u.ip = ip; delete u.ident; delete session.ident[u.id]; }) }),
           status),
         el('div', { className: 'unit-feeds' }, ...feeds(u).map(([ch, what]) => el('span', { className: what ? 'feed' : 'feed spare' }, el('b', { className: 'mono', textContent: ch }), what || 'spare')))),
       el('div', { className: 'unit-side' },
