@@ -55,7 +55,11 @@ function isLocalHost(host) {
 const link = new DeskLink();
 const listeners = new Set();
 let scanning = null;
+let lastDeskError = null;
 link.on('status', (status) => {
+  if (status.error && status.error !== lastDeskError)
+    logError(`desk ${status.host || ''}`.trim(), status.error);
+  lastDeskError = status.error;
   for (const res of listeners) res.write(`data: ${JSON.stringify(status)}\n\n`);
 });
 
@@ -78,6 +82,13 @@ const json = (res, data, status = 200) => {
   res.end(JSON.stringify(data));
 };
 
+// last 300 errors, for the log download in Preferences
+const errorLog = [];
+function logError(where, message) {
+  errorLog.push({ t: new Date().toISOString(), where, message: String(message) });
+  if (errorLog.length > 300) errorLog.shift();
+}
+
 async function handleApi(req, res, path) {
   if (req.method === 'GET' && path === '/api/events') {
     res.writeHead(200, {
@@ -91,6 +102,13 @@ async function handleApi(req, res, path) {
     return;
   }
   if (req.method === 'GET' && path === '/api/lock') return json(res, { locked: LOCKED, product: PRODUCT });
+  if (req.method === 'GET' && path === '/api/log')
+    return json(res, {
+      version: VERSION,
+      node: process.version,
+      platform: `${process.platform} ${process.arch}`,
+      entries: errorLog,
+    });
   if (req.method !== 'POST') return res.writeHead(404).end();
   const body = await readJson(req);
 
@@ -99,6 +117,7 @@ async function handleApi(req, res, path) {
     const result = keyCheck(body.key);
     if (result.ok)
       return json(res, { token: normaliseKey(body.key), licence: result.licence, expires: result.expires });
+    logError('unlock', result.error);
     await new Promise((r) => setTimeout(r, 500));
     return json(res, { error: result.error }, 401);
   }
@@ -151,6 +170,7 @@ async function handleApi(req, res, path) {
         res.write(JSON.stringify({ i, total: lines.length, line, reply, ok }) + '\n');
       },
     });
+    if (error) logError(`shure ${host}`, error);
     return res.end(JSON.stringify(error ? { error } : { done: true, total: lines.length, bad }) + '\n');
   }
 
@@ -289,6 +309,7 @@ async function handle(req, res) {
     res.writeHead(200, { 'content-type': TYPES[extname(file)] || 'application/octet-stream' });
     res.end(data);
   } catch (err) {
+    if (path.startsWith('/api/')) logError(path, err.message);
     if (res.headersSent) return res.end(JSON.stringify({ error: err.message }) + '\n');
     const status = err.code === 'ENOENT' ? 404 : 400;
     res.writeHead(status, { 'content-type': 'application/json' });

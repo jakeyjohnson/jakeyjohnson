@@ -1,5 +1,6 @@
 // Shared UI building blocks.
 
+import { logError } from './log.js';
 import { expandIp, ipTail } from './prefs.js';
 
 // props as properties, except attribute-only ones (aria-*, data-*, list, role)
@@ -99,6 +100,7 @@ export function wireMenus(root = document) {
 }
 
 export function toast(text, kind = '') {
+  if (kind === 'bad') logError('shown', text);
   let box = document.getElementById('toasts');
   if (!box) {
     box = el('div', { id: 'toasts', className: 'toasts', role: 'status', 'aria-live': 'polite' });

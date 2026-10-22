@@ -17,6 +17,7 @@ import {
 import { RACK_DEFAULTS, ampPlan, normalizeRacks, rigPaperwork, syncDs10s } from './rig.js';
 import { prepSheet } from './prep.js';
 import { expandIp, loadPrefs, savePrefs } from './prefs.js';
+import { clearLog, logError, logText, readLog } from './log.js';
 import { openPrefs } from './prefs-ui.js';
 import { mountRig } from './rig-ui.js';
 import { ask, el, info, ipField, segmented, tag, toast, toggle, vfader, wireMenus } from './ui.js';
@@ -84,8 +85,19 @@ const PREFS_KEY = `${STORE}-prefs`;
 const prefs = loadPrefs(PREFS_KEY);
 RACK_DEFAULTS.plate = prefs.defaultPlate;
 // server requests carry the unlock key
-const api = (path, opts = {}) =>
-  fetch(path, { ...opts, headers: { ...(opts.headers || {}), 'x-kk-key': host.token || '' } });
+async function api(path, opts = {}) {
+  try {
+    const res = await fetch(path, {
+      ...opts,
+      headers: { ...(opts.headers || {}), 'x-kk-key': host.token || '' },
+    });
+    if (!res.ok) logError('request', `${path} answered ${res.status}`);
+    return res;
+  } catch (err) {
+    logError('request', `${path}: ${err.message}`);
+    throw err;
+  }
+}
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 let show = load() || defaultShow();
@@ -515,6 +527,7 @@ function download(name, text, type) {
 const fileBase = () => show.name.replace(/[^\w-]+/g, '-').replace(/^-|-$/g, '') || 'show';
 
 function setStatus(text, kind = '') {
+  if (kind === 'bad' && text) logError('shown', text);
   $('status').textContent = text;
   $('status').className = `status ${kind}`;
 }
@@ -2132,8 +2145,30 @@ $('prepBtn').onclick = () =>
   );
 
 // ---- Preferences ----
+async function downloadLog() {
+  let srv = null;
+  try {
+    const res = await fetch('/api/log');
+    if (res.ok) srv = await res.json();
+  } catch {
+    /* web demo: no app server */
+  }
+  const header = [
+    ['Version', VERSION],
+    ['Licence', host.demo ? 'demo' : host.licence || LICENCE],
+    ['Saved', new Date().toString()],
+    ['Computer', navigator.userAgent],
+    ['Screen', `${screen.width}x${screen.height}`],
+    ['App server', srv ? `${srv.version}, node ${srv.node}, ${srv.platform}` : 'not running'],
+    ['Desk', link.state === 'connected' ? `${link.product} at ${link.host}` : link.state],
+    ['Show', `${show.name} (${MODELS[show.options.model]?.label || 'no desk set'})`],
+  ];
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+  download(`show-builder-log-${stamp}.txt`, logText({ header, server: srv?.entries || [] }), 'text/plain');
+}
 function showPrefs() {
   openPrefs({
+    log: { count: () => readLog().length, download: downloadLog, clear: clearLog },
     prefs,
     save: () => {
       savePrefs(PREFS_KEY, prefs);

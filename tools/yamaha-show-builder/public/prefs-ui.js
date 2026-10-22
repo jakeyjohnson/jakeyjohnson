@@ -10,7 +10,7 @@ const options = (entries, value) =>
     el('option', { value: v, textContent: label, selected: String(v) === String(value) }),
   );
 
-export function openPrefs({ prefs, save }) {
+export function openPrefs({ prefs, save, log }) {
   document.getElementById('prefsDialog')?.remove();
   const set = (key, value) => {
     prefs[key] = value;
@@ -294,6 +294,34 @@ export function openPrefs({ prefs, save }) {
           ),
         ),
       ),
+      log
+        ? section(
+            'Error log',
+            row(
+              `${log.count()} on this computer`,
+              el(
+                'span',
+                { className: 'pref-pair' },
+                el('button', {
+                  className: 'ghost',
+                  type: 'button',
+                  textContent: 'Download',
+                  onclick: () => log.download(),
+                }),
+                el('button', {
+                  className: 'ghost',
+                  type: 'button',
+                  textContent: 'Clear',
+                  onclick: () => {
+                    log.clear();
+                    render();
+                  },
+                }),
+              ),
+              'Errors from this page and the app server, with the version and computer details. Send the file to KobiKraken if something goes wrong.',
+            ),
+          )
+        : '',
     );
   }
   function logoPicker() {

@@ -7,7 +7,7 @@ Pick your inputs (lectern mics, handhelds, playback…), pick your speaker zones
 ## Licence keys and demo mode
 
 The app opens on a lock screen.
-- **Licence key:** each customer gets their own 20-character key, `SB-XXXXX-XXXXX-XXXXX-XXXXX`. Type or paste it in (dashes, spaces and capitals don't matter; O and 0, I and 1 are read the same) to unlock the real app. The app's own server checks it, offline, and won't talk to any desk, amp or radio mic until it's unlocked. **Remember on this computer** skips the lock screen next time. The lock button in the header bar locks it again. The footer shows the licence number the key belongs to (e.g. `KK-SB-0001`).
+- **Licence key:** each customer gets their own key: SB and five boxes of four characters (`SB-XXXX-XXXX-XXXX-XXXX-XXXX`). Type it in (each box moves on to the next when it's full) or paste the whole key into the first box; dashes, spaces and capitals don't matter, and O/0 and I/1 are read the same. An older long key (`KK1-…`) can be pasted in too to unlock the real app. The app's own server checks it, offline, and won't talk to any desk, amp or radio mic until it's unlocked. **Remember on this computer** skips the lock screen next time. The lock button in the header bar locks it again. The footer shows the licence number the key belongs to (e.g. `KK-SB-0001`).
 - **Try the demo:** opens the same app with a pretend desk, amps, radio mics and network. Demo shows are kept apart from real ones. **Demo · Exit** in the header goes back to the lock screen.
 
 To issue a key:
@@ -34,6 +34,8 @@ The gear in the header bar (or ⌘, / Ctrl+,) opens Preferences. They're kept on
 - **Your company:** your company name and who prepared it, on the paperwork and the prep sheet; and **your logo** (PNG, JPG or SVG). The logo goes at the top of the paperwork and prep sheet, and on any rack plate set to **Your logo**. On the dark rack plate it's shown in white (turn that off for a logo that's already light); paperwork prints it as it is. **New racks get** picks the plate new racks start with: KobiKraken or your logo.
 
 **Reset all** puts every preference back to its default.
+
+**Error log:** the app keeps a log of what went wrong: errors on the page, requests that failed, the red messages it showed you, and (from the app's own server) devices that didn't answer, the desk dropping out and refused keys. **Download** in Preferences saves it as a text file with the version, licence number, computer, app server and desk details at the top; send that file to KobiKraken when something goes wrong. **Clear** empties it. It keeps the last 400 entries on the page and the last 300 on the server (until the app is closed). Keys and passwords are never written to it.
 
 ## Mac app
 

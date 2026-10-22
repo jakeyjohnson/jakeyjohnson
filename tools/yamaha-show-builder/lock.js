@@ -1,5 +1,5 @@
 // Offline licence keys: licence number + optional end day.
-// Short: SB-XXXXX-XXXXX-XXXXX-XXXXX (default). Long: KK1-..., Ed25519 signed (--long).
+// Short: SB-XXXX-XXXX-XXXX-XXXX-XXXX (default, 5 boxes on the lock screen). Long: KK1-..., Ed25519 signed (--long).
 import { createHmac, createPrivateKey, createPublicKey, sign, timingSafeEqual, verify } from 'node:crypto';
 
 export const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
@@ -95,7 +95,7 @@ export function makeShortKey({ serial, expires = null }, secret = SHORT_SECRET) 
     body = ALPHABET[Number(value & 31n)] + body;
     value >>= 5n;
   }
-  return `${PRODUCT}-${body.match(/.{5}/g).join('-')}`;
+  return `${PRODUCT}-${body.match(/.{4}/g).join('-')}`;
 }
 function checkShortKey(key, secret, today) {
   const body = normaliseKey(key)
@@ -164,7 +164,7 @@ export const normaliseKey = (key) => {
       .replace(/[^0-9A-Z]/g, '')
       .replace(/O/g, '0')
       .replace(/[IL]/g, '1');
-    return `${PRODUCT}-${(body.match(/.{1,5}/g) || []).join('-')}`;
+    return `${PRODUCT}-${(body.match(/.{1,4}/g) || []).join('-')}`;
   }
   const body = text.replace(/^KK1[\s-]*/, '').replace(/[^0-9A-Z]/g, '');
   return `KK1-${(body.match(/.{1,6}/g) || []).join('-')}`;

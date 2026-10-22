@@ -39,7 +39,8 @@ const today = new Date('2026-10-22');
 
 test('short keys are 20 characters, check out however they are typed, and differ from each other', () => {
   const key = makeShortKey({ serial: 5 }, secret);
-  assert.match(key, /^SB-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}$/);
+  assert.match(key, /^SB(-[0-9A-Z]{4}){5}$/);
+  assert.ok(checkKey('SB-' + key.slice(3).replace(/-/g, '').match(/.{5}/g).join('-'), pub, today, secret).ok); // the old 5x4 grouping still reads
   assert.deepEqual(checkKey(key, pub, today, secret), {
     ok: true,
     licence: 'KK-SB-0005',
@@ -55,7 +56,7 @@ test('short keys are 20 characters, check out however they are typed, and differ
 
 test('a short key with a typo, missing a character or made elsewhere is turned down', () => {
   const key = makeShortKey({ serial: 9 }, secret);
-  const typo = key.slice(0, 12) + (key[12] === 'A' ? 'B' : 'A') + key.slice(13);
+  const typo = key.slice(0, 13) + (key[13] === 'A' ? 'B' : 'A') + key.slice(14);
   assert.match(checkKey(typo, pub, today, secret).error, /isn't valid/);
   assert.match(checkKey(key.slice(0, -1), pub, today, secret).error, /incomplete/);
   assert.match(checkKey(`${key}X`, pub, today, secret).error, /too long/);
