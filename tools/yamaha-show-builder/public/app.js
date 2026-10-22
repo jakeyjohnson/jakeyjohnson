@@ -1,6 +1,6 @@
 import { LICENCE, PRODUCT, VERSION } from './about.js';
 import { CHECK_LEVELS, FADER_MARKS, OSC_KEYS, checkKeys, checkState, checkSteps, faderLevel, faderPos, levelText, noiseChannel, readLines, restoreLines, stateLines } from './check.js';
-import { RACK_DEFAULTS, ampPlan, normalizeRacks, rigPaperwork } from './rig.js';
+import { RACK_DEFAULTS, ampPlan, normalizeRacks, rigPaperwork, syncDs10s } from './rig.js';
 import { prepSheet } from './prep.js';
 import { expandIp, loadPrefs, savePrefs } from './prefs.js';
 import { openPrefs } from './prefs-ui.js';
@@ -58,6 +58,7 @@ function draw() {
   normalizeRacks(show); // amps and RF units in rack order, which is the order they fill in
   if (show.options.autoOrder !== false) show.sources = orderSources(show.sources);
   const plan = buildPlan(show);
+  if (syncDs10s(show, plan)) normalizeRacks(show); // DS10s come and go with what the amps need
   const model = MODELS[show.options.model] || MODELS.custom;
   $('showName').value = show.name;
   $('model').value = MODELS[show.options.model] ? show.options.model : 'custom';
