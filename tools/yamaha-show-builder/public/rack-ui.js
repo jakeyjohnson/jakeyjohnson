@@ -189,9 +189,15 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
           el('b', { textContent: [d.model, d.name].filter(Boolean).join(' · ') }), el('small', { className: 'mono', textContent: ` ${d.ip}` }),
           el('button', { className: 'ghost small', type: 'button', textContent: 'Add', onclick: () => addFound(d) }))))) : null);
   }
-  // The logo plate at the top of each rack: the KobiKraken K and wordmark, or just the K
+  // The logo plate at the top of each rack: the KobiKraken K and wordmark, just the K, or your company's
+  // logo from Preferences (your company name until a logo is added)
   function plate(rack) {
     if (rack.plate === 'none') return null;
+    if (rack.plate === 'company') {
+      const p = prefs();
+      return el('li', { className: `rack-plate plate-company ${p.logoWhite ? 'white' : ''}`, role: 'img', 'aria-label': `${p.company || 'Company'} logo plate` },
+        p.companyLogo ? el('img', { src: p.companyLogo, alt: '' }) : el('span', { className: 'plate-name', textContent: p.company || 'Add your logo in Preferences' }));
+    }
     const art = (selector, cls) => {
       const svg = document.querySelector(selector)?.cloneNode(true);
       if (!svg) return null;
@@ -248,7 +254,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
           el('input', { value: rack.name, className: 'rack-name', 'aria-label': 'Rack name', onchange: (ev) => update(() => { rack.name = ev.target.value.trim() || rack.name; }) }),
           el('span', { className: `panel-meta ${rack.size && used > rack.size ? 'over' : ''}`, textContent: rack.size ? `${used}/${rack.size}U` : `${used}U` }),
           el('span', { className: 'grow' }),
-          segmented(rack.plate, [['logo', 'Logo'], ['icon', 'Icon'], ['none', 'No plate']], (v) => update(() => { rack.plate = v; }), `${rack.name} plate`),
+          segmented(rack.plate, [['logo', 'KobiKraken'], ['icon', 'K'], ['company', 'Your logo'], ['none', 'None']], (v) => update(() => { rack.plate = v; }), `${rack.name} plate`),
           el('select', { 'aria-label': `${rack.name} size`, onchange: (ev) => update(() => { rack.size = Number(ev.target.value); }) },
             ...RACK_SIZES.map((n) => el('option', { value: n, textContent: n ? `${n}U` : 'Fit', selected: n === rack.size }))),
           s.racks.length > 1 && !rack.units.length ? el('button', { className: 'remove', type: 'button', textContent: '×', title: `Remove ${rack.name}`, onclick: () => update(() => { s.racks.splice(s.racks.indexOf(rack), 1); }) }) : null),

@@ -389,8 +389,10 @@ export const RACK_ITEMS = {
 export const RACK_SIZES = [0, 4, 6, 8, 10, 12, 14, 16, 20, 24, 30, 42]; // 0: as tall as what's in it
 const familyLists = (show, family) => (family === 'amp' ? [show.amps || []] : family === 'rf' ? [show.rf?.receivers || [], show.rf?.transmitters || []] : [show.rackItems || []]);
 const FAMILIES = ['amp', 'rf', 'item'];
+// The plate new racks get: 'logo' (KobiKraken), or 'company' once a logo is set in Preferences
+export const RACK_DEFAULTS = { plate: 'logo' };
 export function makeRack(kind, n) {
-  return { id: `rack${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind, name: `${{ amp: 'Amp rack', rf: 'RF rack' }[kind] || 'Rack'} ${n}`, units: [], size: 0, plate: 'logo' };
+  return { id: `rack${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind, name: `${{ amp: 'Amp rack', rf: 'RF rack' }[kind] || 'Rack'} ${n}`, units: [], size: 0, plate: RACK_DEFAULTS.plate };
 }
 export function makeRackItem(type, n) {
   return { id: `item${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, type, name: RACK_ITEMS[type]?.label || 'Other', u: RACK_ITEMS[type]?.u || 1, n };

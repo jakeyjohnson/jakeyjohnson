@@ -42,3 +42,18 @@ test('the prep sheet has the pick list with tick boxes, each rack with IPs, and 
   show.name = '<b>Bad</b>';
   assert.ok(!prepSheet(show, buildPlan(show)).body.includes('<b>Bad</b>'));
 });
+
+test('your logo goes on the prep sheet and on racks set to it, and only a real picture gets in', async () => {
+  const { safeLogo } = await import('../public/plan.js');
+  const logo = 'data:image/png;base64,iVBORw0KGgo=';
+  assert.equal(safeLogo(logo), logo);
+  assert.equal(safeLogo('javascript:alert(1)'), '');
+  assert.equal(safeLogo('data:image/png;base64,abc" onerror="x'), '');
+  const show = rigged();
+  show.racks[0].plate = 'company';
+  const { body } = prepSheet(show, buildPlan(show), { company: 'Acme Audio', logo });
+  assert.equal(body.split(logo).length - 1, 2); // the header and the rack plate
+  assert.ok(body.includes('Acme Audio'));
+  const plain = prepSheet(show, buildPlan(show), { company: 'Acme Audio' }).body;
+  assert.ok(plain.includes('Acme Audio logo plate'));
+});

@@ -1,6 +1,6 @@
 import { LICENCE, PRODUCT, VERSION } from './about.js';
 import { CHECK_LEVELS, FADER_MARKS, OSC_KEYS, checkKeys, checkState, checkSteps, faderLevel, faderPos, levelText, noiseChannel, readLines, restoreLines, stateLines } from './check.js';
-import { ampPlan, normalizeRacks, rigPaperwork } from './rig.js';
+import { RACK_DEFAULTS, ampPlan, normalizeRacks, rigPaperwork } from './rig.js';
 import { prepSheet } from './prep.js';
 import { expandIp, loadPrefs, savePrefs } from './prefs.js';
 import { openPrefs } from './prefs-ui.js';
@@ -20,6 +20,7 @@ const $ = (id) => document.getElementById(id);
 const STORE = host.store || 'yamaha-show-builder'; // demo mode keeps its own shows
 const PREFS_KEY = `${STORE}-prefs`;
 const prefs = loadPrefs(PREFS_KEY);
+RACK_DEFAULTS.plate = prefs.defaultPlate;
 // Every request to the app's server carries the unlock key
 const api = (path, opts = {}) => fetch(path, { ...opts, headers: { ...(opts.headers || {}), 'x-kk-key': host.token || '' } });
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -1037,13 +1038,13 @@ function openDoc(p) {
 const licenceText = () => (host.demo ? '' : host.licence || LICENCE);
 $('paperworkBtn').onclick = () => {
   const plan = buildPlan(show);
-  openDoc(paperwork(show, plan, { version: VERSION, licence: licenceText(), company: prefs.company, preparedBy: prefs.preparedBy, extra: rigPaperwork(show, plan) }));
+  openDoc(paperwork(show, plan, { version: VERSION, licence: licenceText(), company: prefs.company, preparedBy: prefs.preparedBy, logo: prefs.companyLogo, extra: rigPaperwork(show, plan) }));
 };
-$('prepBtn').onclick = () => openDoc(prepSheet(show, buildPlan(show), { version: VERSION, licence: licenceText(), company: prefs.company, preparedBy: prefs.preparedBy }));
+$('prepBtn').onclick = () => openDoc(prepSheet(show, buildPlan(show), { version: VERSION, licence: licenceText(), company: prefs.company, preparedBy: prefs.preparedBy, logo: prefs.companyLogo }));
 
 // ---- Preferences ----
 function showPrefs() {
-  openPrefs({ prefs, save: () => { savePrefs(PREFS_KEY, prefs); renderHost(expandIp($('host').value, prefs.deskPrefix) || $('host').value); render(); } });
+  openPrefs({ prefs, save: () => { savePrefs(PREFS_KEY, prefs); RACK_DEFAULTS.plate = prefs.defaultPlate; renderHost(expandIp($('host').value, prefs.deskPrefix) || $('host').value); render(); } });
 }
 $('prefsBtn').onclick = showPrefs;
 document.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === ',') { e.preventDefault(); showPrefs(); } });
