@@ -88,27 +88,32 @@ test('one rack can hold amps, RF units and items, and each tab still fills in ra
   assert.equal(rack.units.length, 4);
 });
 
-test('outputs can be L&R, subs are an output, and sub/top amps put a top and its sub on one output', async () => {
+test('Main L&R can have subs: on an aux, or from main on their own channels or the sub half of a sub/top pair', async () => {
+  const { setMainSubs } = await import('../public/plan.js');
   const show = defaultShow();
   show.options.model = 'CL5';
   show.zones = show.zones.filter((z) => z.type === 'main' || z.type === 'frontfill');
-  const fill = show.zones.find((z) => z.type === 'frontfill');
-  fill.lr = true;
-  const subs = makeZone('sub', 'Subs');
-  show.zones.push(subs);
-  for (const s of show.sources.filter((x) => x.type === 'playback')) s.zones.push(subs.id);
-  const p = buildPlan(show);
-  assert.deepEqual(p.outputs.map((o) => [o.name, o.buses.join('/')]), [['Main LR', 'ST L/ST R'], ['FrntFil', 'MIX1/MIX2'], ['Subs', 'MIX3']]);
-  // Amp 1 in sub/top: Main L top + sub, Main R top + sub. Amp 2 dual: fill L, fill R, subs, spare
+  // On an aux: a Subs output appears, taking what the main takes apart from speech, and goes again after
+  setMainSubs(show, 'aux');
+  const subs = show.zones.find((z) => z.type === 'sub');
+  assert.deepEqual(buildPlan(show).outputs.map((o) => [o.name, o.buses.join('/')]), [['Main LR', 'ST L/ST R'], ['FrntFil', 'MIX1'], ['Subs', 'MIX2']]);
+  const onSubs = show.sources.filter((x) => x.zones.includes(subs.id));
+  assert.ok(onSubs.length && onSubs.every((x) => x.type === 'playback')); // the playbacks, not the speech mics
+  setMainSubs(show, 'none');
+  assert.ok(!show.zones.some((z) => z.type === 'sub'));
+  // From main, dual-channel amp: L, R, then L sub and R sub off the same desk outputs
+  setMainSubs(show, 'main');
+  show.amps = [makeAmp('D80', 1), makeAmp('D80', 2)];
+  let rows = ampPlan(show, buildPlan(show)).rows;
+  assert.deepEqual(rows.map((r) => `${r.label.slice(-1)} ${rowFeedName(r) || 'spare'} ${r.setup}`.trim()), ['A Main LR L Y10P', 'B Main LR R Y10P', 'C Main LR L sub Y-SUB', 'D Main LR R sub Y-SUB', 'A FrntFil 44S', 'B spare', 'C spare', 'D spare']);
+  assert.equal(rows[2].feed.deskOutLabel, rows[0].feed.deskOutLabel);
+  // From main, sub/top amp: the sub rides on the pair, so no extra sub channels
   show.amps = [{ ...makeAmp('D80', 1), mode: 'subtop' }, makeAmp('D80', 2)];
-  const rows = ampPlan(show, p).rows;
-  assert.deepEqual(rows.map((r) => `${r.label}: ${rowFeedName(r) || 'spare'} ${r.setup}`.trim()), [
-    'Amp 1 · Ch A: Main LR L Y10P', 'Amp 1 · Ch B: Main LR L sub Y-SUB', 'Amp 1 · Ch C: Main LR R Y10P', 'Amp 1 · Ch D: Main LR R sub Y-SUB',
-    'Amp 2 · Ch A: FrntFil L 44S', 'Amp 2 · Ch B: FrntFil R 44S', 'Amp 2 · Ch C: Subs Y-SUB', 'Amp 2 · Ch D: spare',
-  ]);
-  assert.equal(rows[1].input, rows[0].input); // the sub runs off the top's input
-  // Fill from outputs counts sub/top amps as two outputs each
+  rows = ampPlan(show, buildPlan(show)).rows;
+  assert.deepEqual(rows.map((r) => `${r.label.slice(-1)} ${rowFeedName(r) || 'spare'} ${r.setup}`.trim()), ['A Main LR L Y10P', 'B Main LR L sub Y-SUB', 'C Main LR R Y10P', 'D Main LR R sub Y-SUB', 'A FrntFil 44S', 'B spare', 'C spare', 'D spare']);
+  assert.deepEqual(ampPlan(show, buildPlan(show)).warnings, []);
+  // Fill from outputs knows the subs are covered
   show.amps = [];
-  addAmpsFor(show, p, 'D80', 'subtop');
-  assert.equal(show.amps.length, 3); // 5 outputs, 2 per sub/top amp
+  addAmpsFor(show, buildPlan(show), 'D80', 'subtop');
+  assert.equal(show.amps.length, 2); // Main L+sub, Main R+sub on one; the fill on the next
 });

@@ -23,9 +23,10 @@ export function checkSteps(plan, ampRows = []) {
     const st = o.zone.type === 'main';
     o.buses.forEach((bus, k) => {
       const side = o.buses.length === 2 ? (k ? 'R' : 'L') : '';
-      const amp = ampRows.filter((r) => r.feed?.key === `${o.zone.id}${side}`).map((r) => `${r.label}${r.sub ? ' sub' : ''}`).join(' + ');
+      const key = `${o.zone.id}${side}`;
+      const amp = ampRows.filter((r) => r.feed?.key === key || r.feed?.subOf === key).map((r) => `${r.label}${r.sub || r.feed.subOf ? ' sub' : ''}`).join(' + ');
       steps.push({
-        key: `${o.zone.id}${side}`,
+        key,
         name: side ? `${o.name} ${side}` : o.name,
         bus: st ? bus : bus.replace('MIX', 'Mix '),
         st, side,
