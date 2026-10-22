@@ -11,8 +11,8 @@ export const DEFAULT_PREFS = {
   backup: true, onlyChanges: true,
   // System check
   checkSource: 'channel', checkStart: -4000,
-  // Paperwork
-  company: '', preparedBy: '',
+  // Your company: name and logo on paperwork, and the logo on rack plates
+  company: '', preparedBy: '', companyLogo: '', logoWhite: true, defaultPlate: 'logo',
 };
 
 export function loadPrefs(key) {
@@ -45,4 +45,33 @@ export function expandIp(text, prefix) {
 export function ipTail(value, prefix) {
   const v = String(value || '');
   return prefix && v.startsWith(`${prefix}.`) ? v.slice(prefix.length + 1) : v;
+}
+
+// A logo file made ready to keep: SVGs as they are (up to 300 KB), pictures scaled to fit 800 × 240 as PNG.
+// Resolves to a data: URL.
+export function readLogo(file) {
+  return new Promise((resolve, reject) => {
+    if (!/^image\/(png|jpeg|svg\+xml|webp|gif)$/.test(file.type)) return reject(new Error('Use a PNG, JPG or SVG logo'));
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Couldn't read that file"));
+    if (file.type === 'image/svg+xml') {
+      if (file.size > 300_000) return reject(new Error('That SVG is over 300 KB. Use a smaller one or a PNG.'));
+      reader.onload = () => resolve(reader.result);
+      return reader.readAsDataURL(file);
+    }
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("That picture didn't open"));
+      img.onload = () => {
+        const scale = Math.min(1, 800 / img.width, 240 / img.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }

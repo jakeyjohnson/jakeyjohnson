@@ -550,3 +550,13 @@ dialog.prefs::backdrop { background: rgba(5, 7, 10, .65); backdrop-filter: blur(
   .pref-row .range { flex-wrap: wrap; }
 }
 .pref-row input.port { width: 96px; }
+
+/* Your logo: on rack plates (white on the dark plate unless turned off) and in Preferences */
+.plate-company img { max-height: 40px; max-width: 70%; object-fit: contain; }
+.plate-company.white img { filter: brightness(0) invert(1); }
+.plate-name { font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #f5f4f0; }
+.rack-row.plate-row .plate-company { flex: 1; height: calc(100% - 2px); }
+.logo-pick { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.logo-preview { display: inline-flex; align-items: center; justify-content: center; height: 40px; min-width: 80px; padding: 4px 10px; border-radius: 8px; background: #20262d; border: 1px solid var(--line-strong); }
+.logo-preview img { max-height: 30px; max-width: 160px; object-fit: contain; }
+.logo-preview.white img { filter: brightness(0) invert(1); }

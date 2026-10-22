@@ -1,6 +1,6 @@
 // The prep sheet: what to pull from the warehouse (with Out and Back tick boxes), each rack drawn unit by
 // unit with its IPs, and the patch: inputs to sockets, outputs to amp channels. Printed on white.
-import { MODELS, SOURCE_TYPES, phantomOf, portLabel } from './plan.js';
+import { MODELS, SOURCE_TYPES, phantomOf, portLabel, safeLogo } from './plan.js';
 import {
   AMP_MODELS, AMP_MODES, IEM_MODELS, RACK_ITEMS, RECEIVER_MODELS, ampPlan, isRadio, rackEntries, rfPlan, rowFeedName, unitHeight,
 } from './rig.js';
@@ -100,7 +100,8 @@ export function pickList(show, plan) {
   return groups;
 }
 
-export function prepSheet(show, plan, { version = '', licence = '', company = '', preparedBy = '' } = {}) {
+export function prepSheet(show, plan, { version = '', licence = '', company = '', preparedBy = '', logo = '' } = {}) {
+  const logoSrc = safeLogo(logo);
   const model = MODELS[show.options?.model];
   const amp = ampPlan(show, plan);
   const rig = rfPlan(show, plan);
@@ -113,7 +114,11 @@ export function prepSheet(show, plan, { version = '', licence = '', company = ''
     const rows = r.units.map((id) => entries.get(id)).filter(Boolean);
     let u = 1;
     const lines = [];
-    if (r.plate !== 'none') { lines.push(`<tr class="plate" style="height:${2 * 22}px"><td class="u">${u}–${u + 1}</td><td colspan="3">KobiKraken logo plate</td></tr>`); u += 2; }
+    if (r.plate !== 'none') {
+      const what = r.plate === 'company' ? (logoSrc ? `<img src="${logoSrc}" alt="${esc(company || 'Company')} logo">` : `${esc(company || 'Company')} logo plate`) : 'KobiKraken logo plate';
+      lines.push(`<tr class="plate ${r.plate === 'company' ? 'company' : ''}" style="height:${2 * 22}px"><td class="u">${u}–${u + 1}</td><td colspan="3">${what}</td></tr>`);
+      u += 2;
+    }
     for (const { unit, family } of rows) {
       const h = unitHeight(unit, family);
       const kind = family === 'amp' ? `${AMP_MODELS[unit.model]?.label || unit.model}${unit.mode === 'subtop' ? ' · Sub/Top' : ''}` : family === 'rf' ? (RECEIVER_MODELS[unit.model] || IEM_MODELS[unit.model])?.label || unit.model : RACK_ITEMS[unit.type]?.label || '';
@@ -145,10 +150,11 @@ export function prepSheet(show, plan, { version = '', licence = '', company = ''
 .kk-prep .racks{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}.kk-prep .rack{break-inside:avoid}
 .kk-prep tr.amp td{background:#f3f5f7}.kk-prep tr.rf td{background:#f7f8f9}.kk-prep tr.plate td{background:#11151a;color:#fff;font-weight:700;text-align:center}
 .kk-prep tr.plate td.u{color:#c8cdd3}.kk-prep tr.free td{color:#8e949b;border-style:dashed;text-align:center}
+.kk-prep img.logo{float:right;max-height:44px;max-width:200px}.kk-prep tr.plate.company td{background:#fff;color:#11151a;border-color:#11151a}.kk-prep tr.plate img{max-height:36px;max-width:240px;vertical-align:middle}
 .kk-prep small{color:#5d6670}.kk-prep .page{page-break-before:always}.kk-prep footer{margin-top:18px;color:#5d6670;font-size:9.5px}
 @media print{.kk-prep h2{break-after:avoid}.kk-prep tr{break-inside:avoid}}`;
   const body = `<div class="kk-prep">
-<h1>${esc(show.name)} · prep sheet</h1>
+${logoSrc ? `<img class="logo" src="${logoSrc}" alt="">` : ''}<h1>${esc(show.name)} · prep sheet</h1>
 <p class="meta">${company ? `<b>${esc(company)}</b> · ` : ''}${esc(model?.inputs ? `Yamaha ${model.label}` : 'Desk not set')} · ${plural(plan.channels.length, 'channel')} · ${plural(plan.outputs.length, 'output')} · printed ${today}</p>
 <div class="sign"><span>Job / date</span><span>Prepped by${preparedBy ? `<b>${esc(preparedBy)}</b>` : ''}</span><span>Checked by</span><span>Back in by</span></div>
 <h2>Pick list</h2>

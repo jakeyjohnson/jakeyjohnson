@@ -3,7 +3,7 @@
 import { MODELS } from './plan.js';
 import { AMP_MODELS, AMP_MODES, IEM_MODELS, RECEIVER_MODELS } from './rig.js';
 import { RANGES } from './rig-ui.js';
-import { DEFAULT_PREFS, cleanPrefix } from './prefs.js';
+import { DEFAULT_PREFS, cleanPrefix, readLogo } from './prefs.js';
 import { el, info, segmented, toast, toggle } from './ui.js';
 
 const options = (entries, value) => entries.map(([v, label]) => el('option', { value: v, textContent: label, selected: String(v) === String(value) }));
@@ -62,9 +62,31 @@ export function openPrefs({ prefs, save }) {
       section('System check',
         row('Noise from', segmented(prefs.checkSource, [['channel', 'Input channel'], ['osc', 'Desk oscillator']], (v) => { set('checkSource', v); render(); }, 'Noise from')),
         row('Start at', select('checkStart', [[-5000, '−50 dB'], [-4000, '−40 dB'], [-3000, '−30 dB'], [-2000, '−20 dB']], Number))),
-      section('Paperwork',
+      section('Your company',
         row('Company', el('input', { value: prefs.company, placeholder: 'Your company', 'aria-label': 'Company', onchange: (e) => set('company', e.target.value.trim()) }), 'On the paperwork and prep sheet.'),
-        row('Prepared by', el('input', { value: prefs.preparedBy, placeholder: 'Your name', 'aria-label': 'Prepared by', onchange: (e) => set('preparedBy', e.target.value.trim()) }))));
+        row('Prepared by', el('input', { value: prefs.preparedBy, placeholder: 'Your name', 'aria-label': 'Prepared by', onchange: (e) => set('preparedBy', e.target.value.trim()) })),
+        row('Logo', logoPicker(), 'PNG, JPG or SVG. It goes on rack plates you set to Company, and at the top of the paperwork and prep sheet.'),
+        prefs.companyLogo ? row('White on rack plates', toggle({ label: '', checked: prefs.logoWhite, onchange: (v) => { set('logoWhite', v); render(); } }), 'Shows a dark logo in white on the dark plate. Paperwork prints it as it is.') : null,
+        row('New racks get', segmented(prefs.defaultPlate, [['logo', 'KobiKraken'], ['company', 'Your logo']], (v) => { set('defaultPlate', v); render(); }, 'Plate for new racks'))));
+  }
+  function logoPicker() {
+    const file = el('input', {
+      type: 'file', accept: 'image/png,image/jpeg,image/svg+xml,image/webp', hidden: true,
+      onchange: async (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        try {
+          set('companyLogo', await readLogo(f));
+          if (prefs.defaultPlate === 'logo') set('defaultPlate', 'company');
+          render();
+          toast('Logo added. Set a rack\'s plate to Your logo on the Racks tab.', 'ok');
+        } catch (err) { toast(err.message, 'bad'); }
+      },
+    });
+    return el('span', { className: 'logo-pick' },
+      prefs.companyLogo ? el('span', { className: `logo-preview ${prefs.logoWhite ? 'white' : ''}` }, el('img', { src: prefs.companyLogo, alt: 'Your logo' })) : null,
+      el('label', { className: 'button ghost' }, prefs.companyLogo ? 'Change' : 'Choose logo…', file),
+      prefs.companyLogo ? el('button', { className: 'ghost', type: 'button', textContent: 'Remove', onclick: () => { set('companyLogo', ''); if (prefs.defaultPlate === 'company') set('defaultPlate', 'logo'); render(); } }) : null);
   }
   render();
   const dialog = el('dialog', { id: 'prefsDialog', className: 'prefs', 'aria-label': 'Preferences' },
