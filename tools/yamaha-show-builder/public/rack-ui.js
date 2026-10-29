@@ -25,6 +25,11 @@ import {
   removeFromRack,
   removeRack,
   addRackPreset,
+  ampIdClashes,
+  cleanAmpId,
+  compareAmpIds,
+  moveAmpById,
+  sortByAmpId,
   sameDevice,
   shureModelFrom,
   unitHeight,
@@ -44,6 +49,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
   session.found ||= []; // the last Find devices scan
   let dragging = null; // { unit } or { found }
   let namingRack = null; // rack being saved as a preset
+  let moveTo = { id: '', rack: '', before: '' }; // Move by ID form
 
   const unitsOf = (kind) => {
     const s = show();
@@ -52,6 +58,25 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
       : [...(s.rf?.receivers || []), ...(s.rf?.transmitters || [])];
   };
   const onlyOf = (kind) => new Set(unitsOf(kind).map((u) => u.id));
+  const isAmp = (u, kind) => kind === 'amp' && u.model !== 'DS10';
+  // the number on the amp (its d&b remote ID)
+  const idField = (u, className) =>
+    el('input', {
+      value: u.ampId || '',
+      className: `${className} mono`,
+      placeholder: 'ID',
+      size: 4,
+      'aria-label': `${u.name} amp ID`,
+      title: 'Amp ID: the number on the amp (its d&b remote ID). Sort by ID and Move by ID go by it.',
+      onchange: (e) =>
+        update(() => {
+          u.ampId = cleanAmpId(e.target.value);
+        }),
+    });
+  const idTwin = (u) => {
+    const list = u.ampId && ampIdClashes(show()).get(cleanAmpId(u.ampId).toLowerCase());
+    return list ? list.find((x) => x !== u) : null;
+  };
   const removeUnit = (s, u) => {
     removeFromRack(s, u.id); // leaves a space behind in a preset rack
     for (const list of [s.amps, s.ds10s, s.rf?.receivers, s.rf?.transmitters, s.rackItems]) {
@@ -229,17 +254,20 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
     const st = session.ident[u.id];
     const models = kind === 'amp' ? AMP_MODELS : isTx(u) ? IEM_MODELS : RECEIVER_MODELS;
     const twin = u.ip && unitsOf(kind).find((x) => x !== u && x.ip === u.ip);
+    const sameId = isAmp(u, kind) && idTwin(u);
     const status = twin
       ? tag('Same IP', 'warn', `${twin.name} has ${u.ip} too. Each unit needs its own address.`)
-      : st
-        ? st.ok
-          ? tag('Checked', 'on', `Answers as ${st.who}`)
-          : st.missing
-            ? tag('No answer', 'warn', st.who)
-            : tag('Wrong unit', 'warn', `Answers as ${st.who}`)
-        : u.ident
-          ? tag('Racked', '', `Expects ${whoText(u.ident) || 'this unit'}. Check rack confirms it.`)
-          : null;
+      : sameId
+        ? tag('Same ID', 'warn', `${sameId.name} is ID ${u.ampId} too. Check the numbers on the amps.`)
+        : st
+          ? st.ok
+            ? tag('Checked', 'on', `Answers as ${st.who}`)
+            : st.missing
+              ? tag('No answer', 'warn', st.who)
+              : tag('Wrong unit', 'warn', `Answers as ${st.who}`)
+          : u.ident
+            ? tag('Racked', '', `Expects ${whoText(u.ident) || 'this unit'}. Check rack confirms it.`)
+            : null;
     return el(
       'li',
       {
@@ -255,6 +283,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
         el(
           'div',
           { className: 'unit-top' },
+          isAmp(u, kind) ? idField(u, 'unit-id') : null,
           el('input', {
             value: u.name,
             className: 'unit-name',
@@ -371,6 +400,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
     return el(
       'div',
       { className: 'racks-wrap' },
+      kind === 'amp' ? ampIdBar(racks) : null,
       el(
         'div',
         { className: 'racks' },
@@ -550,7 +580,8 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
       const st = session.ident[u.id];
       const twin =
         u.ip && family !== 'item' && rackEntries(s).some((x) => x.unit !== u && x.unit.ip === u.ip);
-      const led = twin || (st && !st.ok) ? 'warn' : st?.ok ? 'ok' : '';
+      const sameId = family === 'amp' && u.model !== 'DS10' && idTwin(u);
+      const led = twin || sameId || (st && !st.ok) ? 'warn' : st?.ok ? 'ok' : '';
       const feeds = family === 'item' ? [] : feedsOf(family, u);
       return el(
         'li',
@@ -567,12 +598,15 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
             className: `led ${led}`,
             title: twin
               ? `Same IP as another unit`
-              : st
-                ? st.ok
-                  ? `Checked: ${st.who}`
-                  : st.who
-                : 'Not checked yet',
+              : sameId
+                ? `Same amp ID as ${sameId.name}`
+                : st
+                  ? st.ok
+                    ? `Checked: ${st.who}`
+                    : st.who
+                  : 'Not checked yet',
           }),
+          family === 'amp' && u.model !== 'DS10' ? idField(u, 'face-id') : null,
           el('span', {
             className: 'face-model mono',
             textContent:
@@ -894,6 +928,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
           'div',
           { className: 'panel-body' },
           presetRow,
+          ampIdBar(s.racks),
           s.racks.length
             ? el('div', { className: 'cabinets' }, ...s.racks.map(cabinet))
             : el('div', {
@@ -938,6 +973,94 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
     );
   }
 
+  // Sort the amps by ID, or send one to its place by the number on it
+  function ampIdBar(racks) {
+    const s = show();
+    if (!(s.amps || []).length || !racks.length) return null;
+    if (!racks.some((r) => r.id === moveTo.rack)) moveTo = { ...moveTo, rack: racks[0].id, before: '' };
+    const rack = racks.find((r) => r.id === moveTo.rack);
+    const entries = new Map(rackEntries(s).map((e) => [e.unit.id, e]));
+    const spots = rack.units
+      .map((id) => entries.get(id)?.unit)
+      .filter(Boolean)
+      .map((u) => [
+        u.id,
+        u.type === 'space' ? `into the ${u.u}U space` : `above ${u.ampId ? `ID ${u.ampId} · ` : ''}${u.name}`,
+      ]);
+    if (!spots.some(([id]) => id === moveTo.before)) moveTo.before = '';
+    const ids = [...new Set((s.amps || []).map((a) => cleanAmpId(a.ampId)).filter(Boolean))].sort(
+      compareAmpIds,
+    );
+    const go = () => {
+      let why = '';
+      update(() => {
+        why = moveAmpById(show(), moveTo.id, moveTo.rack, moveTo.before || null);
+      });
+      toast(why || `ID ${cleanAmpId(moveTo.id)} is in ${rack.name}.`, why ? '' : 'ok');
+    };
+    const unnumbered = s.amps.filter((a) => !cleanAmpId(a.ampId)).length;
+    return el(
+      'div',
+      { className: 'inline-form id-bar' },
+      el(
+        'span',
+        { className: 'chip-label' },
+        'Amp ID',
+        info(
+          'Type the ID on each amp (its d&b remote ID) in the box by its name. Sort by ID puts the amps in ID order down the racks; Move puts one amp where it sits by its ID. Built-in amps stay put.',
+        ),
+      ),
+      el('button', {
+        className: 'ghost small',
+        type: 'button',
+        textContent: 'Sort by ID',
+        disabled: !ids.length,
+        title: unnumbered
+          ? `Amps without an ID (${unnumbered}) go after the numbered ones`
+          : 'Amps in ID order, top rack first',
+        onclick: () =>
+          update(() =>
+            sortByAmpId(
+              show(),
+              racks.map((r) => r.id),
+            ),
+          ),
+      }),
+      el('span', { className: 'dim', textContent: 'Move' }),
+      el('input', {
+        className: 'mono id-in',
+        value: moveTo.id,
+        placeholder: 'ID',
+        size: 5,
+        list: 'amp-ids',
+        'aria-label': 'ID of the amp to move',
+        oninput: (e) => {
+          moveTo.id = e.target.value;
+        },
+        onkeydown: (e) => e.key === 'Enter' && go(),
+      }),
+      el('datalist', { id: 'amp-ids' }, ...ids.map((v) => el('option', { value: v }))),
+      el('span', { className: 'dim', textContent: 'to' }),
+      selectOf(
+        moveTo.rack,
+        racks.map((r) => [r.id, r.name]),
+        (v) =>
+          update(() => {
+            moveTo = { ...moveTo, rack: v, before: '' };
+          }),
+        { 'aria-label': 'Rack to move it to' },
+      ),
+      selectOf(
+        moveTo.before,
+        [...spots, ['', 'at the bottom']],
+        (v) => {
+          moveTo.before = v;
+        },
+        { 'aria-label': 'Where in the rack' },
+      ),
+      el('button', { className: 'primary small', type: 'button', textContent: 'Move', onclick: go }),
+    );
+  }
   const rackTools = (kind) => [
     el('button', {
       className: 'ghost',

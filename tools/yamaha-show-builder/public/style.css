@@ -64,7 +64,8 @@ body {
   color: var(--text);
   font: 14px/1.45 var(--sans);
   background-color: var(--bg);
-  background-image: radial-gradient(900px 520px at 50% -8%, rgba(99, 203, 232, 0.1), transparent 65%),
+  background-image:
+    radial-gradient(900px 520px at 50% -8%, rgba(99, 203, 232, 0.1), transparent 65%),
     radial-gradient(1100px 760px at 50% 42%, rgba(30, 36, 44, 0.9), transparent 72%),
     linear-gradient(180deg, #151a20 0%, #11151a 45%, #0c0f13 100%);
   background-attachment: fixed;
@@ -209,7 +210,8 @@ textarea {
 select {
   padding-right: 26px;
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
     linear-gradient(135deg, var(--muted) 50%, transparent 50%);
   background-position:
     calc(100% - 13px) 50%,
@@ -2020,7 +2022,8 @@ body.locked .shell {
   border-radius: 3px;
   border: 1px solid #3b444f;
   color: #f5f4f0;
-  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px),
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px),
     linear-gradient(180deg, #2e353e 0%, #20262d 55%, #1a1f25 100%);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.05) inset,
@@ -2526,4 +2529,40 @@ dialog.prefs::backdrop {
 }
 .preset-form {
   margin: 0 0 10px;
+}
+
+/* ---- Amp IDs ---- */
+.unit-id {
+  width: 54px;
+  text-align: center;
+  font-weight: 600;
+}
+input.face-id {
+  width: 46px;
+  height: 22px;
+  flex: none;
+  padding: 0 4px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(0, 0, 0, 0.35);
+  border-color: var(--line);
+}
+input.face-id:placeholder-shown {
+  color: var(--muted);
+  font-weight: 400;
+}
+.id-bar {
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 8px 10px 8px 14px;
+  box-shadow: none;
+}
+.inline-form.id-bar input.id-in {
+  flex: none;
+  width: 72px;
+}
+.id-bar select {
+  max-width: 220px;
 }

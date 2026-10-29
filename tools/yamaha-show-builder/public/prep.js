@@ -11,6 +11,8 @@ import {
   ds10Plan,
   isRadio,
   rackEntries,
+  ampLabel,
+  cleanAmpId,
   rfPlan,
   rowFeedName,
   unitHeight,
@@ -83,7 +85,7 @@ export function pickList(show, plan) {
         return {
           qty: list.length,
           item: AMP_MODELS[m]?.label || m,
-          note: `${AMP_MODES[mode]} · ${list.map((a) => a.name).join(', ')}`,
+          note: `${AMP_MODES[mode]} · ${list.map(ampLabel).join(', ')}`,
         };
       })
       .concat(
@@ -276,7 +278,7 @@ export function prepSheet(
           unit.model === 'DS10'
             ? (ds?.cables || [])
                 .filter((c) => c.ds10 === unit)
-                .map((c) => `AES ${c.aesOut} → ${c.amp.name} ${c.ampIn}`)
+                .map((c) => `AES ${c.aesOut} → ${ampLabel(c.amp)} ${c.ampIn}`)
                 .join(' · ')
             : family === 'amp'
               ? amp.rows
@@ -290,7 +292,7 @@ export function prepSheet(
                     .join(' · ')
                 : '';
         lines.push(
-          `<tr class="${family}" style="height:${h * 22}px"><td class="u">${h > 1 ? `${u}–${u + h - 1}` : u}</td><td><b>${esc(unit.name)}</b>${kind && kind !== unit.name ? `<br><small>${esc(kind)}</small>` : ''}</td><td class="note">${esc(feeds)}</td><td class="ip">${esc(unit.ip || '')}</td></tr>`,
+          `<tr class="${family}" style="height:${h * 22}px"><td class="u">${h > 1 ? `${u}–${u + h - 1}` : u}</td><td>${family === 'amp' && cleanAmpId(unit.ampId) ? `<span class="id">ID ${esc(cleanAmpId(unit.ampId))}</span> ` : ''}<b>${esc(unit.name)}</b>${kind && kind !== unit.name ? `<br><small>${esc(kind)}</small>` : ''}</td><td class="note">${esc(feeds)}</td><td class="ip">${esc(unit.ip || '')}</td></tr>`,
         );
         u += h;
       }
@@ -332,6 +334,7 @@ export function prepSheet(
 .kk-prep thead th{background:#eef0f2;font-size:10px;text-transform:uppercase;letter-spacing:.05em}.kk-prep tr.grp th{background:#11151a;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
 .kk-prep td.qty{width:34px;text-align:center;font-weight:700;font-size:13px}.kk-prep td.box{width:30px}.kk-prep td.note{color:#3c444d}
 .kk-prep td.ip,.kk-prep td.u{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}.kk-prep td.u{width:34px;color:#5d6670;font-size:10px;text-align:center}
+.kk-prep .id{display:inline-block;padding:0 5px;border:1.5px solid #111;border-radius:3px;font-weight:700;font-size:11px;font-family:ui-monospace,Menlo,monospace}
 .kk-prep .racks{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}.kk-prep .rack{break-inside:avoid}
 .kk-prep tr.amp td{background:#f3f5f7}.kk-prep tr.rf td{background:#f7f8f9}.kk-prep tr.plate td{background:#11151a;color:#fff;font-weight:700;text-align:center}
 .kk-prep tr.plate td.u{color:#c8cdd3}.kk-prep tr.free td{color:#8e949b;border-style:dashed;text-align:center}

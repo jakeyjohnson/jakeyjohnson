@@ -536,7 +536,7 @@ export function rigPaperwork(show, plan) {
   const used = amp.rows.filter((r) => r.feed);
   if (used.length) {
     parts.push(`<h2 class="page">Amplifiers</h2><p class="meta">Every channel starts muted with its gain at the lowest. Unmute and bring up one at a time.</p>
-<table><thead><tr><th>Amp channel</th><th>IP</th><th>Feeds</th><th>From the desk</th><th>Amp input</th><th>Speaker setup</th><th>Start</th><th>Target</th></tr></thead><tbody>${used.map((r) => `<tr><td><b>${esc(r.label)}</b> <small>${esc(r.amp.model)}${r.amp.mode === 'subtop' ? ' · Sub/Top' : ''}</small></td><td>${esc(r.amp.ip)}</td><td>${esc(rowFeedName(r))}</td><td>${esc(r.feed.deskOutLabel)}</td><td>${esc(r.input)}</td><td>${esc(r.setup)}</td><td>Muted, lowest</td><td>${esc(r.target)} dB</td></tr>`).join('')}</tbody></table>`);
+<table><thead><tr><th>Amp channel</th><th>IP</th><th>Feeds</th><th>From the desk</th><th>Amp input</th><th>Speaker setup</th><th>Start</th><th>Target</th></tr></thead><tbody>${used.map((r) => `<tr><td><b>${esc(r.label)}</b> <small>${esc(r.amp.model)}${r.amp.mode === 'subtop' ? ' · Sub/Top' : ''}${cleanAmpId(r.amp.ampId) ? ` · ID ${esc(cleanAmpId(r.amp.ampId))}` : ''}</small></td><td>${esc(r.amp.ip)}</td><td>${esc(rowFeedName(r))}</td><td>${esc(r.feed.deskOutLabel)}</td><td>${esc(r.input)}</td><td>${esc(r.setup)}</td><td>Muted, lowest</td><td>${esc(r.target)} dB</td></tr>`).join('')}</tbody></table>`);
   }
   const rfRows = [...rig.mics.map((m) => ['Mic', m]), ...rig.iems.map((x) => ['IEM', x])];
   if (rfRows.length) {
@@ -570,7 +570,7 @@ export function rigPaperwork(show, plan) {
         );
     if (ds.cables.length)
       parts.push(
-        `<h2>DS10 to the amps</h2><p class="meta">AES3 cables (110 Ω): each carries two channels.</p><table><thead><tr><th>DS10</th><th>AES out</th><th>To amp</th><th>Carries</th></tr></thead><tbody>${ds.cables.map((c) => `<tr><td>${esc(c.ds10?.name || 'DS10')}${c.ds10?.ip ? ` <small>${esc(c.ds10.ip)}</small>` : ''}</td><td>AES ${c.aesOut} (ch ${c.aesOut * 2 - 1}/${c.aesOut * 2})</td><td>${esc(c.amp.name)} · ${esc(c.ampIn)} (${esc(c.inputs)})</td><td>${c.rows.map((r) => `${esc(r.input)} ${esc(rowFeedName(r))}`).join(' · ')}</td></tr>`).join('')}</tbody></table>`,
+        `<h2>DS10 to the amps</h2><p class="meta">AES3 cables (110 Ω): each carries two channels.</p><table><thead><tr><th>DS10</th><th>AES out</th><th>To amp</th><th>Carries</th></tr></thead><tbody>${ds.cables.map((c) => `<tr><td>${esc(c.ds10?.name || 'DS10')}${c.ds10?.ip ? ` <small>${esc(c.ds10.ip)}</small>` : ''}</td><td>AES ${c.aesOut} (ch ${c.aesOut * 2 - 1}/${c.aesOut * 2})</td><td>${esc(ampLabel(c.amp))} · ${esc(c.ampIn)} (${esc(c.inputs)})</td><td>${c.rows.map((r) => `${esc(r.input)} ${esc(rowFeedName(r))}`).join(' · ')}</td></tr>`).join('')}</tbody></table>`,
       );
   }
   if (dante.length)
@@ -831,6 +831,7 @@ export function rackPresetFrom(show, rack) {
           model: unit.model,
           mode: unit.mode || 'dual',
           name: unit.name,
+          ampId: unit.ampId || '',
           ip: unit.ip || '',
         };
       return { kind: tx.has(unit.id) ? 'tx' : 'rx', model: unit.model, name: unit.name, ip: unit.ip || '' };
@@ -880,6 +881,7 @@ export function addRackPreset(show, preset) {
         ...makeAmp(slot.model, show.amps.length + 1),
         mode: slot.mode,
         name: slot.name,
+        ampId: slot.ampId || '',
         ip: slot.ip,
         fixed: true,
       };
@@ -935,6 +937,55 @@ export function nudgeUnit(show, unitId, dir, only = null) {
   const next = racks[racks.indexOf(rack) + dir];
   if (!next) return show;
   return moveUnit(show, unitId, next.id, dir > 0 ? next.units[0] || null : null);
+}
+
+// ---- Amp IDs: the number on the amp (its d&b remote ID), so the racks can follow the labels ----
+export const cleanAmpId = (v) => String(v ?? '').trim();
+const idKey = (v) => cleanAmpId(v).toLowerCase();
+// "2" before "10", "1.02" before "1.10"
+export const compareAmpIds = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+
+// "Amp 3 (ID 12)" on paperwork
+export const ampLabel = (a) => (cleanAmpId(a.ampId) ? `${a.name} (ID ${cleanAmpId(a.ampId)})` : a.name);
+
+export function ampById(show, id) {
+  const want = idKey(id);
+  return (want && (show.amps || []).find((a) => idKey(a.ampId) === want)) || null;
+}
+// IDs on more than one amp: Map of id -> amps
+export function ampIdClashes(show) {
+  const seen = new Map();
+  for (const a of show.amps || [])
+    if (idKey(a.ampId)) seen.set(idKey(a.ampId), [...(seen.get(idKey(a.ampId)) || []), a]);
+  return new Map([...seen].filter(([, list]) => list.length > 1));
+}
+// Amps change places so they read in ID order down the racks, top rack first. Built-in amps, DS10s,
+// spaces and the rest stay where they are; amps with no ID go after the numbered ones.
+export function sortByAmpId(show, rackIds = (show.racks || []).map((r) => r.id)) {
+  const loose = new Map((show.amps || []).filter((a) => !a.fixed).map((a) => [a.id, a]));
+  const slots = (show.racks || [])
+    .filter((r) => rackIds.includes(r.id))
+    .flatMap((r) => r.units.map((id, i) => ({ r, i, id })).filter((x) => loose.has(x.id)));
+  const sorted = slots
+    .map((x) => loose.get(x.id))
+    .sort((a, b) => {
+      const x = cleanAmpId(a.ampId);
+      const y = cleanAmpId(b.ampId);
+      return !x || !y ? !x - !y : compareAmpIds(x, y);
+    });
+  slots.forEach(({ r, i }, k) => {
+    r.units[i] = sorted[k].id;
+  });
+  return normalizeRacks(show);
+}
+// Above `beforeId` (or into that space), or the bottom of the rack. Returns why not, or ''.
+export function moveAmpById(show, id, rackId, beforeId = null) {
+  const amp = ampById(show, id);
+  if (!amp) return `No amp has ID ${cleanAmpId(id) || '(blank)'}.`;
+  if (amp.fixed) return `${amp.name} is built into its rack and stays there.`;
+  if (!(show.racks || []).some((r) => r.id === rackId)) return 'Pick a rack.';
+  moveUnit(show, amp.id, rackId, beforeId);
+  return '';
 }
 
 // ---- Identity: a unit keeps who it was when racked (amp serial, Shure model + device ID);
