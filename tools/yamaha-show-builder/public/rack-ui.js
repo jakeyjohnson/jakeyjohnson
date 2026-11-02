@@ -34,6 +34,7 @@ import {
   shureModelFrom,
   unitHeight,
 } from './rig.js';
+import { firmwareCheck, firmwareRules } from './firmware.js';
 import { el, info, ipField, segmented, tag, toast } from './ui.js';
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -77,6 +78,26 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
     const list = u.ampId && ampIdClashes(show()).get(cleanAmpId(u.ampId).toLowerCase());
     return list ? list.find((x) => x !== u) : null;
   };
+  // firmware as last read, checked against the minimums in Preferences
+  const firmwareOf = (u) =>
+    u.firmware
+      ? { text: u.firmware, ...firmwareCheck(u.model, u.firmware, firmwareRules(prefs().firmwareMin)) }
+      : null;
+  const firmwareTag = (u) => {
+    const fw = firmwareOf(u);
+    if (!fw) return null;
+    return fw.ok === false
+      ? tag(
+          `Firmware ${fw.text}`,
+          'warn',
+          `Older than ${fw.min}, the oldest set in Preferences. Update it before the job.`,
+        )
+      : tag(
+          `FW ${fw.text}`,
+          '',
+          `Firmware ${fw.text}, as read by Check rack${fw.min ? ` (${fw.min} or newer wanted)` : ''}`,
+        );
+  };
   const removeUnit = (s, u) => {
     removeFromRack(s, u.id); // leaves a space behind in a preset rack
     for (const list of [s.amps, s.ds10s, s.rf?.receivers, s.rf?.transmitters, s.rackItems]) {
@@ -95,6 +116,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
     const found = await transport.identify(protocolOf(kind), u.ip);
     const res = sameDevice(u.ident, found);
     if (res.learn) u.ident = identityOf(found);
+    if (res.ok && found.firmware) u.firmware = found.firmware;
     session.ident[u.id] = res.ok ? { ok: true, who: whoText(found) } : { ok: false, who: res.who };
     if (!res.ok)
       throw Object.assign(
@@ -162,7 +184,12 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
         unit = makeAmp(ampModelFrom(found.model) || 'D80', s.amps.length + 1);
         s.amps.push(unit);
       }
-      Object.assign(unit, { ip: d.ip, name: found.name || unit.name, ident: identityOf(found) });
+      Object.assign(unit, {
+        ip: d.ip,
+        name: found.name || unit.name,
+        ident: identityOf(found),
+        firmware: found.firmware || '',
+      });
     } else {
       s.rf ||= {};
       s.rf.receivers ||= [];
@@ -331,6 +358,7 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
               }),
           }),
           status,
+          firmwareTag(u),
           u.fixed ? tag('Built in', '', 'Part of a preset rack: it stays where it is.') : null,
         ),
         el(
@@ -581,7 +609,8 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
       const twin =
         u.ip && family !== 'item' && rackEntries(s).some((x) => x.unit !== u && x.unit.ip === u.ip);
       const sameId = family === 'amp' && u.model !== 'DS10' && idTwin(u);
-      const led = twin || sameId || (st && !st.ok) ? 'warn' : st?.ok ? 'ok' : '';
+      const fw = family === 'item' ? null : firmwareOf(u);
+      const led = twin || sameId || (st && !st.ok) || fw?.ok === false ? 'warn' : st?.ok ? 'ok' : '';
       const feeds = family === 'item' ? [] : feedsOf(family, u);
       return el(
         'li',
@@ -600,11 +629,13 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
               ? `Same IP as another unit`
               : sameId
                 ? `Same amp ID as ${sameId.name}`
-                : st
-                  ? st.ok
-                    ? `Checked: ${st.who}`
-                    : st.who
-                  : 'Not checked yet',
+                : fw?.ok === false
+                  ? `Firmware ${fw.text}, older than ${fw.min}`
+                  : st
+                    ? st.ok
+                      ? `Checked: ${st.who}`
+                      : st.who
+                    : 'Not checked yet',
           }),
           family === 'amp' && u.model !== 'DS10' ? idField(u, 'face-id') : null,
           el('span', {
@@ -614,6 +645,13 @@ export function makeRackUi({ show, update, transport, session, prefs = () => ({}
                 ? ''
                 : `${u.model}${family === 'amp' && u.mode === 'subtop' ? ' · SUB/TOP' : ''}`,
           }),
+          fw
+            ? el('span', {
+                className: `face-fw mono ${fw.ok === false ? 'old' : ''}`,
+                textContent: `fw ${fw.text}`,
+                title: fw.ok === false ? `Older than ${fw.min}, the oldest set in Preferences` : 'Firmware',
+              })
+            : null,
           u.fixed
             ? el('span', { className: 'lock', title: 'Built into this rack', 'aria-label': 'Built in' })
             : null,

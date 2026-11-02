@@ -452,6 +452,9 @@ input[type='checkbox']:not([role='switch']):hover {
 .status.bad {
   color: var(--bad);
 }
+.status.warn {
+  color: var(--warn);
+}
 
 /* ---- Product bar and show header ---- */
 .product-bar {
@@ -2565,4 +2568,22 @@ input.face-id:placeholder-shown {
 }
 .id-bar select {
   max-width: 220px;
+}
+
+/* ---- Firmware ---- */
+.face-fw {
+  flex: none;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+.face-fw.old {
+  color: var(--warn);
+  font-weight: 700;
+}
+.pref-firmware {
+  width: 100%;
+  min-width: 220px;
+  resize: vertical;
+  font-size: 12px;
 }

@@ -124,9 +124,33 @@ const network = () => [
     ip: '192.168.0.130',
     via: ['port 49280'],
   },
-  { kind: 'radio', make: 'Shure', model: 'ULXD4Q', name: 'RF SL 1', ip: '192.168.0.50', via: ['port 2202'] },
-  { kind: 'radio', make: 'Shure', model: 'ULXD4Q', name: 'RF SL 2', ip: '192.168.0.51', via: ['port 2202'] },
-  { kind: 'radio', make: 'Shure', model: 'P10T', name: 'IEM 1', ip: '192.168.0.52', via: ['port 2202'] },
+  {
+    kind: 'radio',
+    make: 'Shure',
+    model: 'ULXD4Q',
+    name: 'RF SL 1',
+    ip: '192.168.0.50',
+    firmware: '2.7.6',
+    via: ['port 2202'],
+  },
+  {
+    kind: 'radio',
+    make: 'Shure',
+    model: 'ULXD4Q',
+    name: 'RF SL 2',
+    ip: '192.168.0.51',
+    firmware: '2.7.6',
+    via: ['port 2202'],
+  },
+  {
+    kind: 'radio',
+    make: 'Shure',
+    model: 'P10T',
+    name: 'IEM 1',
+    ip: '192.168.0.52',
+    firmware: '2.4.12',
+    via: ['port 2202'],
+  },
   {
     kind: 'radio',
     make: 'Sennheiser',
@@ -142,6 +166,7 @@ const network = () => [
     name: 'Mains',
     ip: '192.168.0.60',
     serial: '10236',
+    firmware: '2.10.4',
     via: ['port 30013'],
   },
   {
@@ -151,6 +176,7 @@ const network = () => [
     name: 'Fills',
     ip: '192.168.0.61',
     serial: '10511',
+    firmware: '2.10.4',
     via: ['port 30013'],
   },
   {
@@ -160,6 +186,7 @@ const network = () => [
     name: 'Delays',
     ip: '192.168.0.62',
     serial: '20877',
+    firmware: '2.8.2', // the D40 is behind, to show the warning
     via: ['port 30013'],
   },
   {
@@ -201,7 +228,7 @@ const routes = {
       return json({ error: "That isn't an IP address. Try 192.168.0.128." });
     setLink({ state: 'connecting', host });
     await wait(600);
-    const s = { state: 'connected', host, product: PRODUCT[currentModel()] || 'QL5' };
+    const s = { state: 'connected', host, product: PRODUCT[currentModel()] || 'QL5', firmware: 'V5.90' };
     setLink(s);
     return json(s);
   },
@@ -311,8 +338,15 @@ const routes = {
       return json({ error: `No answer from ${host}. Check its IP and that it's on this network.` }, 400);
     return json(
       kind === 'amp'
-        ? { host, manufacturer: 'd&b audiotechnik', model: d.model, serial: d.serial, name: d.name }
-        : { host, model: d.model, name: d.name },
+        ? {
+            host,
+            manufacturer: 'd&b audiotechnik',
+            model: d.model,
+            serial: d.serial,
+            name: d.name,
+            firmware: d.firmware,
+          }
+        : { host, model: d.model, name: d.name, firmware: d.firmware },
     );
   },
   async '/api/flash'({ host }) {
@@ -375,6 +409,7 @@ const routes = {
         model: d?.model || 'D80',
         name: d?.name || 'Demo amp',
         serial: d?.serial || 'PRETEND',
+        firmware: d?.firmware || '',
       },
       objects,
     });

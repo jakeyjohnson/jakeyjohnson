@@ -1,5 +1,6 @@
 // Prep sheet: pick list with Out/Back ticks, racks with IPs, patch. Printed on white.
 import { MODELS, SOURCE_TYPES, phantomOf, portLabel, safeLogo } from './plan.js';
+import { firmwareCheck, firmwareRules } from './firmware.js';
 import {
   AMP_MODELS,
   AMP_MODES,
@@ -229,7 +230,15 @@ export function pickList(show, plan) {
 export function prepSheet(
   show,
   plan,
-  { version = '', licence = '', company = '', preparedBy = '', logo = '' } = {},
+  {
+    version = '',
+    licence = '',
+    company = '',
+    preparedBy = '',
+    logo = '',
+    firmwareMin = '',
+    desk = null, // { product, firmware } while connected
+  } = {},
 ) {
   const logoSrc = safeLogo(logo);
   const model = MODELS[show.options?.model];
@@ -304,6 +313,25 @@ export function prepSheet(
     })
     .join('');
 
+  // Firmware as last read (desk while connected, kit from Check rack), against Preferences
+  const rules = firmwareRules(firmwareMin);
+  const kit = [
+    ...(desk?.firmware ? [{ name: desk.product, model: desk.product, firmware: desk.firmware, ip: '' }] : []),
+    ...[
+      ...(show.amps || []),
+      ...(show.ds10s || []),
+      ...(show.rf?.receivers || []),
+      ...(show.rf?.transmitters || []),
+    ]
+      .filter((u) => u.firmware)
+      .map((u) => ({ name: ampLabel(u), model: u.model, firmware: u.firmware, ip: u.ip })),
+  ];
+  const firmware = kit
+    .map((k) => {
+      const fw = firmwareCheck(k.model, k.firmware, rules);
+      return `<tr${fw?.ok === false ? ' class="old"' : ''}><td class="box"></td><td><b>${esc(k.name)}</b> <small>${esc(k.model)}</small></td><td class="ip">${esc(k.firmware)}</td><td class="ip">${esc(fw?.min || '')}</td><td>${fw ? (fw.ok ? 'OK' : '<b>Update</b>') : ''}</td><td class="ip">${esc(k.ip)}</td></tr>`;
+    })
+    .join('');
   const radioOf = (c) => rig.mics.find((m) => m.source === c.source);
   const inputs = plan.channels
     .map((c) => {
@@ -337,7 +365,7 @@ export function prepSheet(
 .kk-prep .id{display:inline-block;padding:0 5px;border:1.5px solid #111;border-radius:3px;font-weight:700;font-size:11px;font-family:ui-monospace,Menlo,monospace}
 .kk-prep .racks{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}.kk-prep .rack{break-inside:avoid}
 .kk-prep tr.amp td{background:#f3f5f7}.kk-prep tr.rf td{background:#f7f8f9}.kk-prep tr.plate td{background:#11151a;color:#fff;font-weight:700;text-align:center}
-.kk-prep tr.plate td.u{color:#c8cdd3}.kk-prep tr.free td{color:#8e949b;border-style:dashed;text-align:center}
+.kk-prep tr.plate td.u{color:#c8cdd3}.kk-prep tr.old td{background:#fff1e6;font-weight:600}.kk-prep tr.free td{color:#8e949b;border-style:dashed;text-align:center}
 .kk-prep img.logo{float:right;max-height:44px;max-width:200px}.kk-prep tr.plate.company td{background:#fff;color:#11151a;border-color:#11151a}.kk-prep tr.plate img{max-height:36px;max-width:240px;vertical-align:middle}
 .kk-prep small{color:#5d6670}.kk-prep .page{page-break-before:always}.kk-prep footer{margin-top:18px;color:#5d6670;font-size:9.5px}
 @media print{.kk-prep h2{break-after:avoid}.kk-prep tr{break-inside:avoid}}`;
@@ -348,6 +376,7 @@ ${logoSrc ? `<img class="logo" src="${logoSrc}" alt="">` : ''}<h1>${esc(show.nam
 <h2>Pick list</h2>
 <table><thead><tr><th>Qty</th><th>Item</th><th>Notes</th><th>Out</th><th>Back</th></tr></thead><tbody>${picks || '<tr><td colspan="5">Nothing yet</td></tr>'}</tbody></table>
 ${racks ? `<h2 class="page">Racks</h2><p class="meta">Top to bottom, as they sit. Each unit's IP is on the right.</p><div class="racks">${racks}</div>` : ''}
+${firmware ? `<h2>Firmware</h2><p class="meta">As last read: the desk when it connected, the rest from Check rack. Oldest wanted is set in Preferences.</p><table><thead><tr><th>✓</th><th>Unit</th><th>Firmware</th><th>Oldest wanted</th><th></th><th>IP</th></tr></thead><tbody>${firmware}</tbody></table>` : ''}
 <h2 class="page">Input patch</h2>
 <table><thead><tr><th>✓</th><th>Ch</th><th>Name</th><th>Plugs into</th><th>Mic / DI / radio</th><th>48V</th><th>MHz</th></tr></thead><tbody>${inputs || '<tr><td colspan="7">No inputs</td></tr>'}</tbody></table>
 <h2>Output and amp patch</h2>

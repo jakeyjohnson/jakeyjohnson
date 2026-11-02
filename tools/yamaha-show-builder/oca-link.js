@@ -251,6 +251,7 @@ export class OcaConnection {
 // ---- Reading a whole device ----
 const ROOT_BLOCK = 100;
 const DEVICE_MANAGER = 1;
+const FIRMWARE_MANAGER = 3;
 const ok = (r) => r.status === 0;
 async function readString(conn, ono, level, index) {
   const r = await conn.call(ono, level, index);
@@ -265,6 +266,22 @@ function readValue(kind, params) {
   if (kind === 'switch') return { position: r.u16(), min: r.u16(), max: r.u16() };
   if (kind === 'float3') return { value: r.f32(), min: r.f32(), max: r.f32() };
   return null;
+}
+// OcaFirmwareManager.GetComponentVersions: [{ component, version }]. Component 0 is the boot loader;
+// the first one after it is the firmware people mean. null if the device doesn't say.
+async function readFirmware(conn) {
+  const r = await conn.call(FIRMWARE_MANAGER, 3, 1);
+  if (!ok(r)) return null;
+  try {
+    const parts = new Reader(r.params).list((x) => ({
+      version: `${x.u32()}.${x.u32()}.${x.u32()}`,
+      component: x.u16(),
+    }));
+    const main = parts.find((p) => p.component !== 0) || parts[0];
+    return main ? { firmware: main.version, components: parts } : null;
+  } catch {
+    return null;
+  }
 }
 // Limited concurrency, so a big tree doesn't flood the amp
 async function inBatches(items, size, fn) {
@@ -283,6 +300,7 @@ export async function identifyDevice(host, { port, timeoutMs } = {}) {
     }
     device.serial = await readString(conn, DEVICE_MANAGER, 3, 3);
     device.name = await readString(conn, DEVICE_MANAGER, 3, 4);
+    device.firmware = (await readFirmware(conn))?.firmware || '';
     return device;
   } finally {
     conn.close();
@@ -303,6 +321,7 @@ export async function readDevice(host, { port, timeoutMs, onProgress = () => {} 
     device.role = await readString(conn, DEVICE_MANAGER, 3, 7);
     const oca = await conn.call(DEVICE_MANAGER, 3, 1);
     if (ok(oca)) device.ocaVersion = new Reader(oca.params).u16();
+    Object.assign(device, (await readFirmware(conn)) || { firmware: '' });
 
     // Try the recursive member list first, else walk block by block
     let members = [];

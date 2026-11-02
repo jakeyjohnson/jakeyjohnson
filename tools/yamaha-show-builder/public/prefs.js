@@ -23,6 +23,8 @@ export const DEFAULT_PREFS = {
   // system check
   checkSource: 'channel',
   checkStart: -4000,
+  // oldest firmware you'll take, one model a line: "CL 5.90"
+  firmwareMin: '',
   // paperwork; logo also on rack plates
   company: '',
   preparedBy: '',

@@ -639,6 +639,7 @@ export function ampReadSummary(dump) {
     model: dump.device?.model || '',
     name: dump.device?.name || '',
     serial: dump.device?.serial || '',
+    firmware: dump.device?.firmware || '',
     controls: (dump.objects || [])
       .filter((o) => o.value !== undefined)
       .map((o) => ({ path: o.path, kind: String(o.className || '').replace(/^Oca/, ''), value: value(o) })),

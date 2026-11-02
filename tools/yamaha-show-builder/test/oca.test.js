@@ -92,3 +92,28 @@ test('identifying an amp gives its model and serial without reading its controls
   server.close();
   assert.deepEqual([who.model, who.serial, who.name], ['D80 (pretend)', 'PRETEND-0001', 'Amp on the bench']);
 });
+
+test('firmware comes from the firmware manager, past the boot loader', async () => {
+  const { server } = mockAmp();
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const port = server.address().port;
+  assert.equal((await identifyDevice('127.0.0.1', { port })).firmware, '2.10.4');
+  const { device: full } = await readDevice('127.0.0.1', { port });
+  server.close();
+  assert.equal(full.firmware, '2.10.4');
+  assert.deepEqual(
+    full.components.map((c) => c.component),
+    [0, 1],
+  );
+});
+
+test('an amp with no firmware manager still identifies', async () => {
+  const { server } = mockAmp({ firmware: null });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const who = await identifyDevice('127.0.0.1', { port: server.address().port });
+  server.close();
+  assert.equal(who.serial, 'PRETEND-0001');
+  assert.equal(who.firmware, '');
+});

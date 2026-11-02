@@ -247,9 +247,8 @@ test('amps fed from a DS10: AES inputs in order, one DS10 AES out per pair, Dant
 });
 
 test('a preset rack comes in built, with spaces that new amps and RF fill', async () => {
-  const { addRackPreset, makeSpace, rackPresetFrom, removeFromRack, removeRack } = await import(
-    '../public/rig.js'
-  );
+  const { addRackPreset, makeSpace, rackPresetFrom, removeFromRack, removeRack } =
+    await import('../public/rig.js');
   // Build the warehouse's 15U control rack once: power, a fixed DS10, 6U of space, a switch
   const build = defaultShow();
   build.rackItems = [makeRackItem('power', 1), makeSpace(6), makeRackItem('switch', 2)];

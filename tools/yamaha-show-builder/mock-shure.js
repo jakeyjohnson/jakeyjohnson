@@ -6,6 +6,7 @@ export function mockShure({
   model = process.env.SHURE_MODEL || 'ULXD4Q',
   channels = 4,
   deviceId = process.env.SHURE_ID || 'RX1',
+  firmware = '2.7.6', // null: answers FW_VER with ERR, like older units
 } = {}) {
   const flashes = [];
   const state = {};
@@ -26,6 +27,10 @@ export function mockShure({
         }
         if (/^DEVICE_ID$/.test(rest)) {
           socket.write(`< REP DEVICE_ID {${deviceId.padEnd(31)}} >`);
+          continue;
+        }
+        if (/^FW_VER$/.test(rest)) {
+          socket.write(firmware ? `< REP FW_VER {${firmware.padEnd(24)}} >` : '< REP ERR >');
           continue;
         }
         if (/^FLASH ON$/.test(rest) && verb === 'SET') {

@@ -3,6 +3,7 @@ import net from 'node:net';
 
 const PORT = Number(process.env.DESK_PORT || 49280);
 const MODEL = process.env.DESK_MODEL || 'MockDesk'; // e.g. DESK_MODEL=QL5 to test model detection
+const FIRMWARE = process.env.DESK_FIRMWARE || 'V5.90';
 const state = new Map();
 // Unset addresses: default names, 0 for everything else
 const fallback = (addr, x) =>
@@ -28,7 +29,10 @@ net
         if (!line) continue;
         console.log('>', line);
         const [verb, addr, x, y, ...rest] = line.split(' ');
-        if (verb === 'devinfo') socket.write(`OK devinfo ${addr} "${MODEL}"\n`);
+        if (verb === 'devinfo')
+          socket.write(
+            addr === 'version' ? `OK devinfo version "${FIRMWARE}"\n` : `OK devinfo ${addr} "${MODEL}"\n`,
+          );
         else if (verb.startsWith('ssupdate')) socket.write(`OK ${line}\n`);
         else if (
           verb === 'set' &&

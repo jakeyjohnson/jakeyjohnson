@@ -417,7 +417,7 @@ export function mountRig({ getShow, update, transport, demo = false, prefs = () 
             el('b', { textContent: a.name }),
             el('span', {
               className: 'dim',
-              textContent: ` ${[r.model, r.name, r.serial && `#${r.serial}`].filter(Boolean).join(' · ')}`,
+              textContent: ` ${[r.model, r.name, r.serial && `#${r.serial}`, r.firmware && `fw ${r.firmware}`].filter(Boolean).join(' · ')}`,
             }),
             el('span', {
               className: 'mono dim',

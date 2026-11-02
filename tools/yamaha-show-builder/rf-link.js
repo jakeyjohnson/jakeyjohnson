@@ -123,7 +123,8 @@ export function specteraRequest(host, password, method, path, body) {
   });
 }
 
-// Shure model + device ID (front panel name). flash also blinks the front panel.
+// Shure model, device ID (front panel name) and firmware. flash also blinks the front panel.
+// Older units answer FW_VER with ERR; firmware is '' then.
 export function shureDevice(host, { port = SHURE_PORT, timeoutMs = 2500, flash = false } = {}) {
   return new Promise((resolve, reject) => {
     const socket = net.createConnection({ host, port });
@@ -132,7 +133,13 @@ export function shureDevice(host, { port = SHURE_PORT, timeoutMs = 2500, flash =
     const finish = () => {
       clearTimeout(timer);
       socket.destroy();
-      resolve({ host, model: got.MODEL || '', name: got.DEVICE_ID || '', flashed: Boolean(got.FLASH) });
+      resolve({
+        host,
+        model: got.MODEL || '',
+        name: got.DEVICE_ID || '',
+        firmware: typeof got.FW_VER === 'string' ? got.FW_VER : '',
+        flashed: Boolean(got.FLASH),
+      });
     };
     const timer = setTimeout(
       () =>
@@ -156,14 +163,14 @@ export function shureDevice(host, { port = SHURE_PORT, timeoutMs = 2500, flash =
     socket.on('data', (chunk) => {
       buffer += chunk;
       let m;
-      while ((m = /<\s*REP\s+(MODEL|DEVICE_ID|FLASH)\s*\{?([^}>]*)\}?\s*>/.exec(buffer))) {
+      while ((m = /<\s*REP\s+(MODEL|DEVICE_ID|FW_VER|FLASH|ERR)\s*\{?([^}>]*)\}?\s*>/.exec(buffer))) {
         buffer = buffer.slice(m.index + m[0].length);
         got[m[1]] = m[2].trim() || true;
       }
-      if (got.MODEL && got.DEVICE_ID && (!flash || got.FLASH)) finish();
+      if (got.MODEL && got.DEVICE_ID && (got.FW_VER || got.ERR) && (!flash || got.FLASH)) finish();
     });
     socket.on('connect', () =>
-      socket.write(`< GET MODEL >< GET DEVICE_ID >${flash ? '< SET FLASH ON >' : ''}`),
+      socket.write(`< GET MODEL >< GET DEVICE_ID >< GET FW_VER >${flash ? '< SET FLASH ON >' : ''}`),
     );
   });
 }

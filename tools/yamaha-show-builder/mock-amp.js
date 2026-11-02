@@ -25,7 +25,15 @@ const classId = (id) => {
 };
 const list = (items) => Buffer.concat([u16(items.length), ...items]);
 
-export function mockAmp({ model = 'D80 (pretend)', channels = 4, recursive = true } = {}) {
+const version = (major, minor, build, component) =>
+  Buffer.concat([u32(major), u32(minor), u32(build), u16(component)]);
+
+export function mockAmp({
+  model = 'D80 (pretend)',
+  channels = 4,
+  recursive = true,
+  firmware = [2, 10, 4],
+} = {}) {
   const objects = new Map();
   const add = (ono, cls, role, container, state = {}) =>
     objects.set(ono, { ono, cls, role, container, label: '', ...state });
@@ -55,6 +63,11 @@ export function mockAmp({ model = 'D80 (pretend)', channels = 4, recursive = tru
       if (level === 3 && index === 4) return [0, encodeString('Amp on the bench')];
       if (level === 3 && index === 7) return [0, encodeString('Main L/R')];
       if (level === 3 && index === 1) return [0, u16(1)];
+      return [8, null];
+    }
+    if (ono === 3) {
+      if (level === 3 && index === 1 && firmware)
+        return [0, list([version(1, 4, 0, 0), version(...firmware, 1)])];
       return [8, null];
     }
     const o = objects.get(ono);

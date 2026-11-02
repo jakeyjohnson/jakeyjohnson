@@ -41,3 +41,20 @@ test('a Shure unit says who it is, and flashes when asked', async () => {
   assert.equal(flashes.length, 1);
   server.close();
 });
+
+test('Shure firmware, and older units that answer FW_VER with ERR', async () => {
+  const one = mockShure({ firmware: '2.7.6' });
+  one.server.listen(0, '127.0.0.1');
+  await once(one.server, 'listening');
+  assert.equal((await shureDevice('127.0.0.1', { port: one.server.address().port })).firmware, '2.7.6');
+  one.server.close();
+
+  const old = mockShure({ firmware: null, deviceId: 'Old one' });
+  old.server.listen(0, '127.0.0.1');
+  await once(old.server, 'listening');
+  const t = Date.now();
+  const who = await shureDevice('127.0.0.1', { port: old.server.address().port });
+  old.server.close();
+  assert.deepEqual([who.name, who.firmware], ['Old one', '']);
+  assert.ok(Date.now() - t < 1000, 'ERR answers straight away, no wait for the timeout');
+});

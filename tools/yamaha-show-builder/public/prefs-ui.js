@@ -2,6 +2,7 @@
 import { MODELS } from './plan.js';
 import { AMP_MODELS, AMP_MODES, IEM_MODELS, RECEIVER_MODELS } from './rig.js';
 import { RANGES } from './rig-ui.js';
+import { badFirmwareLines } from './firmware.js';
 import { DEFAULT_PREFS, cleanPrefix, readLogo } from './prefs.js';
 import { el, info, segmented, toast, toggle } from './ui.js';
 
@@ -236,6 +237,27 @@ export function openPrefs({ prefs, save, log }) {
             ],
             Number,
           ),
+        ),
+      ),
+      section(
+        'Firmware',
+        row(
+          'Oldest you take',
+          el('textarea', {
+            className: 'pref-firmware mono',
+            rows: 5,
+            spellcheck: false,
+            value: prefs.firmwareMin,
+            placeholder: 'CL 5.90\nQL 5.90\nULXD 2.7.6\nD80 2.10.4',
+            'aria-label': 'Oldest firmware by model',
+            onchange: (e) => {
+              const bad = badFirmwareLines(e.target.value);
+              if (bad.length)
+                toast(`Not a rule: ${bad[0]}. Write the model, a space, then the version.`, 'bad');
+              set('firmwareMin', e.target.value);
+            },
+          }),
+          'One model a line, then the oldest firmware you want out on a job. The start of a model name covers the range: CL covers CL1, CL3 and CL5. Anything older is flagged when the desk connects or Check rack reads the kit, and on the prep sheet.',
         ),
       ),
       section(

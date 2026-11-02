@@ -16,6 +16,7 @@ import {
 } from './check.js';
 import { RACK_DEFAULTS, ampPlan, normalizeRacks, rigPaperwork, syncDs10s } from './rig.js';
 import { readShowFile, writeKk } from './kkfile.js';
+import { firmwareCheck, firmwareRules } from './firmware.js';
 import { prepSheet } from './prep.js';
 import { expandIp, loadPrefs, savePrefs } from './prefs.js';
 import { clearLog, logError, logText, readLog } from './log.js';
@@ -535,8 +536,11 @@ function setStatus(text, kind = '') {
 
 // ---- Desk connection (server holds the one live connection) ----
 let link = { state: 'idle' };
+// { ok, min } against the minimums in Preferences, or null
+const deskFirmware = (s) => firmwareCheck(s.product, s.firmware, firmwareRules(prefs.firmwareMin));
 function showLink(s) {
   const was = link.state;
+  const fw = s.state === 'connected' ? deskFirmware(s) : null;
   link = s;
   for (const dot of [$('linkDot')]) dot.className = `link-dot ${s.state}`;
   $('linkPill').className = `link-pill ${s.state}`;
@@ -549,11 +553,13 @@ function showLink(s) {
   $('linkStatus').textContent = {
     idle: s.error || '',
     connecting: '',
-    connected: 'Connected',
+    connected: s.firmware
+      ? `Connected · firmware ${s.firmware}${fw && !fw.ok ? `, older than ${fw.min}` : ''}`
+      : 'Connected',
     lost: s.error || 'Lost the desk',
   }[s.state];
   $('linkStatus').className =
-    `status ${s.state === 'connected' ? 'ok' : s.error || s.state === 'lost' ? 'bad' : ''}`;
+    `status ${s.state === 'connected' ? (fw && !fw.ok ? 'warn' : 'ok') : s.error || s.state === 'lost' ? 'bad' : ''}`;
   const btn = $('connectBtn');
   btn.textContent = {
     idle: 'Connect',
@@ -564,7 +570,14 @@ function showLink(s) {
   btn.className = s.state === 'connected' ? 'ghost' : 'primary';
   btn.disabled = s.state === 'connecting';
   $('host').disabled = $('port').disabled = s.state === 'connected' || s.state === 'connecting';
-  if (s.state === 'connected' && was !== 'connected') matchModel(s.product);
+  if (s.state === 'connected' && was !== 'connected') {
+    matchModel(s.product);
+    if (fw && !fw.ok)
+      toast(
+        `${s.product} is on firmware ${s.firmware}, older than the ${fw.min} set in Preferences. Update it before the job.`,
+        'bad',
+      );
+  }
   if (s.state === 'lost' && was === 'connected')
     toast(`Lost ${s.product || 'the desk'}. Check the cable.`, 'bad');
   if (s.state !== was) render();
@@ -2187,6 +2200,8 @@ $('prepBtn').onclick = () =>
       company: prefs.company,
       preparedBy: prefs.preparedBy,
       logo: prefs.companyLogo,
+      firmwareMin: prefs.firmwareMin,
+      desk: link.state === 'connected' ? { product: link.product, firmware: link.firmware } : null,
     }),
   );
 
@@ -2206,7 +2221,12 @@ async function downloadLog() {
     ['Computer', navigator.userAgent],
     ['Screen', `${screen.width}x${screen.height}`],
     ['App server', srv ? `${srv.version}, node ${srv.node}, ${srv.platform}` : 'not running'],
-    ['Desk', link.state === 'connected' ? `${link.product} at ${link.host}` : link.state],
+    [
+      'Desk',
+      link.state === 'connected'
+        ? `${link.product} at ${link.host}, firmware ${link.firmware || 'unknown'}`
+        : link.state,
+    ],
     ['Show', `${show.name} (${MODELS[show.options.model]?.label || 'no desk set'})`],
   ];
   const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');

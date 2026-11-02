@@ -34,7 +34,14 @@ export class DeskLink extends EventEmitter {
   #checker = null;
 
   status() {
-    return { state: this.state, host: this.host, port: this.port, product: this.product, error: this.error };
+    return {
+      state: this.state,
+      host: this.host,
+      port: this.port,
+      product: this.product,
+      firmware: this.firmware,
+      error: this.error,
+    };
   }
 
   #set(patch) {
@@ -44,7 +51,7 @@ export class DeskLink extends EventEmitter {
 
   async connect(host, port = 49280) {
     this.disconnect({ quiet: true });
-    this.#set({ state: 'connecting', host, port, product: null, error: null });
+    this.#set({ state: 'connecting', host, port, product: null, firmware: null, error: null });
     const socket = net.createConnection({ host, port });
     this.#socket = socket;
     socket.setEncoding('utf8');
@@ -90,7 +97,13 @@ export class DeskLink extends EventEmitter {
       this.#set({ state: 'idle', error });
       throw new Error(error);
     }
-    this.#set({ state: 'connected', product: /"([^"]*)"/.exec(reply)?.[1] || null });
+    // Firmware: not every desk answers this; null then
+    const version = await this.send('devinfo version');
+    this.#set({
+      state: 'connected',
+      product: /"([^"]*)"/.exec(reply)?.[1] || null,
+      firmware: /^OK devinfo version "([^"]*)"/.exec(version)?.[1] || null,
+    });
     // keepalive, so a pulled cable shows up while idle
     this.#checker = setInterval(async () => {
       if ((await this.send('devinfo productname')) === 'TIMEOUT') this.#socket?.destroy();
