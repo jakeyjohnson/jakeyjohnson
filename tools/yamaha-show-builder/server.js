@@ -306,7 +306,11 @@ async function handle(req, res) {
     const file = normalize(join(PUBLIC, path === '/' ? 'index.html' : path));
     if (!file.startsWith(PUBLIC)) return res.writeHead(403).end();
     const data = await readFile(file);
-    res.writeHead(200, { 'content-type': TYPES[extname(file)] || 'application/octet-stream' });
+    // no-cache: after an update the app must never show last version's pages
+    res.writeHead(200, {
+      'content-type': TYPES[extname(file)] || 'application/octet-stream',
+      'cache-control': 'no-cache',
+    });
     res.end(data);
   } catch (err) {
     if (path.startsWith('/api/')) logError(path, err.message);

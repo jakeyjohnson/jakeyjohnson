@@ -91,7 +91,8 @@ function createWindow() {
   win.on('closed', () => {
     win = null;
   });
-  win.loadURL(home);
+  // pages cached by an older version would hide this one's
+  win.webContents.session.clearCache().finally(() => win?.loadURL(home));
 }
 
 function buildMenu() {
