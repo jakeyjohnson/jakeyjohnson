@@ -18,11 +18,7 @@ struct RootTabView: View {
 
 struct RunTab: View {
     let start: () -> Void
-    var body: some View {
-        NavigationStack {
-            SessionPreviewView(onStart: start)
-        }
-    }
+    var body: some View { RunHomeView(start: start) }
 }
 
 /// Live session, then summary.

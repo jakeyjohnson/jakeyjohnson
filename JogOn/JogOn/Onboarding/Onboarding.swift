@@ -4,8 +4,12 @@ struct OnboardingFlow: View {
     @Environment(AppState.self) private var state
     @State private var step = 0
     @State private var goal = ""
+    @State private var showIntro = true
     var body: some View {
         ZStack {
+            if showIntro {
+                IntroView(signUp: { showIntro = false }, logIn: { showIntro = false; step = 4 })
+            } else {
             switch step {
             case 0: WelcomeView(next: { step = 1 }, signIn: { step = 4 })
             case 1: GoalView(selection: $goal, next: { step = 2 })
@@ -13,6 +17,7 @@ struct OnboardingFlow: View {
             case 3: PermissionsView(next: { step = 4 })
             case 4: SignInView(next: { step = 5 })
             default: PlanReadyView(finish: { state.goal = goal; state.onboarded = true })
+            }
             }
         }
         .animation(.easeInOut, value: step)

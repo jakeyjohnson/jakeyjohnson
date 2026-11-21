@@ -5,9 +5,15 @@ struct HomeView: View {
     @Environment(AppState.self) private var state
     let start: () -> Void
     var body: some View {
+        NavigationStack { content.navigationDestination(for: String.self) { _ in ActivityView() } }
+    }
+    private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("This week").font(JO.small).foregroundStyle(JO.stone)
+                NavigationLink(value: "activity") {
+                    HStack { Text("This week").font(JO.small).foregroundStyle(JO.stone); Spacer()
+                        Text("All activity").font(JO.small).foregroundStyle(JO.pink); Image(systemName: "chevron.right").font(.caption).foregroundStyle(JO.pink) }
+                }
                 HStack(alignment: .firstTextBaseline) {
                     Text("\(Dummy.weeklyMinutes)").font(JO.number(96))
                     Text("minutes").font(JO.body).foregroundStyle(JO.stone)

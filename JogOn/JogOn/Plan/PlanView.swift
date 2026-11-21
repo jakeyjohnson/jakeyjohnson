@@ -2,22 +2,41 @@ import SwiftUI
 
 struct PlanView: View {
     @State private var paused = false
+    private var weeks: [Int] { Array(Set(Dummy.plan.map(\.week))).sorted() }
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(Dictionary(grouping: Dummy.plan, by: \.week).keys.sorted(), id: \.self) { week in
-                    Section("Week \(week)") {
-                        ForEach(Dummy.plan.filter { $0.week == week }) { row in
-                            NavigationLink { SessionPreviewView(onStart: {}) } label: { PlanRow(row: row) }
-                                .listRowBackground(JO.graphite)
-                        }
-                    }
+            ScrollView {
+                VStack(spacing: 16) {
+                    ForEach(weeks, id: \.self) { week in WeekCard(week: week, rows: Dummy.plan.filter { $0.week == week }) }
                 }
+                .padding(JO.margin)
             }
-            .scrollContentBackground(.hidden).background(JO.black)
+            .background(JO.black.ignoresSafeArea())
             .navigationTitle("Plan")
             .toolbar { Button(paused ? "Resume plan" : "Pause plan") { paused.toggle() }.tint(JO.pink) }
+            .opacity(paused ? 0.5 : 1)
         }
+    }
+}
+
+struct WeekCard: View {
+    let week: Int; let rows: [Dummy.Row]
+    private var current: Bool { rows.contains { $0.status == .today } }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Week \(week)").font(JO.display(28))
+            ProgressBar(value: Double(rows.filter { $0.status == .done }.count) / Double(rows.count))
+            Text("Sessions: \(rows.filter { $0.status == .done }.count)/\(rows.count)").font(JO.small).foregroundStyle(JO.stone)
+            ForEach(rows) { row in
+                NavigationLink { SessionPreviewView(onStart: {}) } label: {
+                    HStack { PlanRow(row: row); Spacer(); Image(systemName: "chevron.right").foregroundStyle(JO.stone) }
+                }.buttonStyle(.plain)
+            }
+        }
+        .padding(18).frame(maxWidth: .infinity, alignment: .leading)
+        .background(JO.graphite)
+        .overlay(RoundedRectangle(cornerRadius: JO.cardRadius).stroke(current ? JO.pink : .clear, lineWidth: 2))
+        .clipShape(RoundedRectangle(cornerRadius: JO.cardRadius))
     }
 }
 
