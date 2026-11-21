@@ -1,0 +1,21 @@
+name: JogOn
+options:
+  bundleIdPrefix: com.jogon
+  deploymentTarget:
+    iOS: "18.0"
+targets:
+  JogOn:
+    type: application
+    platform: iOS
+    sources: [JogOn]
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Jog On uses your location to draw your route and measure distance."
+        INFOPLIST_KEY_NSMotionUsageDescription: "Jog On counts your steps during a session."
+        INFOPLIST_KEY_NSHealthShareUsageDescription: "Jog On reads your workouts from Health."
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Jog On saves your sessions to Health."
+        PRODUCT_BUNDLE_IDENTIFIER: com.jogon.app
