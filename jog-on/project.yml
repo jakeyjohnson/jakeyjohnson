@@ -1,0 +1,26 @@
+name: JogOn
+options:
+  bundleIdPrefix: com.jogon
+  deploymentTarget:
+    iOS: "18.0"
+targets:
+  JogOn:
+    type: application
+    platform: iOS
+    sources: [JogOn]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jogon.app
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+    info:
+      path: JogOn/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UIAppFonts:
+          - Archivo-Regular.ttf
+          - Archivo-SemiBold.ttf
+          - ArchivoExtraCondensed-ExtraBoldItalic.ttf
+          - ArchivoExtraCondensed-Bold.ttf
